@@ -6,6 +6,8 @@ A playing-card combat prototype built with JavaScript, Vite and PixiJS.
 
 Use Node.js 20.19+ or 22.12+ with npm. Install dependencies with `npm ci`, then run `npm run dev` and open the local URL printed by Vite. `npm run build` creates a production build; `npm run preview` serves it locally.
 
+Use **LIGHT MODE / DARK MODE** at the top right to switch appearance. The choice is saved locally and survives battle restarts and page reloads.
+
 ## Play the demo
 
 Click cards to select or deselect them, inspect the combination and cost, then click **PLAY CARDS**. Each valid play costs 1 energy and removes those cards for the rest of the turn. Invalid combinations and Bust cost nothing.

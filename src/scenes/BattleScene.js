@@ -16,6 +16,7 @@ import {
 import { validatePlay, playSelectedCards } from "../systems/PlaySystem.js";
 import { beginEndTurn, completeEndTurn } from "../systems/TurnSystem.js";
 import { resetGameState } from "../gameState.js";
+import { BATTLE_THEMES, getPreferredTheme, savePreferredTheme } from "../themes.js";
 
 /** Brief enemy phase absorbs double clicks before restoring player controls. */
 const ENEMY_PHASE_MS = 400;
@@ -25,6 +26,8 @@ export class BattleScene {
     constructor(app, state) {
         this.app = app;
         this.state = state;
+        this.themeName = getPreferredTheme();
+        this.theme = BATTLE_THEMES[this.themeName];
 		// MAIN CONTAINERS
 		this.container = new Container();
         this.background = new Graphics();
@@ -40,10 +43,11 @@ export class BattleScene {
 		this.app.stage.addChild(
 			this.container
         );
+        this.applyTheme();
     }
 
     // TOP HUD
-    /** Creates player statistics and the current battle phase label. */
+    /** Creates player statistics, the battle phase and appearance control. */
     createTopHUD() {
 		this.topBar =new Graphics();
 		this.hpText = this.createText("",20);
@@ -59,13 +63,17 @@ export class BattleScene {
             this.energyText,
             this.phaseText
         );
+        this.themeButton = this.createButton("", this.theme.button, 140, 40);
+        this.themeButton.on("pointerdown", () => this.toggleTheme());
+        this.container.addChild(this.themeButton);
 
 
         this.refreshHUD();
     }
 
     // ENEMY AREA
-	createEnemyArea() {
+    /** Creates the enemy's theme-aware placeholder, HP and attack intent. */
+    createEnemyArea() {
 		this.enemyName =
             this.createText(
                 this.state.enemy.name,
@@ -85,7 +93,7 @@ export class BattleScene {
         this.enemyBody
             .circle(0,0,70)
             .fill(
-                0x8c3f3f
+                this.theme.enemy
             );
 
 
@@ -105,7 +113,7 @@ export class BattleScene {
             this.createText(
                 "",
                 20,
-                "#f0c75e"
+                this.theme.attack
             );
 
 
@@ -152,7 +160,7 @@ export class BattleScene {
             this.createText(
                 "Enemy Intent",
                 16,
-                "#9fa7b5"
+                this.theme.muted
             );
 
 
@@ -160,7 +168,7 @@ export class BattleScene {
             this.createText(
                 "",
                 20,
-                "#f0c75e"
+                this.theme.attack
             );
 
 
@@ -183,7 +191,7 @@ export class BattleScene {
 
         this.demoRulesText = this.createText(
             "FIXED DEMO HAND\n5 cards restored each turn\n\n21: Attack 25\nPair: Shield +12\n2+ hearts: Heal 4/card\nBust: No effect\n\nEach play costs 1 energy.\nEnd turn: enemy attacks.\nThen shield clears; hand\nand energy restore.",
-            16, "#c5cad3"
+            16, this.theme.secondary
         );
         this.demoRulesText.style.wordWrap = true;
         this.demoRulesText.style.wordWrapWidth = 230;
@@ -199,14 +207,14 @@ export class BattleScene {
         this.selectionText =this.createText("Selected: 0    Value: 0",20);
 
 
-        this.resultText =this.createText("Result: None",22, "#d6d9df");
+        this.resultText =this.createText("Result: None",22);
         this.selectionText.anchor.set(0.5);
         this.resultText.anchor.set(0.5);
         this.container.addChild(this.selectionText,this.resultText);
-        this.feedbackText = this.createText("Select cards to form a combination.", 16, "#9fa7b5");
+        this.feedbackText = this.createText("Select cards to form a combination.", 16, this.theme.muted);
         this.feedbackText.anchor.set(0.5);
         this.container.addChild(this.feedbackText);
-        this.lastActionText = this.createText(this.state.lastAction, 16, "#c5cad3");
+        this.lastActionText = this.createText(this.state.lastAction, 16, this.theme.secondary);
         this.lastActionText.anchor.set(0.5);
         this.lastActionText.style.wordWrap = true;
         this.lastActionText.style.align = "center";
@@ -246,11 +254,11 @@ export class BattleScene {
     /** Creates battle controls and revalidates live selections before playing. */
     createButtons() {
 
-        this.playButton =this.createButton("PLAY CARDS",0xb48732);
+        this.playButton =this.createButton("PLAY CARDS",this.theme.playButton);
 
 
-        this.endTurnButton =this.createButton("END TURN",0x3f4652);
-        this.restartButton = this.createButton("RESTART", 0x3f4652);
+        this.endTurnButton =this.createButton("END TURN",this.theme.button);
+        this.restartButton = this.createButton("RESTART", this.theme.button);
         this.container.addChild(this.restartButton);
         this.restartButton.on("pointerdown", () => this.restart());
 
@@ -299,29 +307,25 @@ export class BattleScene {
 
     if (result.name === "BUST") {
         this.resultText.text ="BUST!";
-        this.resultText.style.fill ="#e35454";
 
     }
     else if (result.name === "BLACKJACK") {
         this.resultText.text =`BLACKJACK!   Attack ${result.action.amount}`;
-        this.resultText.style.fill ="#f0c75e";
     }else if (result.name === "PAIR") {
         this.resultText.text =`PAIR!   Shield +${result.action.amount}`;
-        this.resultText.style.fill ="#67b7ff";
     }else if (result.name === "HEART COMBO") {
         this.resultText.text = `HEART COMBO!   Heal +${result.action.amount}`;
-        this.resultText.style.fill = "#68d391";
     }
     else {
         this.resultText.text ="Result: None";
-        this.resultText.style.fill ="#d6d9df"; }
+    }
         const validation = validatePlay(this.state);
         this.feedbackText.text = validation.reason || `Cost: ${validation.cost} energy`;
         if (this.state.result) {
             this.resultText.text = this.state.result === "victory" ? "VICTORY! Goblin defeated." : "DEFEAT! Try again.";
-            this.resultText.style.fill = this.state.result === "victory" ? "#68d391" : "#e35454";
             this.feedbackText.text = "Battle finished. Press RESTART to play again.";
         }
+        this.resultText.style.fill = this.getResultColor(result.name);
         this.playButton.alpha = validation.allowed ? 1 : 0.45;
         this.playButton.eventMode = validation.allowed ? "static" : "none";
         this.playButton.cursor = validation.allowed ? "pointer" : "default";
@@ -418,26 +422,81 @@ export class BattleScene {
 
     }
     // HELPERS
-    /** Creates consistent battle text using locally available system fonts. */
-    createText(text,fontSize,color="#ffffff"){
+    /** Creates battle text in the current theme using system fonts. */
+    createText(text,fontSize,color=this.theme.text){
          return new Text({
             text,
             style: {fill:color,fontSize,fontWeight:"bold",},
         });
     }
-    /** Creates a canvas button with a centered label. */
-    createButton(label,color){
+    /** Creates a sized canvas button with graphics retained for theme repainting. */
+    createButton(label,color,width=160,height=50){
         const button =new Container();
         const background =new Graphics();
-        background.roundRect(0,0,160,50,8).fill(color);
-        const text = this.createText(label,17);
+        background.roundRect(0,0,width,height,8).fill(color);
+        const text = this.createText(label,17,this.theme.buttonText);
         text.anchor.set(0.5);
-        text.position.set(80,25);
+        text.position.set(width / 2,height / 2);
         button.addChild(background,text);
         button.eventMode ="static";
         button.cursor ="pointer";
+        button.background = background;
+        button.labelText = text;
+        button.buttonWidth = width;
+        button.buttonHeight = height;
         
         return button;
+    }
+
+    /** Switches appearance and remembers it without changing battle state. */
+    toggleTheme() {
+        this.themeName = this.themeName === "dark" ? "light" : "dark";
+        this.theme = BATTLE_THEMES[this.themeName];
+        savePreferredTheme(this.themeName);
+        this.applyTheme();
+    }
+
+    /** Repaints persistent battle views while preserving selection and controls. */
+    applyTheme() {
+        document.documentElement.style.setProperty("--game-background", this.theme.background);
+        document.documentElement.style.colorScheme = this.themeName;
+        this.app.renderer.background.color = this.theme.background;
+        [this.hpText, this.shieldText, this.energyText, this.phaseText, this.enemyName,
+            this.enemyHPText, this.handCountText, this.usedCountText, this.turnText,
+            this.selectionText].forEach(text => { text.style.fill = this.theme.text; });
+        [this.sideIntentTitle, this.feedbackText].forEach(text => { text.style.fill = this.theme.muted; });
+        [this.demoRulesText, this.lastActionText].forEach(text => { text.style.fill = this.theme.secondary; });
+        [this.enemyIntentText, this.sideIntentText].forEach(text => { text.style.fill = this.theme.attack; });
+        const preview = evaluateCards(this.state.hand.filter(card => card.selected));
+        this.resultText.style.fill = this.getResultColor(preview.name);
+        this.enemyBody.clear().circle(0, 0, 70).fill(this.theme.enemy);
+        this.repaintButton(this.playButton, this.theme.playButton);
+        [this.endTurnButton, this.restartButton, this.themeButton].forEach(button => {
+            this.repaintButton(button, this.theme.button);
+        });
+        this.themeButton.labelText.text = this.themeName === "dark" ? "LIGHT MODE" : "DARK MODE";
+        this.resize();
+    }
+
+    /**
+     * Returns the theme's semantic color for the current result or preview.
+     * @param {string|undefined} name Card combination name, if a preview exists.
+     * @returns {string} Foreground color for the current feedback.
+     */
+    getResultColor(name) {
+        if (this.state.result) return this.state.result === "victory" ? this.theme.heal : this.theme.danger;
+        return { BUST: this.theme.danger, BLACKJACK: this.theme.attack,
+            PAIR: this.theme.shield, "HEART COMBO": this.theme.heal }[name] ?? this.theme.text;
+    }
+
+    /**
+     * Recolors a button while retaining its input state and geometry.
+     * @param {Container} button Button view to repaint.
+     * @param {string} color Theme background color.
+     */
+    repaintButton(button, color) {
+        button.background.clear().roundRect(0, 0, button.buttonWidth, button.buttonHeight, 8).fill(color);
+        button.labelText.style.fill = this.theme.buttonText;
     }
 
 
@@ -467,7 +526,7 @@ export class BattleScene {
                 height
             )
             .fill(
-                0x15181e
+                this.theme.background
             );
 
 
@@ -484,7 +543,7 @@ export class BattleScene {
                 70
             )
             .fill(
-                0x20242c
+                this.theme.panel
             );
 
 
@@ -510,6 +569,7 @@ export class BattleScene {
             width * 0.75,
             24
         );
+        this.themeButton.position.set(width - 160, 15);
 
 
         // SIDE PANEL
@@ -536,7 +596,7 @@ export class BattleScene {
                 10
             )
             .fill(
-                0x20242c
+                this.theme.panel
             );
 
 
