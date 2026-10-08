@@ -8,6 +8,21 @@ Use Node.js 20.19+ or 22.12+ with npm. Install dependencies with `npm ci`, then 
 
 Use **LIGHT MODE / DARK MODE** at the top right to switch appearance. The choice is saved locally and survives battle restarts and page reloads.
 
+## Deploy to GitHub Pages
+
+In the repository's **Settings → Pages → Build and deployment**, select **GitHub Actions** as the source. After `.github/workflows/deploy-pages.yml` is merged into `main`, pushes to `main` build and deploy the game. You can also open **Actions → Deploy to GitHub Pages → Run workflow** and select `main`; other branches are skipped.
+
+The workflow uses Node.js 24, installs the locked dependencies with `npm ci`, and uploads only `dist`. Vite's base path comes from the Pages configuration, supporting both a repository subpath and a custom domain. No personal access token is required. See the [GitHub Pages workflow documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages) and [Vite deployment guide](https://vite.dev/guide/static-deploy.html#github-pages).
+
+For the default repository URL, the site will be at `https://ljf920727.github.io/card-roguelike/` after a successful deployment. To check the same subpath locally:
+
+```sh
+npm run build -- --base=/card-roguelike/
+npm run preview -- --base=/card-roguelike/
+```
+
+Open the preview URL ending in `/card-roguelike/`, check that the game and tab icon load, then select A♠ + K♦ and play once. After deployment, repeat these checks using the URL shown by the `github-pages` environment in Actions.
+
 ## Play the demo
 
 Click cards to select or deselect them, inspect the combination and cost, then click **PLAY CARDS**. Each valid play costs 1 energy and removes those cards for the rest of the turn. Invalid combinations and Bust cost nothing.
