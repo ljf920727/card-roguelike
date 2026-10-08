@@ -10,10 +10,6 @@ import {
 } from "../components/CardView.js";
 
 import {
-    calculateBlackjackValue,
-} from "../systems/BlackjackSystem.js";
-
-import {
     evaluateCards,
 } from "../systems/RuleEngine.js";
 
@@ -25,6 +21,7 @@ import { resetGameState } from "../gameState.js";
 const ENEMY_PHASE_MS = 400;
 
 export class BattleScene {
+    /** Builds the persistent battle panels and connects their controls. */
     constructor(app, state) {
         this.app = app;
         this.state = state;
@@ -46,6 +43,7 @@ export class BattleScene {
     }
 
     // TOP HUD
+    /** Creates player statistics and the current battle phase label. */
     createTopHUD() {
 		this.topBar =new Graphics();
 		this.hpText = this.createText("",20);
@@ -53,13 +51,13 @@ export class BattleScene {
 
 
         this.energyText =this.createText("",20);
-		this.floorText =this.createText("",20);
+		this.phaseText =this.createText("",20);
 		this.container.addChild(
             this.topBar,
             this.hpText,
             this.shieldText,
             this.energyText,
-            this.floorText
+            this.phaseText
         );
 
 
@@ -129,20 +127,21 @@ export class BattleScene {
 
     // RIGHT SIDE PANEL
 
+    /** Creates live hand counts and concise rules for the fixed demo mode. */
     createSidePanel() {
 
         this.sidePanel =
             new Graphics();
 
 
-        this.deckText =
+        this.handCountText =
             this.createText(
                 "",
                 18
             );
 
 
-        this.discardText =
+        this.usedCountText =
             this.createText(
                 "",
                 18
@@ -174,14 +173,21 @@ export class BattleScene {
 
         this.container.addChild(
             this.sidePanel,
-            this.deckText,
-            this.discardText,
+            this.handCountText,
+            this.usedCountText,
             this.sideIntentTitle,
             this.sideIntentText,
             this.turnText
         );
 
 
+        this.demoRulesText = this.createText(
+            "FIXED DEMO HAND\n5 cards restored each turn\n\n21: Attack 25\nPair: Shield +12\n2+ hearts: Heal 4/card\nBust: No effect\n\nEach play costs 1 energy.\nEnd turn: enemy attacks.\nThen shield clears; hand\nand energy restore.",
+            16, "#c5cad3"
+        );
+        this.demoRulesText.style.wordWrap = true;
+        this.demoRulesText.style.wordWrapWidth = 230;
+        this.container.addChild(this.demoRulesText);
         this.refreshSidePanel();
     }
 
@@ -200,6 +206,11 @@ export class BattleScene {
         this.feedbackText = this.createText("Select cards to form a combination.", 16, "#9fa7b5");
         this.feedbackText.anchor.set(0.5);
         this.container.addChild(this.feedbackText);
+        this.lastActionText = this.createText(this.state.lastAction, 16, "#c5cad3");
+        this.lastActionText.anchor.set(0.5);
+        this.lastActionText.style.wordWrap = true;
+        this.lastActionText.style.align = "center";
+        this.container.addChild(this.lastActionText);
     }
 
 
@@ -350,9 +361,11 @@ export class BattleScene {
         this.refreshHUD();
         this.refreshSidePanel();
         this.onCardSelectionChanged();
+        this.lastActionText.text = this.state.lastAction;
         this.resize();
     }
     // REFRESH
+    /** Displays player resources and whether battle input is available. */
     refreshHUD() {
 
         this.hpText.text =
@@ -367,12 +380,14 @@ export class BattleScene {
             `Energy ${this.state.player.energy}/${this.state.player.maxEnergy}`;
 
 
-        this.floorText.text =
-            `Floor ${this.state.run.floor}`;
+        this.phaseText.text =
+            this.state.result ? this.state.result.toUpperCase() :
+            this.state.phase === "enemy" ? "ENEMY TURN" : "YOUR TURN";
     }
 
 
 
+    /** Displays enemy HP and the attack that End Turn will resolve. */
     refreshEnemy() {
 
         this.enemyName.text =
@@ -388,26 +403,29 @@ export class BattleScene {
 
 
         this.enemyIntentText.text =
-                `Attack ${intentValue}`;
+                this.state.result ? "Battle finished" : `Intent: Attack ${intentValue}`;
     }
 
 
 
+    /** Displays actual demo hand and used-card counts without implying a deck. */
     refreshSidePanel() {
-    this.deckText.text =`Deck: ${this.state.deck.drawPile}`;
-    this.discardText.text =`Discard: ${this.state.deck.discardPile}`;
+    this.handCountText.text =`Hand: ${this.state.hand.length}`;
+    this.usedCountText.text =`Used this turn: ${this.state.usedCards.length}`;
     const intentValue = this.state.enemy.intent?.value ?? 0;
-    this.sideIntentText.text = `Attack ${intentValue}`;
+    this.sideIntentText.text = this.state.result ? "None" : `Attack ${intentValue}`;
     this.turnText.text =`Turn: ${this.state.run.turn}`;
 
     }
     // HELPERS
+    /** Creates consistent battle text using locally available system fonts. */
     createText(text,fontSize,color="#ffffff"){
          return new Text({
             text,
             style: {fill:color,fontSize,fontWeight:"bold",},
         });
     }
+    /** Creates a canvas button with a centered label. */
     createButton(label,color){
         const button =new Container();
         const background =new Graphics();
@@ -426,15 +444,17 @@ export class BattleScene {
 
     // RESIZE / LAYOUT
 
-    /** Positions battle panels and controls within the canvas. */
+    /** Positions battle panels and scales the full layout for smaller canvases. */
     resize() {
 
-        const width =
-            this.app.screen.width;
+        const width = Math.max(1280, this.app.screen.width);
 
 
-        const height =
-            this.app.screen.height;
+        const height = Math.max(720, this.app.screen.height);
+        const scale = Math.min(this.app.screen.width / width, this.app.screen.height / height);
+        this.container.scale.set(scale);
+        this.container.position.set((this.app.screen.width - width * scale) / 2,
+            (this.app.screen.height - height * scale) / 2);
 
 
         // BACKGROUND
@@ -489,7 +509,7 @@ export class BattleScene {
         );
 
 
-        this.floorText.position.set(
+        this.phaseText.position.set(
             width * 0.75,
             24
         );
@@ -498,7 +518,7 @@ export class BattleScene {
         // SIDE PANEL
 
         const sideWidth =
-            210;
+            270;
 
 
         const sideX =
@@ -515,7 +535,7 @@ export class BattleScene {
                 0,
                 0,
                 sideWidth,
-                350,
+                540,
                 10
             )
             .fill(
@@ -529,13 +549,13 @@ export class BattleScene {
         );
 
 
-        this.deckText.position.set(
+        this.handCountText.position.set(
             sideX + 20,
             125
         );
 
 
-        this.discardText.position.set(
+        this.usedCountText.position.set(
             sideX + 20,
             170
         );
@@ -557,13 +577,12 @@ export class BattleScene {
             sideX + 20,
             320
         );
+        this.demoRulesText.position.set(sideX + 20, 365);
 
 
         // MAIN GAME CENTER
 
-        const gameWidth =
-            width -
-            sideWidth;
+        const gameWidth = width - sideWidth - 40;
 
 
         const gameCenterX =
@@ -574,25 +593,25 @@ export class BattleScene {
 
         this.enemyName.position.set(
             gameCenterX,
-            145
+            140
         );
 
 
         this.enemyBody.position.set(
             gameCenterX,
-            260
+            230
         );
 
 
         this.enemyHPText.position.set(
             gameCenterX,
-            355
+            315
         );
 
 
         this.enemyIntentText.position.set(
             gameCenterX,
-            390
+            345
         );
 
 
@@ -600,15 +619,17 @@ export class BattleScene {
 
         this.selectionText.position.set(
             gameCenterX,
-            height - 330
+            height - 335
         );
 
 
         this.resultText.position.set(
             gameCenterX,
-            height - 295
+            height - 303
         );
-        this.feedbackText.position.set(gameCenterX, height - 263);
+        this.feedbackText.position.set(gameCenterX, height - 275);
+        this.lastActionText.style.wordWrapWidth = gameWidth - 60;
+        this.lastActionText.position.set(gameCenterX, 94);
 
 
         // CARDS

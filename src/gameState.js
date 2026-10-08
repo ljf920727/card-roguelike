@@ -8,10 +8,10 @@ export function createInitialState() {
     return {
         phase: "player",
         result: null,
+        lastAction: "Demo battle: select cards, then play a combination.",
         player: { hp: 80, maxHp: 100, shield: 0, energy: 3, maxEnergy: 3 },
         enemy: { name: "Goblin", hp: 50, maxHp: 50, intent: { type: "attack", value: 8 } },
         run: { floor: 1, turn: 1, gold: 0 },
-        deck: { drawPile: 47, discardPile: 0 },
         hand: [
             { id: 1, rank: "A", suit: "spades", selected: false },
             { id: 2, rank: "K", suit: "diamonds", selected: false },

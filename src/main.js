@@ -1,3 +1,4 @@
+/** Initializes PixiJS and keeps the battle layout aligned with renderer size. */
 import{Application,} from "pixi.js";
 import "./style.css";
 import{gameState} from "./gameState.js";
@@ -6,6 +7,7 @@ import {
 } from "./scenes/BattleScene.js";
 
 
+/** Starts the local battle scene and listens for completed canvas resizing. */
 async function main() {
   const app = new Application();
   await app.init({
@@ -18,7 +20,7 @@ async function main() {
   gameContainer.appendChild(app.canvas);
   const battleScene = new BattleScene(app, gameState);
   battleScene.resize();
-  window.addEventListener("resize", () => {
+  app.renderer.on("resize", () => {
     battleScene.resize();
   }
 );

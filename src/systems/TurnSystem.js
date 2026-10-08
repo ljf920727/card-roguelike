@@ -13,7 +13,9 @@ export function beginEndTurn(state) {
     state.phase = "enemy";
     state.hand.forEach(card => { card.selected = false; });
     state.selection = { cards: [], value: 0, results: [], primaryAction: null };
-    return { allowed: true, ...applyEnemyAttack(state) };
+    const outcome = applyEnemyAttack(state);
+    state.lastAction = `Goblin attacked: blocked ${outcome.blocked}; lost ${outcome.damage} HP.`;
+    return { allowed: true, ...outcome };
 }
 
 /**
@@ -30,5 +32,6 @@ export function completeEndTurn(state) {
     state.hand.forEach(card => { card.selected = false; });
     state.usedCards = [];
     state.phase = "player";
+    state.lastAction += " Five demo cards and energy restored; shield cleared.";
     return true;
 }

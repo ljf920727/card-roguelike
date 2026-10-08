@@ -40,7 +40,13 @@ export function playSelectedCards(state) {
     const validation = validatePlay(state);
     if (!validation.allowed) return validation;
 
-    applyAction(state, validation.evaluation.action);
+    const action = validation.evaluation.action;
+    const before = { enemyHp: state.enemy.hp, hp: state.player.hp, shield: state.player.shield };
+    applyAction(state, action);
+    const effect = action.type === "attack" ? `dealt ${before.enemyHp - state.enemy.hp} damage` :
+        action.type === "heal" ? `healed ${state.player.hp - before.hp} HP` :
+        `gained ${state.player.shield - before.shield} shield`;
+    state.lastAction = `${validation.evaluation.name}: ${effect}; spent ${validation.cost} energy.`;
     state.player.energy -= validation.cost;
     const played = new Set(validation.cards);
     state.hand = state.hand.filter(card => !played.has(card));

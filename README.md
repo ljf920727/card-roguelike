@@ -1,3 +1,26 @@
+# Juniper — Single-Battle Prototype
+
+A playing-card combat prototype built with JavaScript, Vite and PixiJS.
+
+## Run locally
+
+Use Node.js 20.19+ or 22.12+ with npm. Install dependencies with `npm ci`, then run `npm run dev` and open the local URL printed by Vite. `npm run build` creates a production build; `npm run preview` serves it locally.
+
+## Play the demo
+
+Click cards to select or deselect them, inspect the combination and cost, then click **PLAY CARDS**. Each valid play costs 1 energy and removes those cards for the rest of the turn. Invalid combinations and Bust cost nothing.
+
+- Any total of 21 attacks for 25 damage. Aces count as 11 or 1; J/Q/K count as 10.
+- Exactly two matching ranks grant 12 shield.
+- Two or more hearts heal 4 HP per card, up to maximum HP.
+- Priority is Bust → 21 → pair → hearts. Only the first matching effect applies.
+
+**END TURN** resolves Goblin's displayed attack of 8. Shield absorbs damage first. If the player survives, the next turn clears remaining shield, restores 3 energy, and returns the same five demo cards (A♠, K♦, 7♥, 7♠, 3♥). Controls briefly lock during enemy resolution so a double click cannot end two turns.
+
+Enemy HP 0 means victory; player HP 0 means defeat. Battle controls stop immediately. **RESTART** is available at any time and resets HP to 80/100, enemy HP to 50/50, energy to 3/3, turn to 1 and the demo hand.
+
+This demo has one encounter and a fixed five-card pool. A real shuffled deck, Jokers, encounter progression, rewards and deckbuilding are future work. All current visuals use local code and system fonts; gameplay assets require no remote downloads once dependencies are installed.
+
 ## What Each File Does
 
 This project separates the UI, game rules, combat logic, and game data so team members can work on different parts without interfering with each other.
@@ -13,9 +36,9 @@ Examples:
 - Energy
 - Enemy HP
 - Enemy intent
-- Floor
+- Battle phase
 - Turn
-- Deck count
+- Demo hand and used-card counts
 - Current hand
 
 working on **game logic or balancing** can edit this file when new game state values are needed.
@@ -87,7 +110,7 @@ It currently contains:
 - Enemy display
 - Enemy HP
 - Enemy intent
-- Deck and discard information
+- Demo hand counts and rules
 - Selected card preview
 - Player hand
 - Play Cards button
@@ -391,27 +414,27 @@ This system could handle:
 
 ### Turn System
 
-The current `End Turn` button is still a prototype.
+The current `End Turn` button delegates enemy damage and fixed-hand restoration to `src/systems/TurnSystem.js`.
 
-A future system could be:
+The current system is:
 
 ```text
 src/systems/TurnSystem.js
 ```
 
-It could handle:
+It handles enemy resolution and resource restoration:
 
 ```text
 Player plays cards
 → Enemy acts
 → Shield updates
-→ Cards discarded
-→ New cards drawn
+→ Used demo cards returned
+→ Same five demo cards restored
 → Energy restored
 → Next turn
 ```
 
-This is another good independent task 
+Real deck drawing and encounter progression remain future work.
 
 ---
 
