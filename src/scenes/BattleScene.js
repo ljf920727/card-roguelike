@@ -444,17 +444,14 @@ export class BattleScene {
 
     // RESIZE / LAYOUT
 
-    /** Positions battle panels and scales the full layout for smaller canvases. */
+    /** Fits the battle layout to the canvas with the HUD at its top edge. */
     resize() {
 
-        const width = Math.max(1280, this.app.screen.width);
-
-
-        const height = Math.max(720, this.app.screen.height);
-        const scale = Math.min(this.app.screen.width / width, this.app.screen.height / height);
+        const scale = Math.min(1, this.app.screen.width / 1280, this.app.screen.height / 720);
+        const width = this.app.screen.width / scale;
+        const height = this.app.screen.height / scale;
         this.container.scale.set(scale);
-        this.container.position.set((this.app.screen.width - width * scale) / 2,
-            (this.app.screen.height - height * scale) / 2);
+        this.container.position.set(0, 0);
 
 
         // BACKGROUND
