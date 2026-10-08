@@ -1,5 +1,6 @@
 /** Stores the single-battle prototype's player, enemy and demo hand data. */
 export const gameState = {
+    phase: "player",
     player: {
         hp:80,
         maxHp:100,

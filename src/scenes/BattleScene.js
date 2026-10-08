@@ -18,6 +18,10 @@ import {
 } from "../systems/RuleEngine.js";
 
 import { validatePlay, playSelectedCards } from "../systems/PlaySystem.js";
+import { beginEndTurn, completeEndTurn } from "../systems/TurnSystem.js";
+
+/** Brief enemy phase absorbs double clicks before restoring player controls. */
+const ENEMY_PHASE_MS = 400;
 
 export class BattleScene {
     constructor(app, state) {
@@ -213,7 +217,8 @@ export class BattleScene {
                 const cardView =
                     new CardView(card,() => {
                             this.onCardSelectionChanged();
-                        }
+                        },
+                        () => this.state.phase === "player" && this.state.hand.includes(card)
                     );
 
 
@@ -244,12 +249,7 @@ export class BattleScene {
                 this.feedbackText.text = validation.reason;
                 return;
             }
-             this.createCards();
-             this.refreshEnemy();
-             this.refreshHUD();
-             this.refreshSidePanel();
-             this.onCardSelectionChanged();
-             this.resize();
+             this.refreshBattle();
             }
         );
         this.onCardSelectionChanged();
@@ -258,7 +258,7 @@ export class BattleScene {
         this.endTurnButton.on(
             "pointerdown",
             () => {
-                console.log("End Turn clicked");
+                this.endTurn();
             }
         );
     }
@@ -305,6 +305,34 @@ export class BattleScene {
         this.playButton.alpha = validation.allowed ? 1 : 0.45;
         this.playButton.eventMode = validation.allowed ? "static" : "none";
         this.playButton.cursor = validation.allowed ? "pointer" : "default";
+        const canEndTurn = this.state.phase === "player" && this.state.player.hp > 0 && this.state.enemy.hp > 0;
+        this.endTurnButton.alpha = canEndTurn ? 1 : 0.45;
+        this.endTurnButton.eventMode = canEndTurn ? "static" : "none";
+        this.handContainer.children.forEach(view => {
+            view.eventMode = canEndTurn ? "static" : "none";
+            view.cursor = canEndTurn ? "pointer" : "default";
+        });
+    }
+    /** Resolves one enemy action and holds the input lock through rapid clicks. */
+    endTurn() {
+        const outcome = beginEndTurn(this.state);
+        if (!outcome.allowed) return;
+        this.refreshBattle();
+        this.turnTimeout = setTimeout(() => {
+            this.turnTimeout = null;
+            completeEndTurn(this.state);
+            this.refreshBattle();
+        }, ENEMY_PHASE_MS);
+    }
+
+    /** Refreshes battle data, live card views and their current layout. */
+    refreshBattle() {
+        this.createCards();
+        this.refreshEnemy();
+        this.refreshHUD();
+        this.refreshSidePanel();
+        this.onCardSelectionChanged();
+        this.resize();
     }
     // REFRESH
     refreshHUD() {

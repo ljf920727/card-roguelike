@@ -1,3 +1,4 @@
+/** Renders a playing card and gates selection through the battle input policy. */
 import{
     Container,
     Graphics,
@@ -12,13 +13,15 @@ const SUIT_SYMBOLS = {
 };
 
 export class CardView extends Container {
+    /** Creates a selectable card with a live permission callback. */
     constructor(
-        cardData,onSelectionChanged
+        cardData,onSelectionChanged,isSelectable = () => true
 
     ) {
         super();
         this.cardData = cardData;
         this.onSelectionChanged = onSelectionChanged;
+        this.isSelectable = isSelectable;
         this.cardWidth = 100;
         this.cardHeight = 140;
         this.background = new Graphics();
@@ -87,7 +90,9 @@ export class CardView extends Container {
         .stroke({ width: 3, color: borderColor });
 
     }
+    /** Toggles a permitted live card and notifies the selection preview. */
     toggleSelection() {
+        if (!this.isSelectable()) return;
         this.cardData.selected = !this.cardData.selected;
         if(this.cardData.selected) {
             this.y = -20;
