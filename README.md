@@ -23,12 +23,14 @@ working on **game logic or balancing** can edit this file when new game state va
 Example:
 
 ```js
-player: {
-    hp: 80,
-    maxHp: 100,
-    shield: 0,
-    energy: 3,
-}
+const gameState = {
+    player: {
+        hp: 80,
+        maxHp: 100,
+        shield: 0,
+        energy: 3,
+    },
+};
 ```
 
 ✅ Safe to modify when adding new game state values.
