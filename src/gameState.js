@@ -1,3 +1,4 @@
+/** Stores the single-battle prototype's player, enemy and demo hand data. */
 export const gameState = {
     player: {
         hp:80,
@@ -59,10 +60,11 @@ export const gameState = {
         },
 
      ],
+     usedCards: [],
      selection: {
         cards: [],
         value: 0,
-        result:[],
+        results:[],
         primaryAction: null,
 
      },

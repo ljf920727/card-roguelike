@@ -17,10 +17,7 @@ import {
     evaluateCards,
 } from "../systems/RuleEngine.js";
 
-import {
-    applyAction,
-} from "../systems/CombatSystem.js";
-import { validatePlay } from "../systems/PlaySystem.js";
+import { validatePlay, playSelectedCards } from "../systems/PlaySystem.js";
 
 export class BattleScene {
     constructor(app, state) {
@@ -202,12 +199,13 @@ export class BattleScene {
 
 
     // CARDS
+    /** Rebuilds the live hand and disposes views for cards no longer available. */
     createCards() {
 
         this.container.addChild (this.handContainer);
 
 
-        this.handContainer.removeChildren();
+        this.handContainer.removeChildren().forEach(view => view.destroy({ children: true }));
 
 
         this.state.hand.forEach(
@@ -241,16 +239,17 @@ export class BattleScene {
 
 
         this.playButton.on("pointerdown",() => {
-            const validation = validatePlay(this.state);
+            const validation = playSelectedCards(this.state);
              if (!validation.allowed) {
                 this.feedbackText.text = validation.reason;
                 return;
             }
-             applyAction(this.state,validation.evaluation.action);
+             this.createCards();
              this.refreshEnemy();
              this.refreshHUD();
              this.refreshSidePanel();
              this.onCardSelectionChanged();
+             this.resize();
             }
         );
         this.onCardSelectionChanged();

@@ -1,5 +1,6 @@
 /** Validates player card selections independently of the battle UI. */
 import { evaluateCards } from "./RuleEngine.js";
+import { applyAction } from "./CombatSystem.js";
 
 /** Energy paid by each successful combination in the demo battle. */
 export const PLAY_COST = 1;
@@ -28,4 +29,23 @@ export function validatePlay(state) {
         reason = "Not enough energy. End your turn to restore energy.";
     }
     return { allowed: !reason, reason, cards, evaluation, cost: PLAY_COST };
+}
+
+/**
+ * Resolves a valid selection once, paying energy and retiring its cards.
+ * @param {Object} state Mutable battle state.
+ * @returns {Object} Validation outcome and the applied combination, if any.
+ */
+export function playSelectedCards(state) {
+    const validation = validatePlay(state);
+    if (!validation.allowed) return validation;
+
+    applyAction(state, validation.evaluation.action);
+    state.player.energy -= validation.cost;
+    const played = new Set(validation.cards);
+    state.hand = state.hand.filter(card => !played.has(card));
+    validation.cards.forEach(card => { card.selected = false; });
+    state.usedCards.push(...validation.cards);
+    state.selection = { cards: [], value: 0, results: [], primaryAction: null };
+    return validation;
 }
