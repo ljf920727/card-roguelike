@@ -19,6 +19,7 @@ import {
 
 import { validatePlay, playSelectedCards } from "../systems/PlaySystem.js";
 import { beginEndTurn, completeEndTurn } from "../systems/TurnSystem.js";
+import { resetGameState } from "../gameState.js";
 
 /** Brief enemy phase absorbs double clicks before restoring player controls. */
 const ENEMY_PHASE_MS = 400;
@@ -238,6 +239,9 @@ export class BattleScene {
 
 
         this.endTurnButton =this.createButton("END TURN",0x3f4652);
+        this.restartButton = this.createButton("RESTART", 0x3f4652);
+        this.container.addChild(this.restartButton);
+        this.restartButton.on("pointerdown", () => this.restart());
 
 
         this.container.addChild(this.playButton,this.endTurnButton);
@@ -302,6 +306,11 @@ export class BattleScene {
         this.resultText.style.fill ="#d6d9df"; }
         const validation = validatePlay(this.state);
         this.feedbackText.text = validation.reason || `Cost: ${validation.cost} energy`;
+        if (this.state.result) {
+            this.resultText.text = this.state.result === "victory" ? "VICTORY! Goblin defeated." : "DEFEAT! Try again.";
+            this.resultText.style.fill = this.state.result === "victory" ? "#68d391" : "#e35454";
+            this.feedbackText.text = "Battle finished. Press RESTART to play again.";
+        }
         this.playButton.alpha = validation.allowed ? 1 : 0.45;
         this.playButton.eventMode = validation.allowed ? "static" : "none";
         this.playButton.cursor = validation.allowed ? "pointer" : "default";
@@ -318,11 +327,20 @@ export class BattleScene {
         const outcome = beginEndTurn(this.state);
         if (!outcome.allowed) return;
         this.refreshBattle();
+        if (this.state.phase === "finished") return;
         this.turnTimeout = setTimeout(() => {
             this.turnTimeout = null;
             completeEndTurn(this.state);
             this.refreshBattle();
         }, ENEMY_PHASE_MS);
+    }
+
+    /** Cancels pending turn work and restores a fresh battle at any time. */
+    restart() {
+        if (this.turnTimeout != null) clearTimeout(this.turnTimeout);
+        this.turnTimeout = null;
+        resetGameState(this.state);
+        this.refreshBattle();
     }
 
     /** Refreshes battle data, live card views and their current layout. */
@@ -616,6 +634,7 @@ export class BattleScene {
             gameCenterX + 15,
             height - 65
         );
+        this.restartButton.position.set(width - 180, height - 65);
 
     }
 

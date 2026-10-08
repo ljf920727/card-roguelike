@@ -1,7 +1,7 @@
 /** Applies combat effects and shield-first enemy damage to battle data. */
 
 /**
- * Applies an evaluated attack, shield or healing effect within HP bounds.
+ * Applies an evaluated effect within HP bounds and detects a battle result.
  * @param {Object} state Mutable battle state.
  * @param {Object|null} action Rule engine action to apply.
  */
@@ -31,6 +31,7 @@ export function applyAction(state,action) {
 			
 		default: console.log( "Unknown action:", action);
     }
+    updateBattleResult(state);
 }
 
 /**
@@ -44,5 +45,18 @@ export function applyEnemyAttack(state) {
     const damage = Math.min(state.player.hp, attack - blocked);
     state.player.shield -= blocked;
     state.player.hp -= damage;
+    updateBattleResult(state);
     return { blocked, damage };
+}
+
+/**
+ * Ends the battle immediately when either combatant has no HP remaining.
+ * @param {Object} state Mutable battle state.
+ */
+export function updateBattleResult(state) {
+    if (state.player.hp > 0 && state.enemy.hp > 0) return;
+    state.result = state.player.hp <= 0 ? "defeat" : "victory";
+    state.phase = "finished";
+    state.hand.forEach(card => { card.selected = false; });
+    state.selection = { cards: [], value: 0, results: [], primaryAction: null };
 }
