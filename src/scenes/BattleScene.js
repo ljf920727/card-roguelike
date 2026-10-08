@@ -1,3 +1,4 @@
+/** Builds the battle UI and delegates gameplay decisions to systems. */
 import {
     Container,
     Graphics,
@@ -9,21 +10,24 @@ import {
 } from "../components/CardView.js";
 
 import {
-    calculateBlackjackValue,
-} from "../systems/BlackjackSystem.js";
-
-import {
     evaluateCards,
 } from "../systems/RuleEngine.js";
 
-import {
-    applyAction,
-} from "../systems/CombatSystem.js";
+import { validatePlay, playSelectedCards } from "../systems/PlaySystem.js";
+import { beginEndTurn, completeEndTurn } from "../systems/TurnSystem.js";
+import { resetGameState } from "../gameState.js";
+import { BATTLE_THEMES, getPreferredTheme, savePreferredTheme } from "../themes.js";
+
+/** Brief enemy phase absorbs double clicks before restoring player controls. */
+const ENEMY_PHASE_MS = 400;
 
 export class BattleScene {
+    /** Builds the persistent battle panels and connects their controls. */
     constructor(app, state) {
         this.app = app;
         this.state = state;
+        this.themeName = getPreferredTheme();
+        this.theme = BATTLE_THEMES[this.themeName];
 		// MAIN CONTAINERS
 		this.container = new Container();
         this.background = new Graphics();
@@ -39,9 +43,11 @@ export class BattleScene {
 		this.app.stage.addChild(
 			this.container
         );
+        this.applyTheme();
     }
 
     // TOP HUD
+    /** Creates player statistics, the battle phase and appearance control. */
     createTopHUD() {
 		this.topBar =new Graphics();
 		this.hpText = this.createText("",20);
@@ -49,21 +55,25 @@ export class BattleScene {
 
 
         this.energyText =this.createText("",20);
-		this.floorText =this.createText("",20);
+		this.phaseText =this.createText("",20);
 		this.container.addChild(
             this.topBar,
             this.hpText,
             this.shieldText,
             this.energyText,
-            this.floorText
+            this.phaseText
         );
+        this.themeButton = this.createButton("", this.theme.button, 140, 40);
+        this.themeButton.on("pointerdown", () => this.toggleTheme());
+        this.container.addChild(this.themeButton);
 
 
         this.refreshHUD();
     }
 
     // ENEMY AREA
-	createEnemyArea() {
+    /** Creates the enemy's theme-aware placeholder, HP and attack intent. */
+    createEnemyArea() {
 		this.enemyName =
             this.createText(
                 this.state.enemy.name,
@@ -83,7 +93,7 @@ export class BattleScene {
         this.enemyBody
             .circle(0,0,70)
             .fill(
-                0x8c3f3f
+                this.theme.enemy
             );
 
 
@@ -103,7 +113,7 @@ export class BattleScene {
             this.createText(
                 "",
                 20,
-                "#f0c75e"
+                this.theme.attack
             );
 
 
@@ -125,20 +135,21 @@ export class BattleScene {
 
     // RIGHT SIDE PANEL
 
+    /** Creates live hand counts and concise rules for the fixed demo mode. */
     createSidePanel() {
 
         this.sidePanel =
             new Graphics();
 
 
-        this.deckText =
+        this.handCountText =
             this.createText(
                 "",
                 18
             );
 
 
-        this.discardText =
+        this.usedCountText =
             this.createText(
                 "",
                 18
@@ -149,7 +160,7 @@ export class BattleScene {
             this.createText(
                 "Enemy Intent",
                 16,
-                "#9fa7b5"
+                this.theme.muted
             );
 
 
@@ -157,7 +168,7 @@ export class BattleScene {
             this.createText(
                 "",
                 20,
-                "#f0c75e"
+                this.theme.attack
             );
 
 
@@ -170,38 +181,55 @@ export class BattleScene {
 
         this.container.addChild(
             this.sidePanel,
-            this.deckText,
-            this.discardText,
+            this.handCountText,
+            this.usedCountText,
             this.sideIntentTitle,
             this.sideIntentText,
             this.turnText
         );
 
 
+        this.demoRulesText = this.createText(
+            "FIXED DEMO HAND\n5 cards restored each turn\n\n21: Attack 25\nPair: Shield +12\n2+ hearts: Heal 4/card\nBust: No effect\n\nEach play costs 1 energy.\nEnd turn: enemy attacks.\nThen shield clears; hand\nand energy restore.",
+            16, this.theme.secondary
+        );
+        this.demoRulesText.style.wordWrap = true;
+        this.demoRulesText.style.wordWrapWidth = 230;
+        this.container.addChild(this.demoRulesText);
         this.refreshSidePanel();
     }
 
     // SELECTION AREA
 
+    /** Creates the selection preview and visible play validation feedback. */
     createSelectionArea() {
 
         this.selectionText =this.createText("Selected: 0    Value: 0",20);
 
 
-        this.resultText =this.createText("Result: None",22, "#d6d9df");
+        this.resultText =this.createText("Result: None",22);
         this.selectionText.anchor.set(0.5);
         this.resultText.anchor.set(0.5);
         this.container.addChild(this.selectionText,this.resultText);
+        this.feedbackText = this.createText("Select cards to form a combination.", 16, this.theme.muted);
+        this.feedbackText.anchor.set(0.5);
+        this.container.addChild(this.feedbackText);
+        this.lastActionText = this.createText(this.state.lastAction, 16, this.theme.secondary);
+        this.lastActionText.anchor.set(0.5);
+        this.lastActionText.style.wordWrap = true;
+        this.lastActionText.style.align = "center";
+        this.container.addChild(this.lastActionText);
     }
 
 
     // CARDS
+    /** Rebuilds the live hand and disposes views for cards no longer available. */
     createCards() {
 
         this.container.addChild (this.handContainer);
 
 
-        this.handContainer.removeChildren();
+        this.handContainer.removeChildren().forEach(view => view.destroy({ children: true }));
 
 
         this.state.hand.forEach(
@@ -209,7 +237,8 @@ export class BattleScene {
                 const cardView =
                     new CardView(card,() => {
                             this.onCardSelectionChanged();
-                        }
+                        },
+                        () => this.state.phase === "player" && this.state.hand.includes(card)
                     );
 
 
@@ -222,41 +251,43 @@ export class BattleScene {
 
     // BUTTONS
 
+    /** Creates battle controls and revalidates live selections before playing. */
     createButtons() {
 
-        this.playButton =this.createButton("PLAY CARDS",0xb48732);
+        this.playButton =this.createButton("PLAY CARDS",this.theme.playButton);
 
 
-        this.endTurnButton =this.createButton("END TURN",0x3f4652);
+        this.endTurnButton =this.createButton("END TURN",this.theme.button);
+        this.restartButton = this.createButton("RESTART", this.theme.button);
+        this.container.addChild(this.restartButton);
+        this.restartButton.on("pointerdown", () => this.restart());
 
 
         this.container.addChild(this.playButton,this.endTurnButton);
 
 
         this.playButton.on("pointerdown",() => {
-            const action =this.state.selection.primaryAction;
-             if (!action) {
-                console.log("No action to perform.");
+            const validation = playSelectedCards(this.state);
+             if (!validation.allowed) {
+                this.feedbackText.text = validation.reason;
                 return;
             }
-             applyAction(this.state,action);
-             this.refreshEnemy();
-             this.refreshHUD();
-             this.refreshSidePanel();
-             console.log("Applied action:",action);
+             this.refreshBattle();
             }
         );
+        this.onCardSelectionChanged();
 
 
         this.endTurnButton.on(
             "pointerdown",
             () => {
-                console.log("End Turn clicked");
+                this.endTurn();
             }
         );
     }
 
     // CARD SELECTION
+    /** Synchronizes the preview and button availability with the current hand. */
     onCardSelectionChanged() {
 
     const selectedCards =this.state.hand.filter(
@@ -276,24 +307,69 @@ export class BattleScene {
 
     if (result.name === "BUST") {
         this.resultText.text ="BUST!";
-        this.resultText.style.fill ="#e35454";
 
     }
     else if (result.name === "BLACKJACK") {
         this.resultText.text =`BLACKJACK!   Attack ${result.action.amount}`;
-        this.resultText.style.fill ="#f0c75e";
     }else if (result.name === "PAIR") {
         this.resultText.text =`PAIR!   Shield +${result.action.amount}`;
-        this.resultText.style.fill ="#67b7ff";
     }else if (result.name === "HEART COMBO") {
         this.resultText.text = `HEART COMBO!   Heal +${result.action.amount}`;
-        this.resultText.style.fill = "#68d391";
     }
     else {
         this.resultText.text ="Result: None";
-        this.resultText.style.fill ="#d6d9df"; }
+    }
+        const validation = validatePlay(this.state);
+        this.feedbackText.text = validation.reason || `Cost: ${validation.cost} energy`;
+        if (this.state.result) {
+            this.resultText.text = this.state.result === "victory" ? "VICTORY! Goblin defeated." : "DEFEAT! Try again.";
+            this.feedbackText.text = "Battle finished. Press RESTART to play again.";
+        }
+        this.resultText.style.fill = this.getResultColor(result.name);
+        this.playButton.alpha = validation.allowed ? 1 : 0.45;
+        this.playButton.eventMode = validation.allowed ? "static" : "none";
+        this.playButton.cursor = validation.allowed ? "pointer" : "default";
+        const canEndTurn = this.state.phase === "player" && this.state.player.hp > 0 && this.state.enemy.hp > 0;
+        this.endTurnButton.alpha = canEndTurn ? 1 : 0.45;
+        this.endTurnButton.eventMode = canEndTurn ? "static" : "none";
+        this.handContainer.children.forEach(view => {
+            view.eventMode = canEndTurn ? "static" : "none";
+            view.cursor = canEndTurn ? "pointer" : "default";
+        });
+    }
+    /** Resolves one enemy action and holds the input lock through rapid clicks. */
+    endTurn() {
+        const outcome = beginEndTurn(this.state);
+        if (!outcome.allowed) return;
+        this.refreshBattle();
+        if (this.state.phase === "finished") return;
+        this.turnTimeout = setTimeout(() => {
+            this.turnTimeout = null;
+            completeEndTurn(this.state);
+            this.refreshBattle();
+        }, ENEMY_PHASE_MS);
+    }
+
+    /** Cancels pending turn work and restores a fresh battle at any time. */
+    restart() {
+        if (this.turnTimeout != null) clearTimeout(this.turnTimeout);
+        this.turnTimeout = null;
+        resetGameState(this.state);
+        this.refreshBattle();
+    }
+
+    /** Refreshes battle data, live card views and their current layout. */
+    refreshBattle() {
+        this.createCards();
+        this.refreshEnemy();
+        this.refreshHUD();
+        this.refreshSidePanel();
+        this.onCardSelectionChanged();
+        this.lastActionText.text = this.state.lastAction;
+        this.resize();
     }
     // REFRESH
+    /** Displays player resources and whether battle input is available. */
     refreshHUD() {
 
         this.hpText.text =
@@ -308,12 +384,14 @@ export class BattleScene {
             `Energy ${this.state.player.energy}/${this.state.player.maxEnergy}`;
 
 
-        this.floorText.text =
-            `Floor ${this.state.run.floor}`;
+        this.phaseText.text =
+            this.state.result ? this.state.result.toUpperCase() :
+            this.state.phase === "enemy" ? "ENEMY TURN" : "YOUR TURN";
     }
 
 
 
+    /** Displays enemy HP and the attack that End Turn will resolve. */
     refreshEnemy() {
 
         this.enemyName.text =
@@ -329,52 +407,110 @@ export class BattleScene {
 
 
         this.enemyIntentText.text =
-                `Attack ${intentValue}`;
+                this.state.result ? "Battle finished" : `Intent: Attack ${intentValue}`;
     }
 
 
 
+    /** Displays actual demo hand and used-card counts without implying a deck. */
     refreshSidePanel() {
-    this.deckText.text =`Deck: ${this.state.deck.drawPile}`;
-    this.discardText.text =`Discard: ${this.state.deck.discardPile}`;
+    this.handCountText.text =`Hand: ${this.state.hand.length}`;
+    this.usedCountText.text =`Used this turn: ${this.state.usedCards.length}`;
     const intentValue = this.state.enemy.intent?.value ?? 0;
-    this.sideIntentText.text = `Attack ${intentValue}`;
+    this.sideIntentText.text = this.state.result ? "None" : `Attack ${intentValue}`;
     this.turnText.text =`Turn: ${this.state.run.turn}`;
 
     }
     // HELPERS
-    createText(text,fontSize,color="#ffffff"){
+    /** Creates battle text in the current theme using system fonts. */
+    createText(text,fontSize,color=this.theme.text){
          return new Text({
             text,
             style: {fill:color,fontSize,fontWeight:"bold",},
         });
     }
-    createButton(label,color){
+    /** Creates a sized canvas button with graphics retained for theme repainting. */
+    createButton(label,color,width=160,height=50){
         const button =new Container();
         const background =new Graphics();
-        background.roundRect(0,0,160,50,8).fill(color);
-        const text = this.createText(label,17);
+        background.roundRect(0,0,width,height,8).fill(color);
+        const text = this.createText(label,17,this.theme.buttonText);
         text.anchor.set(0.5);
-        text.position.set(80,25);
+        text.position.set(width / 2,height / 2);
         button.addChild(background,text);
         button.eventMode ="static";
         button.cursor ="pointer";
+        button.background = background;
+        button.labelText = text;
+        button.buttonWidth = width;
+        button.buttonHeight = height;
         
         return button;
+    }
+
+    /** Switches appearance and remembers it without changing battle state. */
+    toggleTheme() {
+        this.themeName = this.themeName === "dark" ? "light" : "dark";
+        this.theme = BATTLE_THEMES[this.themeName];
+        savePreferredTheme(this.themeName);
+        this.applyTheme();
+    }
+
+    /** Repaints persistent battle views while preserving selection and controls. */
+    applyTheme() {
+        document.documentElement.style.setProperty("--game-background", this.theme.background);
+        document.documentElement.style.colorScheme = this.themeName;
+        this.app.renderer.background.color = this.theme.background;
+        [this.hpText, this.shieldText, this.energyText, this.phaseText, this.enemyName,
+            this.enemyHPText, this.handCountText, this.usedCountText, this.turnText,
+            this.selectionText].forEach(text => { text.style.fill = this.theme.text; });
+        [this.sideIntentTitle, this.feedbackText].forEach(text => { text.style.fill = this.theme.muted; });
+        [this.demoRulesText, this.lastActionText].forEach(text => { text.style.fill = this.theme.secondary; });
+        [this.enemyIntentText, this.sideIntentText].forEach(text => { text.style.fill = this.theme.attack; });
+        const preview = evaluateCards(this.state.hand.filter(card => card.selected));
+        this.resultText.style.fill = this.getResultColor(preview.name);
+        this.enemyBody.clear().circle(0, 0, 70).fill(this.theme.enemy);
+        this.repaintButton(this.playButton, this.theme.playButton);
+        [this.endTurnButton, this.restartButton, this.themeButton].forEach(button => {
+            this.repaintButton(button, this.theme.button);
+        });
+        this.themeButton.labelText.text = this.themeName === "dark" ? "LIGHT MODE" : "DARK MODE";
+        this.resize();
+    }
+
+    /**
+     * Returns the theme's semantic color for the current result or preview.
+     * @param {string|undefined} name Card combination name, if a preview exists.
+     * @returns {string} Foreground color for the current feedback.
+     */
+    getResultColor(name) {
+        if (this.state.result) return this.state.result === "victory" ? this.theme.heal : this.theme.danger;
+        return { BUST: this.theme.danger, BLACKJACK: this.theme.attack,
+            PAIR: this.theme.shield, "HEART COMBO": this.theme.heal }[name] ?? this.theme.text;
+    }
+
+    /**
+     * Recolors a button while retaining its input state and geometry.
+     * @param {Container} button Button view to repaint.
+     * @param {string} color Theme background color.
+     */
+    repaintButton(button, color) {
+        button.background.clear().roundRect(0, 0, button.buttonWidth, button.buttonHeight, 8).fill(color);
+        button.labelText.style.fill = this.theme.buttonText;
     }
 
 
 
     // RESIZE / LAYOUT
 
+    /** Fits the battle layout to the canvas with the HUD at its top edge. */
     resize() {
 
-        const width =
-            this.app.screen.width;
-
-
-        const height =
-            this.app.screen.height;
+        const scale = Math.min(1, this.app.screen.width / 1280, this.app.screen.height / 720);
+        const width = this.app.screen.width / scale;
+        const height = this.app.screen.height / scale;
+        this.container.scale.set(scale);
+        this.container.position.set(0, 0);
 
 
         // BACKGROUND
@@ -390,7 +526,7 @@ export class BattleScene {
                 height
             )
             .fill(
-                0x15181e
+                this.theme.background
             );
 
 
@@ -407,7 +543,7 @@ export class BattleScene {
                 70
             )
             .fill(
-                0x20242c
+                this.theme.panel
             );
 
 
@@ -429,16 +565,17 @@ export class BattleScene {
         );
 
 
-        this.floorText.position.set(
+        this.phaseText.position.set(
             width * 0.75,
             24
         );
+        this.themeButton.position.set(width - 160, 15);
 
 
         // SIDE PANEL
 
         const sideWidth =
-            210;
+            270;
 
 
         const sideX =
@@ -455,11 +592,11 @@ export class BattleScene {
                 0,
                 0,
                 sideWidth,
-                350,
+                540,
                 10
             )
             .fill(
-                0x20242c
+                this.theme.panel
             );
 
 
@@ -469,13 +606,13 @@ export class BattleScene {
         );
 
 
-        this.deckText.position.set(
+        this.handCountText.position.set(
             sideX + 20,
             125
         );
 
 
-        this.discardText.position.set(
+        this.usedCountText.position.set(
             sideX + 20,
             170
         );
@@ -497,13 +634,12 @@ export class BattleScene {
             sideX + 20,
             320
         );
+        this.demoRulesText.position.set(sideX + 20, 365);
 
 
         // MAIN GAME CENTER
 
-        const gameWidth =
-            width -
-            sideWidth;
+        const gameWidth = width - sideWidth - 40;
 
 
         const gameCenterX =
@@ -514,25 +650,25 @@ export class BattleScene {
 
         this.enemyName.position.set(
             gameCenterX,
-            145
+            140
         );
 
 
         this.enemyBody.position.set(
             gameCenterX,
-            260
+            230
         );
 
 
         this.enemyHPText.position.set(
             gameCenterX,
-            355
+            315
         );
 
 
         this.enemyIntentText.position.set(
             gameCenterX,
-            390
+            345
         );
 
 
@@ -540,14 +676,17 @@ export class BattleScene {
 
         this.selectionText.position.set(
             gameCenterX,
-            height - 330
+            height - 335
         );
 
 
         this.resultText.position.set(
             gameCenterX,
-            height - 295
+            height - 303
         );
+        this.feedbackText.position.set(gameCenterX, height - 275);
+        this.lastActionText.style.wordWrapWidth = gameWidth - 60;
+        this.lastActionText.position.set(gameCenterX, 94);
 
 
         // CARDS
@@ -573,6 +712,7 @@ export class BattleScene {
             gameCenterX + 15,
             height - 65
         );
+        this.restartButton.position.set(width - 180, height - 65);
 
     }
 

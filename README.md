@@ -1,3 +1,45 @@
+# Juniper — Single-Battle Prototype
+
+A playing-card combat prototype built with JavaScript, Vite and PixiJS.
+
+[Play Juniper](https://ljf920727.github.io/card-roguelike/)
+
+## Run locally
+
+Use Node.js 24 with npm, matching the deployment workflow. Vite also supports Node.js 20.x from 20.19, or Node.js 22.12 and newer. Install dependencies with `npm ci`, then run `npm run dev` and open the local URL printed by Vite. `npm run build` creates a production build in `dist`; `npm run preview` serves it locally for verification.
+
+Use **LIGHT MODE / DARK MODE** at the top right to switch appearance. The choice is saved locally and survives battle restarts and page reloads.
+
+## Deploy to GitHub Pages
+
+A repository administrator must select **GitHub Actions** as the source in **Settings → Pages → Build and deployment**. Once `.github/workflows/deploy-pages.yml` is on `main`, pushes to `main` build and deploy the game. You can also open **Actions → Deploy to GitHub Pages → Run workflow** and select `main`; other branches are skipped.
+
+The workflow uses Node.js 24, installs the locked dependencies with `npm ci`, and uploads only `dist`. Vite's base path comes from the Pages configuration, supporting both a repository subpath and a custom domain. No personal access token is required. See the [GitHub Pages workflow documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages) and [Vite deployment guide](https://vite.dev/guide/static-deploy.html#github-pages).
+
+To check the repository subpath locally:
+
+```sh
+npm run build -- --base=/card-roguelike/
+npm run preview -- --base=/card-roguelike/
+```
+
+Open the preview URL ending in `/card-roguelike/`, check that the game and tab icon load, then select A♠ + K♦ and play once. After deployment, repeat these checks using the URL shown by the `github-pages` environment in Actions.
+
+## Play the demo
+
+Click cards to select or deselect them, inspect the combination and cost, then click **PLAY CARDS**. Each valid play costs 1 energy and removes those cards for the rest of the turn. Invalid combinations and Bust cost nothing.
+
+- Any total of 21 attacks for 25 damage. Aces count as 11 or 1; J/Q/K count as 10.
+- Exactly two matching ranks grant 12 shield.
+- Two or more hearts heal 4 HP per card, up to maximum HP.
+- Priority is Bust → 21 → pair → hearts. Only the first matching effect applies.
+
+**END TURN** resolves Goblin's displayed attack of 8. Shield absorbs damage first. If the player survives, the next turn clears remaining shield, restores 3 energy, and returns the same five demo cards (A♠, K♦, 7♥, 7♠, 3♥). Controls briefly lock during enemy resolution so a double click cannot end two turns.
+
+Enemy HP 0 means victory; player HP 0 means defeat. Battle controls stop immediately. **RESTART** is available at any time and resets HP to 80/100, enemy HP to 50/50, energy to 3/3, turn to 1 and the demo hand.
+
+This demo has one encounter and a fixed five-card pool. A real shuffled deck, Jokers, encounter progression, rewards and deckbuilding are future work. Battle visuals use PixiJS drawing code and system fonts; the browser tab icon is a bundled PNG. No runtime requests to external asset services are needed.
+
 ## What Each File Does
 
 This project separates the UI, game rules, combat logic, and game data so team members can work on different parts without interfering with each other.
@@ -13,22 +55,28 @@ Examples:
 - Energy
 - Enemy HP
 - Enemy intent
-- Floor
+- Battle phase
+- Victory or defeat result
 - Turn
-- Deck count
+- Demo hand and used-card counts
 - Current hand
+- Selection preview and latest action feedback
+
+`createInitialState()` creates independent battle data. `resetGameState()` restores it while preserving the outer state reference used by the UI.
 
 working on **game logic or balancing** can edit this file when new game state values are needed.
 
 Example:
 
 ```js
-player: {
-    hp: 80,
-    maxHp: 100,
-    shield: 0,
-    energy: 3,
-}
+const gameState = {
+    player: {
+        hp: 80,
+        maxHp: 100,
+        shield: 0,
+        energy: 3,
+    },
+};
 ```
 
 ✅ Safe to modify when adding new game state values.
@@ -66,12 +114,13 @@ Examples of things that can be changed:
 ⚠️ Avoid changing the card data structure:
 
 ```js
+id
 rank
 suit
 selected
 ```
 
-unless the team agrees to update the rest of the project.
+unless the team agrees to update the rest of the project. Card IDs identify the fixed demo cards when the hand is restored; selection and play validation share these card objects.
 
 ---
 
@@ -85,12 +134,16 @@ It currently contains:
 - Enemy display
 - Enemy HP
 - Enemy intent
-- Deck and discard information
+- Demo hand counts and rules
 - Selected card preview
 - Player hand
 - Play Cards button
 - End Turn button
+- Restart button and battle result feedback
+- Light / dark mode button
 - Battle layout
+
+Selection previews come from `RuleEngine`. Play validation and resource consumption are delegated to `PlaySystem`; enemy turns are delegated to `TurnSystem`. Keep combination detection and combat calculations in those systems.
 
 This is the main **battle UI file**.
 
@@ -258,6 +311,26 @@ energy
 
 ---
 
+### `src/systems/PlaySystem.js`
+
+**Purpose:** Validates and resolves a player card play.
+
+It checks the battle phase, live selection, combination and available energy. A valid play delegates its effect to `CombatSystem`, consumes 1 energy, moves played cards into `usedCards` and clears the selection. Invalid plays leave battle resources unchanged.
+
+Keep play permission and resource consumption here; keep combination detection in `RuleEngine` and rendering in `BattleScene`.
+
+---
+
+### `src/systems/TurnSystem.js`
+
+**Purpose:** Resolves the enemy turn and restores the fixed demo hand.
+
+`beginEndTurn()` enters the enemy phase and delegates shield-first damage to `CombatSystem`. `completeEndTurn()` advances a surviving player's turn, clears shield, restores energy and returns the same five cards. Victory / defeat detection belongs to `CombatSystem`.
+
+`BattleScene` handles the short input-lock timer and cancels it on restart; turn calculations remain here.
+
+---
+
 ### `src/main.js`
 
 **Purpose:** Starts PixiJS and loads the battle scene.
@@ -272,6 +345,14 @@ It:
 This is mainly a startup file.
 
 ⚠️ Please avoid changing this file unless you are adding a new scene, changing application startup, or fixing a related issue.
+
+---
+
+### `src/themes.js`
+
+**Purpose:** Defines the dark and light color palettes and saves the local appearance preference.
+
+Theme preference is separate from battle data. `BattleScene` repaints the views; switching appearance or restarting does not reset the preference. Unavailable browser storage does not prevent switching.
 
 ---
 
@@ -290,6 +371,12 @@ can edit:
 
 ---
 
+### `index.html`, `public/card-icon.png` and `.github/workflows/deploy-pages.yml`
+
+`index.html` hosts the game container and references the browser tab icon in `public/card-icon.png`. The deployment workflow builds the Vite site with the Pages base path and publishes only `dist`.
+
+---
+
 ## Recommended
 
 To avoid merge conflicts, everyone can divide work by system.
@@ -301,6 +388,7 @@ Work mainly in:
 ```text
 src/components/CardView.js
 src/scenes/BattleScene.js
+src/themes.js
 src/style.css
 ```
 
@@ -351,6 +439,8 @@ Work mainly in:
 
 ```text
 src/systems/CombatSystem.js
+src/systems/PlaySystem.js
+src/systems/TurnSystem.js
 src/gameState.js
 ```
 
@@ -368,7 +458,7 @@ Possible tasks:
 
 ### Deck / Card Logic
 
-A deck system has not been fully implemented yet.
+A real deck system has not been implemented. The current demo restores the same five cards instead of drawing from a shuffled deck.
 
 Future files could include:
 
@@ -378,7 +468,7 @@ src/systems/DeckSystem.js
 
 This system could handle:
 
-- Creating a 52-card deck
+- Creating the full playing-card deck, with deck size and Joker behavior agreed by the team
 - Shuffling
 - Drawing cards
 - Discarding cards
@@ -389,27 +479,27 @@ This system could handle:
 
 ### Turn System
 
-The current `End Turn` button is still a prototype.
+The current `End Turn` button delegates enemy damage and fixed-hand restoration to `src/systems/TurnSystem.js`.
 
-A future system could be:
+The current system is:
 
 ```text
 src/systems/TurnSystem.js
 ```
 
-It could handle:
+It handles enemy resolution and resource restoration:
 
 ```text
 Player plays cards
 → Enemy acts
 → Shield updates
-→ Cards discarded
-→ New cards drawn
+→ Used demo cards returned
+→ Same five demo cards restored
 → Energy restored
 → Next turn
 ```
 
-This is another good independent task 
+Real deck drawing and encounter progression remain future work.
 
 ---
 
@@ -422,16 +512,25 @@ CardView
 → How cards look
 
 BattleScene
-→ How the battle screen looks
+→ Battle rendering, input events and UI timing
 
 RuleEngine / rules
 → What card combinations mean
 
 CombatSystem
-→ What combat actions do
+→ Combat effects, HP bounds and victory / defeat detection
+
+PlaySystem
+→ Play validation, energy cost and used-card movement
+
+TurnSystem
+→ Enemy resolution and next-turn restoration
 
 gameState
-→ Current game data
+→ Current game data and reset
+
+themes
+→ Appearance colors and local preference
 ```
 
 For example:
@@ -442,18 +541,27 @@ Instead:
 
 ```text
 BattleScene
-→ sends selected cards
+→ requests a play
+
+PlaySystem
+→ validates the live selection through RuleEngine
 
 RuleEngine
-→ detects Pair
+→ returns the Pair shield action
+
+PlaySystem
+→ delegates the combat effect
 
 CombatSystem
 → gives Shield
+
+PlaySystem
+→ consumes energy and moves the played cards
 
 BattleScene
 → updates the display
 ```
 
-Keeping these systems separate will make it easier for each others
+Keep state and card schema changes coordinated with their consumers, and add new combination rules in separate files whenever possible. Keeping these systems separate helps team members work independently.
 
 ---

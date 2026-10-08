@@ -1,3 +1,8 @@
+/** Defines page sizing and theme-aware colors around the battle canvas. */
+:root {
+    --game-background: #15181e;
+}
+
 * {
     box-sizing: border-box;
 }
@@ -10,7 +15,7 @@ body {
    overflow: hidden;
 }
 body{
-  background-color: #15181e;
+  background-color: var(--game-background, #15181e);
 
   font-family: Arial,Helvetica,sans-serif;
 }
