@@ -1,3 +1,4 @@
+/** Resolves the highest-priority card combination into a combat action. */
 import{calculateBlackjackValue} from "./BlackjackSystem.js";
 import {
     evaluatePair,
@@ -7,6 +8,11 @@ import {
     evaluateHeartHeal,
 } from "./rules/HeartHealRule.js";
 
+/**
+ * Checks bust, twenty-one, pairs and heart healing in priority order.
+ * @param {Object[]} cards Cards participating in the combination.
+ * @returns {Object} Blackjack value, combination name and optional action.
+ */
 export function evaluateCards(cards){
     const value =  calculateBlackjackValue(cards);
     if (cards.length === 0){
@@ -33,7 +39,7 @@ export function evaluateCards(cards){
             action: {
                 type: "attack",
 
-                // just setup first attack for now, can add more later
+                // Twenty-one grants the demo's fixed attack value.
                 amount: 25,
             },
         };

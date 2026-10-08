@@ -1,3 +1,4 @@
+/** Builds the battle UI and delegates gameplay decisions to systems. */
 import {
     Container,
     Graphics,
@@ -19,6 +20,7 @@ import {
 import {
     applyAction,
 } from "../systems/CombatSystem.js";
+import { validatePlay } from "../systems/PlaySystem.js";
 
 export class BattleScene {
     constructor(app, state) {
@@ -183,6 +185,7 @@ export class BattleScene {
 
     // SELECTION AREA
 
+    /** Creates the selection preview and visible play validation feedback. */
     createSelectionArea() {
 
         this.selectionText =this.createText("Selected: 0    Value: 0",20);
@@ -192,6 +195,9 @@ export class BattleScene {
         this.selectionText.anchor.set(0.5);
         this.resultText.anchor.set(0.5);
         this.container.addChild(this.selectionText,this.resultText);
+        this.feedbackText = this.createText("Select cards to form a combination.", 16, "#9fa7b5");
+        this.feedbackText.anchor.set(0.5);
+        this.container.addChild(this.feedbackText);
     }
 
 
@@ -222,6 +228,7 @@ export class BattleScene {
 
     // BUTTONS
 
+    /** Creates battle controls and revalidates live selections before playing. */
     createButtons() {
 
         this.playButton =this.createButton("PLAY CARDS",0xb48732);
@@ -234,18 +241,19 @@ export class BattleScene {
 
 
         this.playButton.on("pointerdown",() => {
-            const action =this.state.selection.primaryAction;
-             if (!action) {
-                console.log("No action to perform.");
+            const validation = validatePlay(this.state);
+             if (!validation.allowed) {
+                this.feedbackText.text = validation.reason;
                 return;
             }
-             applyAction(this.state,action);
+             applyAction(this.state,validation.evaluation.action);
              this.refreshEnemy();
              this.refreshHUD();
              this.refreshSidePanel();
-             console.log("Applied action:",action);
+             this.onCardSelectionChanged();
             }
         );
+        this.onCardSelectionChanged();
 
 
         this.endTurnButton.on(
@@ -257,6 +265,7 @@ export class BattleScene {
     }
 
     // CARD SELECTION
+    /** Synchronizes the preview and button availability with the current hand. */
     onCardSelectionChanged() {
 
     const selectedCards =this.state.hand.filter(
@@ -292,6 +301,11 @@ export class BattleScene {
     else {
         this.resultText.text ="Result: None";
         this.resultText.style.fill ="#d6d9df"; }
+        const validation = validatePlay(this.state);
+        this.feedbackText.text = validation.reason || `Cost: ${validation.cost} energy`;
+        this.playButton.alpha = validation.allowed ? 1 : 0.45;
+        this.playButton.eventMode = validation.allowed ? "static" : "none";
+        this.playButton.cursor = validation.allowed ? "pointer" : "default";
     }
     // REFRESH
     refreshHUD() {
@@ -367,6 +381,7 @@ export class BattleScene {
 
     // RESIZE / LAYOUT
 
+    /** Positions battle panels and controls within the canvas. */
     resize() {
 
         const width =
@@ -548,6 +563,7 @@ export class BattleScene {
             gameCenterX,
             height - 295
         );
+        this.feedbackText.position.set(gameCenterX, height - 263);
 
 
         // CARDS
