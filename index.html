@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Hosts the game canvas and browser metadata. -->
+<!-- Hosts the battle interface and the card canvas. -->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -8,7 +8,102 @@
     <title>Juniper</title>
   </head>
   <body>
-    <div id="game-container"></div>
+    <header class="topbar">
+      <h1 class="brand">Juniper</h1>
+      <div class="stats">
+        <div class="stat hp" aria-label="Health">
+          <span class="hp-icon" aria-hidden="true">♥</span>
+          <div class="bar"><div class="bar-fill" id="hp-fill"></div></div>
+          <span id="hp-text"></span>
+        </div>
+        <span class="stat shield-badge" id="shield-text"></span>
+        <div class="stat energy">
+          <span class="energy-label">Energy</span>
+          <div class="chips" id="energy-chips" role="img"></div>
+        </div>
+      </div>
+      <div class="topbar-end">
+        <span class="phase" id="phase-text"></span>
+        <button type="button" class="button secondary small" id="theme-button"></button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <main class="table" id="table">
+        <p class="log" id="last-action" aria-live="polite"></p>
+
+        <section class="enemy" aria-label="Enemy">
+          <div class="enemy-token" id="enemy-token">
+            <span class="enemy-face" id="enemy-initial"></span>
+          </div>
+          <div class="enemy-info">
+            <h2 class="enemy-name" id="enemy-name"></h2>
+            <p class="enemy-hp" id="enemy-hp"></p>
+            <span class="intent" id="enemy-intent"></span>
+          </div>
+        </section>
+
+        <section class="selection" aria-live="polite">
+          <p class="selection-count" id="selection-text"></p>
+          <p class="result" id="result-text"></p>
+          <p class="feedback" id="feedback-text"></p>
+        </section>
+
+        <div class="hand-row">
+          <div class="mode-toggle">
+            <span class="mode-title" id="mode-title">Combo type</span>
+            <div class="mode-track" role="radiogroup" aria-labelledby="mode-title">
+              <button type="button" class="mode-option" role="radio" data-mode="blackjack" data-accent="attack">
+                <span class="mode-label">Blackjack</span>
+                <span class="mode-hint">Beat the dealer</span>
+              </button>
+              <button type="button" class="mode-option" role="radio" data-mode="poker" data-accent="shield">
+                <span class="mode-label">Poker</span>
+                <span class="mode-hint">Play any hand</span>
+              </button>
+            </div>
+          </div>
+          <div class="hand" id="hand"></div>
+          <div class="blackjack" id="blackjack">
+            <div class="bj-row">
+              <span class="bj-label" id="bj-dealer-label"></span>
+              <div class="bj-cards" id="bj-dealer"></div>
+              <span class="bj-total" id="bj-dealer-total"></span>
+            </div>
+            <div class="bj-row">
+              <span class="bj-label">You</span>
+              <div class="bj-cards" id="bj-player"></div>
+              <span class="bj-total" id="bj-player-total"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="button primary" id="play-button"></button>
+          <button type="button" class="button secondary" id="stand-button">Stand</button>
+          <button type="button" class="button secondary" id="end-turn-button">End turn</button>
+        </div>
+      </main>
+
+      <aside class="panel">
+        <section class="run-info">
+          <h2 class="fight" id="fight-text"></h2>
+          <p class="turn" id="turn-text"></p>
+          <p class="pile" id="draw-text"></p>
+          <p class="pile" id="discard-text"></p>
+        </section>
+        <section class="next-move">
+          <p class="muted" id="intent-title"></p>
+          <p class="next-attack" id="side-intent"></p>
+        </section>
+        <section class="rules">
+          <h2 class="rules-title" id="rules-title"></h2>
+          <div class="rules-body" id="rules-body"></div>
+          <p class="muted rules-shared">Each poker play or blackjack deal costs 1 energy. Ending your turn lets the enemy attack, then you draw a new hand.</p>
+        </section>
+        <button type="button" class="button secondary restart" id="restart-button">New run</button>
+      </aside>
+    </div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
