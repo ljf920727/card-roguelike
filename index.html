@@ -1,14 +1,216 @@
 <!doctype html>
-<!-- Hosts the game canvas and browser metadata. -->
+<!-- Hosts the battle interface and the card canvas. -->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="/card-icon.png" />
     <title>Juniper</title>
+    <script>
+      try {
+        if (localStorage.getItem('juniper.theme') === 'light') document.documentElement.dataset.splash = 'light';
+      } catch {}
+    </script>
+    <style>
+      body:not(.ready) > :not(#splash) { visibility: hidden; }
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 28px;
+        background: #0f2621;
+        color: #f3efe3;
+        transition: opacity 350ms ease, visibility 350ms;
+      }
+      [data-splash="light"] #splash { background: #e3ebe5; color: #15302a; }
+      body.ready #splash { opacity: 0; visibility: hidden; }
+      .splash-title {
+        margin: 0;
+        font: 700 clamp(2.5rem, 8vw, 4rem)/1 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      }
+      .splash-cards { position: relative; width: 120px; height: 96px; }
+      .splash-card {
+        position: absolute;
+        left: 38px;
+        top: 4px;
+        width: 44px;
+        height: 64px;
+        border-radius: 7px;
+        background: #fbf8f0;
+        border: 1px solid #d9d2c0;
+        box-shadow: 0 4px 10px rgb(0 0 0 / 0.25);
+        display: grid;
+        place-items: center;
+        font: 24px/1 Georgia, serif;
+        transform-origin: 50% 120%;
+        animation: splash-deal 1.6s ease-in-out infinite;
+      }
+      .splash-card:nth-child(1) { color: #1b2421; --angle: -22deg; }
+      .splash-card:nth-child(2) { color: #b8323c; --angle: 0deg; animation-delay: 120ms; }
+      .splash-card:nth-child(3) { color: #1b2421; --angle: 22deg; animation-delay: 240ms; }
+      @keyframes splash-deal {
+        0%, 100% { transform: rotate(0deg); }
+        40%, 70% { transform: rotate(var(--angle)); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .splash-card { animation: none; transform: rotate(var(--angle)); }
+        #splash { transition: none; }
+      }
+    </style>
   </head>
   <body>
-    <div id="game-container"></div>
+    <div id="splash" role="status" aria-label="Loading Juniper">
+      <div class="splash-cards" aria-hidden="true">
+        <span class="splash-card">♠</span>
+        <span class="splash-card">♥</span>
+        <span class="splash-card">♣</span>
+      </div>
+      <p class="splash-title">Juniper</p>
+    </div>
+    <header class="topbar">
+      <h1 class="brand">Juniper</h1>
+      <div class="stats">
+        <div class="stat hp" aria-label="Health">
+          <span class="hp-icon" aria-hidden="true">♥</span>
+          <div class="bar"><div class="bar-fill" id="hp-fill"></div></div>
+          <span id="hp-text"></span>
+        </div>
+        <span class="stat shield-badge" id="shield-text"></span>
+        <div class="stat energy">
+          <span class="energy-label">Energy</span>
+          <div class="chips" id="energy-chips" role="img"></div>
+        </div>
+      </div>
+      <div class="topbar-end">
+        <span class="phase" id="phase-text"></span>
+        <button type="button" class="button secondary small" id="theme-button"></button>
+        <button type="button" class="button secondary small" id="menu-button" aria-keyshortcuts="Escape">Menu</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <main class="table" id="table">
+        <p class="log" id="last-action" aria-live="polite"></p>
+
+        <section class="enemy" aria-label="Enemy">
+          <div class="enemy-token" id="enemy-token">
+            <span class="enemy-face" id="enemy-initial"></span>
+          </div>
+          <div class="enemy-info">
+            <h2 class="enemy-name" id="enemy-name"></h2>
+            <p class="enemy-hp" id="enemy-hp"></p>
+            <span class="intent" id="enemy-intent"></span>
+          </div>
+        </section>
+
+        <section class="selection" aria-live="polite">
+          <p class="selection-count" id="selection-text"></p>
+          <p class="result" id="result-text"></p>
+          <p class="feedback" id="feedback-text"></p>
+        </section>
+
+        <div class="hand-row">
+          <div class="mode-toggle">
+            <span class="mode-title" id="mode-title">Combo type</span>
+            <div class="mode-track" role="radiogroup" aria-labelledby="mode-title">
+              <button type="button" class="mode-option" role="radio" data-mode="blackjack" data-accent="attack">
+                <span class="mode-label">Blackjack</span>
+                <span class="mode-hint">Beat the dealer</span>
+              </button>
+              <button type="button" class="mode-option" role="radio" data-mode="poker" data-accent="shield">
+                <span class="mode-label">Poker</span>
+                <span class="mode-hint">Play any hand</span>
+              </button>
+            </div>
+          </div>
+          <div class="hand" id="hand"></div>
+          <div class="blackjack" id="blackjack">
+            <div class="bj-row">
+              <span class="bj-label" id="bj-dealer-label"></span>
+              <div class="bj-cards" id="bj-dealer"></div>
+              <span class="bj-total" id="bj-dealer-total"></span>
+            </div>
+            <div class="bj-row">
+              <span class="bj-label">You</span>
+              <div class="bj-cards" id="bj-player"></div>
+              <span class="bj-total" id="bj-player-total"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="button primary" id="play-button"></button>
+          <button type="button" class="button secondary" id="stand-button">Stand</button>
+          <button type="button" class="button secondary" id="end-turn-button">End turn</button>
+        </div>
+      </main>
+
+      <aside class="panel">
+        <section class="run-info">
+          <h2 class="fight" id="fight-text"></h2>
+          <p class="turn" id="turn-text"></p>
+          <p class="pile" id="draw-text"></p>
+          <p class="pile" id="discard-text"></p>
+        </section>
+        <section class="next-move">
+          <p class="muted" id="intent-title"></p>
+          <p class="next-attack" id="side-intent"></p>
+        </section>
+        <section class="rules">
+          <h2 class="rules-title" id="rules-title"></h2>
+          <div class="rules-body" id="rules-body"></div>
+          <p class="muted rules-shared">Each poker play or blackjack deal costs 1 energy. Ending your turn lets the enemy attack, then you draw a new hand.</p>
+        </section>
+        <button type="button" class="button secondary restart" id="restart-button">New run</button>
+      </aside>
+    </div>
+    <div class="menu" id="menu" hidden>
+      <div class="menu-backdrop" aria-hidden="true"></div>
+      <div class="menu-content">
+        <div class="menu-fan" aria-hidden="true">
+          <span class="menu-card black">A<i>♠</i></span>
+          <span class="menu-card red">K<i>♥</i></span>
+          <span class="menu-card black">Q<i>♣</i></span>
+          <span class="menu-card red">J<i>♦</i></span>
+          <span class="menu-card red">10<i>♥</i></span>
+        </div>
+        <h2 class="menu-title" aria-label="Juniper">
+          <span>J</span><span>u</span><span>n</span><span>i</span><span>p</span><span>e</span><span>r</span>
+        </h2>
+        <p class="menu-tagline">Blackjack and poker, one run at a time.</p>
+        <div class="menu-actions">
+          <button type="button" class="menu-button play" id="menu-play">Play</button>
+          <button type="button" class="menu-button new-run" id="menu-new-run" hidden>New run</button>
+          <button type="button" class="menu-button rules" id="menu-rules">How to play</button>
+          <button type="button" class="menu-button theme" id="menu-theme"></button>
+        </div>
+      </div>
+    </div>
+
+    <dialog class="rules-dialog" id="rules-dialog" aria-labelledby="rules-dialog-title">
+      <h2 id="rules-dialog-title">How to play</h2>
+      <p>Each run is four fights against random enemies. The last one is a boss. Your HP carries over between fights, and you recover a little after each win.</p>
+      <h3>Your turn</h3>
+      <p>You have 3 energy and a hand of 5 cards from a shuffled 52-card deck. Spend energy on poker hands or blackjack rounds, then end your turn and the enemy attacks for the amount it showed.</p>
+      <div class="rules-columns">
+        <section>
+          <h3>Blackjack</h3>
+          <p>Deal (1 energy) to get 2 cards; the enemy gets 2, one face down. Hit to take another card, stand to stop, and the enemy draws until it reaches 17. Closest to 21 without going over wins.</p>
+          <p>Win and the enemy takes damage equal to your total (a natural blackjack deals 30). Lose or bust and the enemy hits you. A tie refunds your energy.</p>
+        </section>
+        <section>
+          <h3>Poker</h3>
+          <p>Select 1 to 5 cards from your hand. The best poker hand among them is played, from high card up to a royal flush. Bigger hands hit harder; pairs give shield and flushes heal. The full list is in the side panel.</p>
+        </section>
+      </div>
+      <form method="dialog">
+        <button type="submit" class="menu-button play">Got it</button>
+      </form>
+    </dialog>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

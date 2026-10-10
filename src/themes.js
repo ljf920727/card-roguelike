@@ -3,18 +3,20 @@
 /** Semantic colors keep combat feedback readable on either background. */
 export const BATTLE_THEMES = {
     dark: {
-        background: '#15181E', panel: '#20242C', text: '#FFF',
-        secondary: '#C5CAD3', muted: '#9FA7B5', danger: '#E35454',
-        attack: '#F0C75E', shield: '#67B7FF', heal: '#68D391',
-        button: '#3F4652', playButton: '#B48732', buttonText: '#FFF',
-        enemy: '#8C3F3F',
+        background: '#0F2621', felt: '#17483D', feltEdge: '#10362E', rim: '#C2A05A',
+        panel: '#132F29', panelLine: '#28503F', text: '#F3EFE3',
+        secondary: '#C6D5CD', muted: '#93ADA2', danger: '#E8676D',
+        attack: '#E9BC62', shield: '#8FB0EA', heal: '#82D0A1',
+        button: '#1C4136', playButton: '#E9BC62', buttonText: '#132F29',
+        enemy: '#9A3A46', enemyRing: '#6F2732', accentText: '#132F29',
     },
     light: {
-        background: '#F0F3F8', panel: '#FFF', text: '#172230',
-        secondary: '#3F4E62', muted: '#526076', danger: '#B32636',
-        attack: '#845400', shield: '#17689E', heal: '#217044',
-        button: '#D9E1EC', playButton: '#EFCE82', buttonText: '#172230',
-        enemy: '#A64C4C',
+        background: '#E3EBE5', felt: '#CADFD1', feltEdge: '#B4CCBC', rim: '#9C7A2E',
+        panel: '#F8FAF7', panelLine: '#C5D5CA', text: '#15302A',
+        secondary: '#36524A', muted: '#55705F', danger: '#B23440',
+        attack: '#86600F', shield: '#2D5A9C', heal: '#24734A',
+        button: '#F8FAF7', playButton: '#D4A445', buttonText: '#15302A',
+        enemy: '#A8424D', enemyRing: '#7C2B35', accentText: '#FFFFFF',
     },
 };
 
