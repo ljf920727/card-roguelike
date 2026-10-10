@@ -7,6 +7,7 @@
 export function createInitialState() {
     return {
         phase: "player",
+        mode: "blackjack",
         result: null,
         lastAction: "Demo battle: select cards, then play a combination.",
         player: { hp: 80, maxHp: 100, shield: 0, energy: 3, maxEnergy: 3 },

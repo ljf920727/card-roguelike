@@ -21,6 +21,19 @@ import { BATTLE_THEMES, getPreferredTheme, savePreferredTheme } from "../themes.
 /** Brief enemy phase absorbs double clicks before restoring player controls. */
 const ENEMY_PHASE_MS = 400;
 
+const COMBO_MODES = [
+    { id: "blackjack", label: "BLACKJACK", hint: "Hit exactly 21", accent: "attack" },
+    { id: "poker", label: "POKER", hint: "Pair or hearts", accent: "shield" },
+];
+const MODE_OPTION_WIDTH = 150;
+const MODE_OPTION_HEIGHT = 56;
+const MODE_TOGGLE_PADDING = 6;
+const MODE_TOGGLE_WIDTH = MODE_OPTION_WIDTH + MODE_TOGGLE_PADDING * 2;
+const MODE_RULES = {
+    blackjack: "BLACKJACK MODE\nFixed demo hand, restored\neach turn.\n\nTotal of 21: Attack 25\nOver 21: Bust, no effect\nAces count 11 or 1;\nJ/Q/K count 10.\n\nEach play costs 1 energy.\nEnd turn: enemy attacks.",
+    poker: "POKER MODE\nFixed demo hand, restored\neach turn.\n\nPair (2 same rank):\n  Shield +12\n2+ hearts: Heal 4/card\n\nEach play costs 1 energy.\nEnd turn: enemy attacks.",
+};
+
 export class BattleScene {
     /** Builds the persistent battle panels and connects their controls. */
     constructor(app, state) {
@@ -39,6 +52,7 @@ export class BattleScene {
 		this.createSidePanel();
 		this.createSelectionArea();
 		this.createCards();
+		this.createModeToggle();
 		this.createButtons();
 		this.app.stage.addChild(
 			this.container
@@ -189,10 +203,7 @@ export class BattleScene {
         );
 
 
-        this.demoRulesText = this.createText(
-            "FIXED DEMO HAND\n5 cards restored each turn\n\n21: Attack 25\nPair: Shield +12\n2+ hearts: Heal 4/card\nBust: No effect\n\nEach play costs 1 energy.\nEnd turn: enemy attacks.\nThen shield clears; hand\nand energy restore.",
-            16, this.theme.secondary
-        );
+        this.demoRulesText = this.createText("", 16, this.theme.secondary);
         this.demoRulesText.style.wordWrap = true;
         this.demoRulesText.style.wordWrapWidth = 230;
         this.container.addChild(this.demoRulesText);
@@ -249,6 +260,62 @@ export class BattleScene {
     }
 
 
+    createModeToggle() {
+        this.modeToggle = new Container();
+        this.modeToggleTitle = this.createText("COMBO TYPE", 14, this.theme.muted);
+        this.modeToggleTitle.anchor.set(0.5, 0);
+        this.modeToggleTitle.position.set(MODE_TOGGLE_WIDTH / 2, 0);
+        this.modeToggleTrack = new Graphics();
+        this.modeToggleTrack.position.set(0, 26);
+        this.modeToggle.addChild(this.modeToggleTitle, this.modeToggleTrack);
+        this.modeOptions = COMBO_MODES.map((mode, index) => {
+            const option = new Container();
+            option.background = new Graphics();
+            option.labelText = this.createText(mode.label, 17);
+            option.labelText.anchor.set(0.5);
+            option.labelText.position.set(MODE_OPTION_WIDTH / 2, 22);
+            option.hintText = this.createText(mode.hint, 12);
+            option.hintText.anchor.set(0.5);
+            option.hintText.position.set(MODE_OPTION_WIDTH / 2, 42);
+            option.addChild(option.background, option.labelText, option.hintText);
+            option.position.set(MODE_TOGGLE_PADDING, 26 + MODE_TOGGLE_PADDING + index * (MODE_OPTION_HEIGHT + MODE_TOGGLE_PADDING));
+            option.mode = mode;
+            option.on("pointerdown", () => this.setMode(mode.id));
+            this.modeToggle.addChild(option);
+            return option;
+        });
+        this.container.addChild(this.modeToggle);
+        this.refreshModeToggle();
+    }
+
+    setMode(mode) {
+        if (this.state.phase !== "player" || this.state.mode === mode) return;
+        this.state.mode = mode;
+        this.refreshSidePanel();
+        this.onCardSelectionChanged();
+    }
+
+    refreshModeToggle() {
+        const canSwitch = this.state.phase === "player";
+        const trackHeight = COMBO_MODES.length * (MODE_OPTION_HEIGHT + MODE_TOGGLE_PADDING) + MODE_TOGGLE_PADDING;
+        this.modeToggleTrack.clear().roundRect(0, 0, MODE_TOGGLE_WIDTH, trackHeight, 12).fill(this.theme.panel);
+        this.modeToggleTitle.style.fill = this.theme.muted;
+        this.modeOptions.forEach(option => {
+            const active = option.mode.id === this.state.mode;
+            option.background.clear().roundRect(0, 0, MODE_OPTION_WIDTH, MODE_OPTION_HEIGHT, 8);
+            if (active) {
+                option.background.fill(this.theme[option.mode.accent]);
+            } else {
+                option.background.fill(this.theme.background).stroke({ color: this.theme.button, width: 2 });
+            }
+            option.labelText.style.fill = active ? this.theme.background : this.theme.text;
+            option.hintText.style.fill = active ? this.theme.background : this.theme.muted;
+            option.alpha = canSwitch || active ? 1 : 0.45;
+            option.eventMode = canSwitch && !active ? "static" : "none";
+            option.cursor = canSwitch && !active ? "pointer" : "default";
+        });
+    }
+
     // BUTTONS
 
     /** Creates battle controls and revalidates live selections before playing. */
@@ -294,7 +361,7 @@ export class BattleScene {
             card => card.selected
         );
 
-    const result =evaluateCards(selectedCards);
+    const result =evaluateCards(selectedCards, this.state.mode);
 
     this.state.selection.cards =selectedCards;
     this.state.selection.value = result.value;
@@ -303,7 +370,8 @@ export class BattleScene {
     this.state.selection.primaryAction = result.action;
 
 
-    this.selectionText.text =`Selected: ${selectedCards.length}    Value: ${result.value}`;
+    this.selectionText.text = this.state.mode === "poker" ? `Selected: ${selectedCards.length}` :
+        `Selected: ${selectedCards.length}    Value: ${result.value}`;
 
     if (result.name === "BUST") {
         this.resultText.text ="BUST!";
@@ -336,6 +404,7 @@ export class BattleScene {
             view.eventMode = canEndTurn ? "static" : "none";
             view.cursor = canEndTurn ? "pointer" : "default";
         });
+        this.refreshModeToggle();
     }
     /** Resolves one enemy action and holds the input lock through rapid clicks. */
     endTurn() {
@@ -419,6 +488,7 @@ export class BattleScene {
     const intentValue = this.state.enemy.intent?.value ?? 0;
     this.sideIntentText.text = this.state.result ? "None" : `Attack ${intentValue}`;
     this.turnText.text =`Turn: ${this.state.run.turn}`;
+    this.demoRulesText.text = MODE_RULES[this.state.mode];
 
     }
     // HELPERS
@@ -467,7 +537,7 @@ export class BattleScene {
         [this.sideIntentTitle, this.feedbackText].forEach(text => { text.style.fill = this.theme.muted; });
         [this.demoRulesText, this.lastActionText].forEach(text => { text.style.fill = this.theme.secondary; });
         [this.enemyIntentText, this.sideIntentText].forEach(text => { text.style.fill = this.theme.attack; });
-        const preview = evaluateCards(this.state.hand.filter(card => card.selected));
+        const preview = evaluateCards(this.state.hand.filter(card => card.selected), this.state.mode);
         this.resultText.style.fill = this.getResultColor(preview.name);
         this.enemyBody.clear().circle(0, 0, 70).fill(this.theme.enemy);
         this.repaintButton(this.playButton, this.theme.playButton);
@@ -475,6 +545,7 @@ export class BattleScene {
             this.repaintButton(button, this.theme.button);
         });
         this.themeButton.labelText.text = this.themeName === "dark" ? "LIGHT MODE" : "DARK MODE";
+        this.refreshModeToggle();
         this.resize();
     }
 
@@ -691,13 +762,18 @@ export class BattleScene {
 
         // CARDS
 
+        const handGroupWidth = MODE_TOGGLE_WIDTH + 30 + this.handContainer.width;
         this.handContainer.x =
             gameCenterX -
-            this.handContainer.width / 2;
+            handGroupWidth / 2 + MODE_TOGGLE_WIDTH + 30;
 
 
         this.handContainer.y =
             height - 230;
+        this.modeToggle.position.set(
+            this.handContainer.x - MODE_TOGGLE_WIDTH - 30,
+            this.handContainer.y - 26
+        );
 
 
         // BUTTONS

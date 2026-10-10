@@ -12,7 +12,7 @@ export const PLAY_COST = 1;
  */
 export function validatePlay(state) {
     const cards = state.hand.filter(card => card.selected);
-    const evaluation = evaluateCards(cards);
+    const evaluation = evaluateCards(cards, state.mode);
     let reason = "";
     if ((state.phase && state.phase !== "player") || state.player.hp <= 0 || state.enemy.hp <= 0) {
         reason = "Card plays are unavailable outside your turn.";
@@ -24,7 +24,8 @@ export function validatePlay(state) {
     } else if (evaluation.name === "BUST") {
         reason = `Bust: ${evaluation.value} exceeds 21. Deselect a card.`;
     } else if (!evaluation.action) {
-        reason = "No combination. Try 21, a pair, or two hearts.";
+        reason = state.mode === "poker" ? "No poker hand. Try a pair or two or more hearts." :
+            "No blackjack. Make the total exactly 21.";
     } else if (state.player.energy < PLAY_COST) {
         reason = "Not enough energy. End your turn to restore energy.";
     }

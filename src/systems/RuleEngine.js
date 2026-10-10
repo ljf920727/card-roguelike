@@ -13,7 +13,7 @@ import {
  * @param {Object[]} cards Cards participating in the combination.
  * @returns {Object} Blackjack value, combination name and optional action.
  */
-export function evaluateCards(cards){
+export function evaluateCards(cards, mode = "blackjack"){
     const value =  calculateBlackjackValue(cards);
     if (cards.length === 0){
         return {
@@ -22,6 +22,9 @@ export function evaluateCards(cards){
             action: null,
         };
 
+    }
+    if (mode === "poker") {
+        return evaluatePokerCards(cards, value);
     }
     //BUST
     if (value > 21) {
@@ -44,7 +47,14 @@ export function evaluateCards(cards){
             },
         };
     }
+    return {
+        name: "None",
+        value,
+        action: null,
+    };
+}
 
+function evaluatePokerCards(cards, value) {
     //PAIR
     const pairResult =evaluatePair(cards);
     if (pairResult.triggered) {
