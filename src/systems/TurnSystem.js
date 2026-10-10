@@ -1,5 +1,7 @@
-/** Controls enemy resolution and restores the fixed demo hand each turn. */
+/** Controls enemy resolution and deals a fresh hand each turn. */
 import { applyEnemyAttack } from "./CombatSystem.js";
+import { discardHand, drawCards, HAND_SIZE } from "./DeckSystem.js";
+import { rollIntent } from "./RunSystem.js";
 
 /**
  * Locks player input and resolves one enemy action without starting a new turn.
@@ -7,14 +9,14 @@ import { applyEnemyAttack } from "./CombatSystem.js";
  * @returns {Object} Acceptance and actual enemy damage outcome.
  */
 export function beginEndTurn(state) {
-    if (state.phase !== "player" || state.player.hp <= 0 || state.enemy.hp <= 0) {
+    if (state.phase !== "player" || state.player.hp <= 0 || state.enemy.hp <= 0 || state.blackjack?.status === "playing") {
         return { allowed: false };
     }
     state.phase = "enemy";
     state.hand.forEach(card => { card.selected = false; });
     state.selection = { cards: [], value: 0, results: [], primaryAction: null };
     const outcome = applyEnemyAttack(state);
-    state.lastAction = `Goblin attacked: blocked ${outcome.blocked}; lost ${outcome.damage} HP.`;
+    state.lastAction = `${state.enemy.name} attacked: blocked ${outcome.blocked}; lost ${outcome.damage} HP.`;
     return { allowed: true, ...outcome };
 }
 
@@ -28,10 +30,11 @@ export function completeEndTurn(state) {
     state.run.turn += 1;
     state.player.shield = 0;
     state.player.energy = state.player.maxEnergy;
-    state.hand = [...state.hand, ...state.usedCards].sort((a, b) => a.id - b.id);
-    state.hand.forEach(card => { card.selected = false; });
-    state.usedCards = [];
+    state.blackjack = null;
+    discardHand(state);
+    drawCards(state, HAND_SIZE);
+    rollIntent(state.enemy);
     state.phase = "player";
-    state.lastAction += " Five demo cards and energy restored; shield cleared.";
+    state.lastAction += " New hand drawn; energy restored; shield cleared.";
     return true;
 }

@@ -1,28 +1,31 @@
-/** Creates and resets state for a single battle with a fixed five-card demo hand. */
+/** Creates and resets state for a random run of fights drawn from a shuffled deck. */
+import { createDeck, drawCards, shuffle, HAND_SIZE } from "./systems/DeckSystem.js";
+import { createEncounters, createEnemy, withArticle } from "./systems/RunSystem.js";
 
 /**
- * Creates an independent battle with fresh card objects and selection state.
- * @returns {Object} Initial player, enemy, turn and demo hand data.
+ * Creates an independent run with a shuffled deck, random fights and an opening hand.
+ * @returns {Object} Initial player, enemy, run, deck and hand data.
  */
 export function createInitialState() {
-    return {
+    const encounters = createEncounters();
+    const state = {
         phase: "player",
         mode: "blackjack",
         result: null,
-        lastAction: "Demo battle: select cards, then play a combination.",
+        lastAction: "",
         player: { hp: 80, maxHp: 100, shield: 0, energy: 3, maxEnergy: 3 },
-        enemy: { name: "Goblin", hp: 50, maxHp: 50, intent: { type: "attack", value: 8 } },
-        run: { floor: 1, turn: 1, gold: 0 },
-        hand: [
-            { id: 1, rank: "A", suit: "spades", selected: false },
-            { id: 2, rank: "K", suit: "diamonds", selected: false },
-            { id: 3, rank: "7", suit: "hearts", selected: false },
-            { id: 4, rank: "7", suit: "spades", selected: false },
-            { id: 5, rank: "3", suit: "hearts", selected: false },
-        ],
+        enemy: createEnemy(encounters[0]),
+        run: { floor: 1, turn: 1, gold: 0, encounters },
+        drawPile: shuffle(createDeck()),
+        discardPile: [],
+        hand: [],
         usedCards: [],
+        blackjack: null,
         selection: { cards: [], value: 0, results: [], primaryAction: null },
     };
+    state.lastAction = `A new run begins. ${withArticle(state.enemy.name)} blocks the way.`;
+    drawCards(state, HAND_SIZE);
+    return state;
 }
 
 /**
