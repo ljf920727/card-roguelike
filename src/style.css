@@ -932,7 +932,7 @@ button {
 .bj-label {
     color: var(--secondary);
     font-weight: 600;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
 }
 
 .bj-total {
@@ -1017,8 +1017,12 @@ button {
     }
 
     .bj-row {
-        grid-template-columns: 56px minmax(0, 1fr) 36px;
+        grid-template-columns: 72px minmax(0, 1fr) 32px;
         gap: 8px;
+    }
+
+    .bj-label {
+        font-size: 0.875rem;
     }
 
     .bj-card {
