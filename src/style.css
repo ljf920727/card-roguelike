@@ -559,7 +559,8 @@ button {
         height: 22px;
     }
 
-    .energy-label {
+    .energy-label,
+    #theme-button {
         display: none;
     }
 
@@ -622,6 +623,287 @@ button {
 @media (prefers-reduced-motion: reduce) {
     * {
         transition: none !important;
+    }
+}
+
+.menu {
+    position: fixed;
+    inset: 0;
+    z-index: 5;
+    display: grid;
+    place-items: center;
+    overflow: hidden auto;
+    padding: 32px var(--gutter);
+    background: var(--background);
+}
+
+.menu[hidden] {
+    display: none;
+}
+
+.menu-backdrop {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+.menu-backdrop::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 220vmax;
+    aspect-ratio: 1;
+    translate: -50% -50%;
+    background: repeating-conic-gradient(from 0deg, var(--felt) 0 9deg, var(--felt-edge) 9deg 18deg);
+    filter: blur(2px);
+    animation: menu-turn 140s linear infinite;
+}
+
+.menu-backdrop::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 42% 46% at 50% 50%, transparent 0 96%, color-mix(in srgb, var(--rim) 55%, transparent) 97% 98%, transparent 99%),
+        radial-gradient(ellipse at 50% 50%, transparent 30%, var(--background) 85%);
+}
+
+.menu-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    text-align: center;
+}
+
+.menu-fan {
+    position: relative;
+    width: 300px;
+    height: 150px;
+    animation: menu-float 6s ease-in-out infinite;
+}
+
+.menu-card {
+    --angle: 0deg;
+    position: absolute;
+    left: calc(50% - 38px);
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 76px;
+    height: 106px;
+    padding: 6px 8px;
+    border-radius: 9px;
+    background: #fbf8f0;
+    border: 1px solid #d9d2c0;
+    box-shadow: 0 8px 18px rgb(0 0 0 / 0.3);
+    font: 700 1.4rem/1 var(--display-font);
+    transform-origin: 50% 150%;
+    rotate: var(--angle);
+    transition: translate 200ms ease;
+}
+
+.menu-card i {
+    font-style: normal;
+    font-size: 1.1rem;
+}
+
+.menu-card:nth-child(1) { --angle: -28deg; }
+.menu-card:nth-child(2) { --angle: -14deg; }
+.menu-card:nth-child(4) { --angle: 14deg; }
+.menu-card:nth-child(5) { --angle: 28deg; }
+
+.menu-card.black {
+    color: #1b2421;
+}
+
+.menu-card.red {
+    color: #b8323c;
+}
+
+.menu-fan:hover .menu-card {
+    translate: 0 -6px;
+}
+
+.menu-title {
+    display: flex;
+    font-family: var(--display-font);
+    font-size: clamp(4rem, 14vw, 8rem);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    text-shadow: 0 6px 0 var(--felt-edge), 0 10px 24px rgb(0 0 0 / 0.35);
+}
+
+.menu-title span {
+    display: inline-block;
+    animation: menu-wave 3.2s ease-in-out infinite;
+}
+
+.menu-title span:nth-child(2) { animation-delay: 0.12s; }
+.menu-title span:nth-child(3) { animation-delay: 0.24s; }
+.menu-title span:nth-child(4) { animation-delay: 0.36s; }
+.menu-title span:nth-child(5) { animation-delay: 0.48s; }
+.menu-title span:nth-child(6) { animation-delay: 0.6s; }
+.menu-title span:nth-child(7) { animation-delay: 0.72s; }
+
+.menu-tagline {
+    color: var(--secondary);
+    font-size: 1.05rem;
+    font-weight: 500;
+}
+
+.menu-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    width: min(420px, 100%);
+    margin-top: 12px;
+}
+
+.menu-button {
+    --face: var(--button);
+    --lip: var(--felt-edge);
+    --label: var(--text);
+    padding: 14px 20px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--face);
+    color: var(--label);
+    box-shadow: 0 6px 0 var(--lip), 0 12px 20px rgb(0 0 0 / 0.25);
+    font-family: var(--display-font);
+    font-size: 1.25rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: translate 80ms ease, box-shadow 80ms ease, filter 150ms ease;
+}
+
+.menu-button:hover {
+    filter: brightness(1.06);
+}
+
+.menu-button:active {
+    translate: 0 4px;
+    box-shadow: 0 2px 0 var(--lip), 0 6px 12px rgb(0 0 0 / 0.25);
+}
+
+.menu-button.play {
+    --face: var(--attack);
+    --lip: color-mix(in srgb, var(--attack) 55%, black);
+    --label: var(--accent-text);
+    grid-column: 1 / -1;
+    font-size: 1.6rem;
+    padding-block: 18px;
+}
+
+.menu-button.new-run {
+    --face: var(--danger);
+    --lip: color-mix(in srgb, var(--danger) 55%, black);
+    --label: #fff;
+    grid-column: 1 / -1;
+}
+
+.menu-button.rules {
+    --face: var(--shield);
+    --lip: color-mix(in srgb, var(--shield) 55%, black);
+    --label: var(--accent-text);
+}
+
+.menu-button.theme {
+    --face: var(--panel);
+    --lip: color-mix(in srgb, var(--panel) 55%, black);
+}
+
+.menu-button[hidden] {
+    display: none;
+}
+
+.rules-dialog {
+    width: min(560px, calc(100% - 32px));
+    padding: 28px;
+    border: 1px solid var(--panel-line);
+    border-radius: 20px;
+    background: var(--panel);
+    color: var(--text);
+    box-shadow: 0 24px 60px rgb(0 0 0 / 0.45);
+}
+
+.rules-dialog::backdrop {
+    background: rgb(0 0 0 / 0.55);
+}
+
+.rules-dialog h2,
+.rules-dialog h3 {
+    margin: 0 0 6px;
+    font-family: var(--display-font);
+}
+
+.rules-dialog h2 {
+    font-size: 2rem;
+}
+
+.rules-dialog h3 {
+    margin-top: 18px;
+    font-size: 1.25rem;
+}
+
+.rules-dialog p {
+    color: var(--secondary);
+}
+
+.rules-columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0 24px;
+}
+
+.rules-dialog form {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 24px;
+}
+
+.rules-dialog .menu-button {
+    grid-column: auto;
+    padding: 12px 28px;
+    font-size: 1.15rem;
+}
+
+@keyframes menu-turn {
+    to { rotate: 360deg; }
+}
+
+@keyframes menu-float {
+    0%, 100% { translate: 0 0; }
+    50% { translate: 0 -8px; }
+}
+
+@keyframes menu-wave {
+    0%, 60%, 100% { translate: 0 0; rotate: 0deg; }
+    30% { translate: 0 -0.08em; rotate: -3deg; }
+}
+
+@media (max-width: 480px) {
+    .menu-fan {
+        scale: 0.8;
+        margin-block: -12px;
+    }
+
+    .menu-button {
+        font-size: 1.1rem;
+        padding: 12px 14px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .menu-backdrop::before,
+    .menu-fan,
+    .menu-title span {
+        animation: none;
     }
 }
 

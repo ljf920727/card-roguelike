@@ -5,6 +5,7 @@ import {gameState} from './gameState.js';
 import {
   BattleScene,
 } from './scenes/BattleScene.js';
+import { MenuScreen } from './scenes/MenuScreen.js';
 
 
 /**
@@ -29,9 +30,25 @@ async function main() {
   await app.init(options);
 
   document.getElementById('hand').appendChild(app.canvas);
-  new BattleScene(app, gameState);
+  const battle = new BattleScene(app, gameState);
+  new MenuScreen(battle).show();
 }
 
-main().catch((error) => {
+const SPLASH_MIN_MS = 600;
+
+function hideSplash() {
+  const remaining = SPLASH_MIN_MS - performance.now();
+  if (remaining > 0) {
+    setTimeout(hideSplash, remaining);
+    return;
+  }
+  document.body.classList.add('ready');
+  const splash = document.getElementById('splash');
+  splash?.addEventListener('transitionend', () => splash.remove(), { once: true });
+}
+
+
+main().then(hideSplash).catch((error) => {
   console.error('Failed to initialize the battle scene:', error);
+  hideSplash();
 });
