@@ -5,6 +5,10 @@
  * @param {Object} state Mutable battle state.
  * @param {Object|null} action Rule engine action to apply.
  */
+export function applyActions(state, actions) {
+    actions.forEach(action => applyAction(state, action));
+}
+
 export function applyAction(state,action) {
     if (!action) {
         return;

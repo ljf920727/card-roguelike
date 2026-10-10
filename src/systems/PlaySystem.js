@@ -1,6 +1,6 @@
 /** Validates player card selections independently of the battle UI. */
 import { evaluateCards } from "./RuleEngine.js";
-import { applyAction } from "./CombatSystem.js";
+import { applyActions } from "./CombatSystem.js";
 
 /** Energy paid by each successful combination in the demo battle. */
 export const PLAY_COST = 1;
@@ -12,20 +12,17 @@ export const PLAY_COST = 1;
  */
 export function validatePlay(state) {
     const cards = state.hand.filter(card => card.selected);
-    const evaluation = evaluateCards(cards, state.mode);
+    const evaluation = evaluateCards(cards);
     let reason = "";
     if ((state.phase && state.phase !== "player") || state.player.hp <= 0 || state.enemy.hp <= 0) {
         reason = "Card plays are unavailable outside your turn.";
+    } else if (state.mode !== "poker") {
+        reason = "Switch to poker to play cards from your hand.";
     } else if (state.selection.cards.some(card => !state.hand.includes(card)) ||
         new Set(cards.map(card => card.id)).size !== cards.length) {
         reason = "Selected cards are no longer available. Select your hand again.";
     } else if (!cards.length) {
-        reason = "Select cards to form a combination.";
-    } else if (evaluation.name === "BUST") {
-        reason = `Bust: ${evaluation.value} exceeds 21. Deselect a card.`;
-    } else if (!evaluation.action) {
-        reason = state.mode === "poker" ? "No poker hand. Try a pair or two or more hearts." :
-            "No blackjack. Make the total exactly 21.";
+        reason = "Select 1 to 5 cards to make a poker hand.";
     } else if (state.player.energy < PLAY_COST) {
         reason = "Not enough energy. End your turn to restore energy.";
     }
@@ -41,13 +38,9 @@ export function playSelectedCards(state) {
     const validation = validatePlay(state);
     if (!validation.allowed) return validation;
 
-    const action = validation.evaluation.action;
     const before = { enemyHp: state.enemy.hp, hp: state.player.hp, shield: state.player.shield };
-    applyAction(state, action);
-    const effect = action.type === "attack" ? `dealt ${before.enemyHp - state.enemy.hp} damage` :
-        action.type === "heal" ? `healed ${state.player.hp - before.hp} HP` :
-        `gained ${state.player.shield - before.shield} shield`;
-    state.lastAction = `${validation.evaluation.name}: ${effect}; spent ${validation.cost} energy.`;
+    applyActions(state, validation.evaluation.actions);
+    state.lastAction = `${validation.evaluation.label}: ${describeChanges(state, before)}; spent ${validation.cost} energy.`;
     state.player.energy -= validation.cost;
     const played = new Set(validation.cards);
     state.hand = state.hand.filter(card => !played.has(card));
@@ -55,4 +48,12 @@ export function playSelectedCards(state) {
     state.usedCards.push(...validation.cards);
     state.selection = { cards: [], value: 0, results: [], primaryAction: null };
     return validation;
+}
+
+export function describeChanges(state, before) {
+    const changes = [];
+    if (before.enemyHp !== state.enemy.hp) changes.push(`dealt ${before.enemyHp - state.enemy.hp} damage`);
+    if (before.shield !== state.player.shield) changes.push(`gained ${state.player.shield - before.shield} shield`);
+    if (before.hp !== state.player.hp) changes.push(`healed ${state.player.hp - before.hp} HP`);
+    return changes.join(", ") || "no effect";
 }
