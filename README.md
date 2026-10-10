@@ -1,6 +1,6 @@
-# Juniper — Single-Battle Prototype
+# Juniper
 
-A playing-card combat prototype built with JavaScript, Vite and PixiJS.
+A playing-card roguelike prototype built with JavaScript, Vite and PixiJS.
 
 [Play Juniper](https://ljf920727.github.io/card-roguelike/)
 
@@ -8,7 +8,7 @@ A playing-card combat prototype built with JavaScript, Vite and PixiJS.
 
 Use Node.js 24 with npm, matching the deployment workflow. Vite also supports Node.js 20.x from 20.19, or Node.js 22.12 and newer. Install dependencies with `npm ci`, then run `npm run dev` and open the local URL printed by Vite. `npm run build` creates a production build in `dist`; `npm run preview` serves it locally for verification.
 
-Use **LIGHT MODE / DARK MODE** at the top right to switch appearance. The choice is saved locally and survives battle restarts and page reloads.
+Use **Light mode / Dark mode** at the top right to switch appearance. The choice is saved locally and survives battle restarts and page reloads.
 
 ## Deploy to GitHub Pages
 
@@ -25,18 +25,37 @@ npm run preview -- --base=/card-roguelike/
 
 Open the preview URL ending in `/card-roguelike/`, check that the game and tab icon load, then select A♠ + K♦ and play once. After deployment, repeat these checks using the URL shown by the `github-pages` environment in Actions.
 
-## Play the demo
+## Play a run
 
-Pick a combo type with the **BLACKJACK / POKER** toggle next to your hand, click cards to select or deselect them, inspect the combination and cost, then click **PLAY CARDS**. Each valid play costs 1 energy and removes those cards for the rest of the turn. Invalid combinations and Bust cost nothing. You can switch combo type at any time during your turn.
+The game opens on a main menu. **Play** starts a run, **How to play** shows the rules, and the theme button switches between light and dark. During a run, **Menu** in the top bar or the Esc key brings the menu back with **Continue run** and **New run**.
 
-- **Blackjack:** any total of 21 attacks for 25 damage. Aces count as 11 or 1; J/Q/K count as 10. Over 21 is Bust.
-- **Poker:** exactly two matching ranks grant 12 shield. Two or more hearts heal 4 HP per card, up to maximum HP. A pair takes priority over hearts.
+Each run is four fights against randomly chosen enemies, and the last one is a boss (Ogre or Witch). You play from a shuffled 52-card deck and draw 5 cards each turn.
 
-**END TURN** resolves Goblin's displayed attack of 8. Shield absorbs damage first. If the player survives, the next turn clears remaining shield, restores 3 energy, and returns the same five demo cards (A♠, K♦, 7♥, 7♠, 3♥). Controls briefly lock during enemy resolution so a double click cannot end two turns.
+You have 3 energy per turn. Pick a combo type with the **Blackjack / Poker** toggle, then spend energy in that mode. You can't switch modes or end your turn in the middle of a blackjack round.
 
-Enemy HP 0 means victory; player HP 0 means defeat. Battle controls stop immediately. **RESTART** is available at any time and resets HP to 80/100, enemy HP to 50/50, energy to 3/3, turn to 1 and the demo hand.
+- **Blackjack:** **Deal** (1 energy) gives you 2 cards from the draw pile and the enemy 2, one face down. **Hit** takes another card, **Stand** stops; the enemy then draws until it reaches 17. Aces count as 11 or 1; J/Q/K count as 10. Win and the enemy takes damage equal to your total (a natural blackjack, Ace plus a 10-value card, deals 30). Lose or bust and the enemy hits you for its attack value, with shield absorbing first. A tie (push) refunds the energy.
+- **Poker:** select 1 to 5 cards from your hand and click **Play cards** (1 energy). The best poker hand among them is played:
 
-This demo has one encounter and a fixed five-card pool. A real shuffled deck, Jokers, encounter progression, rewards and deckbuilding are future work. Battle visuals use PixiJS drawing code and system fonts; the browser tab icon is a bundled PNG. No runtime requests to external asset services are needed.
+  | Hand | Effect |
+  |---|---|
+  | Royal flush | 75 damage |
+  | Straight flush | 50 damage, heal 15 |
+  | Four of a kind | 40 damage |
+  | Full house | 25 damage, 12 shield |
+  | Flush | heal 15 |
+  | Straight | 25 damage (A-2-3-4-5 counts; no wrap-around) |
+  | Three of a kind | 18 damage |
+  | Two pair | 18 shield |
+  | Pair | 10 shield |
+  | High card | half the highest card's value, rounded up |
+
+Your turn ends on its own about a second after you run out of cards or energy (unless a blackjack round is still in progress); controls lock during that pause. You can also end it early with **End turn**.
+
+**End turn** resolves the enemy's displayed attack. Shield absorbs damage first. If you survive, your remaining hand is discarded, you draw 5 new cards, energy refills to 3, shield clears and the enemy picks a new attack value from its range. When the draw pile runs out, the discard pile is reshuffled into it. Controls briefly lock during enemy resolution so a double click cannot end two turns.
+
+Defeating an enemy shows **Next fight**. Your HP carries over and you recover up to 10 HP before the next enemy. Beating the boss completes the run; reaching 0 HP ends it. Either way the main button becomes **New run**, which starts a fresh random run. **New run** in the side panel abandons the current run at any time.
+
+Jokers, rewards and deckbuilding are future work. Battle visuals use PixiJS drawing code and system fonts; the browser tab icon is a bundled PNG. No runtime requests to external asset services are needed.
 
 ## What Each File Does
 
@@ -56,7 +75,8 @@ Examples:
 - Battle phase
 - Victory or defeat result
 - Turn
-- Demo hand and used-card counts
+- Draw pile, discard pile and played cards
+- Run progress and the random fight list
 - Current hand
 - Selection preview and latest action feedback
 
@@ -118,28 +138,25 @@ suit
 selected
 ```
 
-unless the team agrees to update the rest of the project. Card IDs identify the fixed demo cards when the hand is restored; selection and play validation share these card objects.
+unless the team agrees to update the rest of the project. Card IDs are unique across the 52-card deck; selection and play validation share these card objects.
 
 ---
 
 ### `src/scenes/BattleScene.js`
 
-**Purpose:** Builds and displays the main battle screen.
+**Purpose:** Connects the battle screen to the game state.
 
-It currently contains:
+The interface itself is HTML in `index.html`, laid out with flexbox and grid in `src/style.css`. `BattleScene` fills in its text, wires up the buttons and keeps it in sync with the state:
 
-- Player HUD
-- Enemy display
-- Enemy HP
-- Enemy intent
-- Demo hand counts and rules
-- Selected card preview
-- Player hand
-- Play Cards button
-- End Turn button
-- Restart button and battle result feedback
-- Light / dark mode button
-- Battle layout
+- Player HUD (HP bar, shield, energy chips)
+- Enemy token, HP ring and intent
+- Run progress, deck counts and rules for the active combo type
+- Blackjack / Poker combo type toggle
+- Selected card preview and feedback
+- Play cards / Next fight / New run and End turn buttons
+- Light / dark mode, published as CSS custom properties from `themes.js`
+
+Only the player hand is drawn with PixiJS. `resize()` scales the cards to the width of the `#hand` element and sizes the canvas to fit.
 
 Selection previews come from `RuleEngine`. Play validation and resource consumption are delegated to `PlaySystem`; enemy turns are delegated to `TurnSystem`. Keep combination detection and combat calculations in those systems.
 
@@ -163,7 +180,7 @@ can work here.
 
 ### `src/systems/BlackjackSystem.js`
 
-**Purpose:** Calculates Blackjack card values.
+**Purpose:** Calculates Blackjack card values and runs blackjack rounds.
 
 It handles:
 
@@ -171,6 +188,8 @@ It handles:
 - J / Q / K = 10
 - Ace = 11 or 1
 - Blackjack total
+- `dealRound()`, `hit()` and `stand()` against the enemy dealer, who draws to 17
+- Resolving a round: damage on a win, the enemy's attack on a loss or bust, an energy refund on a push
 
 Example:
 
@@ -188,78 +207,19 @@ This file should mainly be changed by team members working on **card rules**.
 
 ### `src/systems/RuleEngine.js`
 
-**Purpose:** Determines which card combination the player has created.
+**Purpose:** Finds the best poker hand in the selected cards and returns its combat actions.
 
-Current examples:
-
-```text
-BLACKJACK
-PAIR
-HEART COMBO
-```
-
-The Rule Engine connects card combinations to combat actions.
-
-Example:
-
-```text
-BLACKJACK
-→ attack
-
-PAIR
-→ defend
-
-HEART COMBO
-→ heal
-```
-
-adding new card combinations will usually need to update this file.
+A hand can grant more than one action (a full house deals damage and gives shield), so evaluations return an `actions` list that `PlaySystem` applies in order through `CombatSystem.applyActions()`.
 
 ✅ Good place for gameplay-rule development.
 
-⚠️ Try to keep individual rules in separate files instead of putting all rule logic directly into `RuleEngine.js`.
+⚠️ Keep hand detection in `src/systems/rules/` rather than in `RuleEngine.js`.
 
 ---
 
-### `src/systems/rules/PairRule.js`
+### `src/systems/rules/PokerRule.js`
 
-**Purpose:** Detects a Pair.
-
-Example:
-
-```text
-7♥ + 7♠
-→ PAIR
-→ Shield
-```
-
-Team members can change:
-
-- Pair requirements
-- Shield amount
-- Pair behaviour
-
-✅ Safe for gameplay balancing.
-
----
-
-### `src/systems/rules/HeartHealRule.js`
-
-**Purpose:** Detects the current Heart healing combination.
-
-Example:
-
-```text
-7♥ + 3♥
-→ HEART COMBO
-→ Heal
-```
-
-Team members can change:
-
-- Number of Hearts required
-- Healing amount
-- Healing formula
+**Purpose:** Detects all ten poker hands, from high card to royal flush, in 1 to 5 cards, and defines each hand's effect in `POKER_HANDS`. The side panel's hand list is generated from `POKER_HANDS`, so changing an effect there updates the UI too.
 
 ✅ Safe for gameplay balancing.
 
@@ -321,11 +281,29 @@ Keep play permission and resource consumption here; keep combination detection i
 
 ### `src/systems/TurnSystem.js`
 
-**Purpose:** Resolves the enemy turn and restores the fixed demo hand.
+**Purpose:** Resolves the enemy turn and deals the next hand.
 
-`beginEndTurn()` enters the enemy phase and delegates shield-first damage to `CombatSystem`. `completeEndTurn()` advances a surviving player's turn, clears shield, restores energy and returns the same five cards. Victory / defeat detection belongs to `CombatSystem`.
+`beginEndTurn()` enters the enemy phase and delegates shield-first damage to `CombatSystem`. `completeEndTurn()` advances a surviving player's turn, clears shield, restores energy, discards the hand, draws 5 new cards and rolls the enemy's next attack. Victory / defeat detection belongs to `CombatSystem`.
+
+---
+
+### `src/systems/DeckSystem.js`
+
+**Purpose:** Creates and shuffles the 52-card deck, draws cards (reshuffling the discard pile when the draw pile is empty) and discards the hand at the end of a turn.
+
+---
+
+### `src/systems/RunSystem.js`
+
+**Purpose:** Builds a run's random fight list (three enemies, then a boss), creates enemies, rolls their attack intent and moves the player to the next fight after a victory.
 
 `BattleScene` handles the short input-lock timer and cancels it on restart; turn calculations remain here.
+
+---
+
+### `src/scenes/MenuScreen.js`
+
+**Purpose:** Shows the main menu over the battle and routes Play / Continue run, New run, How to play and the theme toggle to `BattleScene`. While the menu is open the battle is made inert, so it can't be clicked or tabbed into.
 
 ---
 
@@ -335,10 +313,10 @@ Keep play permission and resource consumption here; keep combination detection i
 
 It:
 
-- Creates the PixiJS application
-- Adds the canvas to the webpage
-- Creates `BattleScene`
-- Handles window resizing
+- Creates the PixiJS application for the card canvas
+- Adds the canvas to the `#hand` element
+- Creates `BattleScene` and opens the `MenuScreen`
+- Hides the loading splash once the scene is ready
 
 This is mainly a startup file.
 
@@ -356,14 +334,9 @@ Theme preference is separate from battle data. `BattleScene` repaints the views;
 
 ### `src/style.css`
 
-**Purpose:** Controls the webpage around the PixiJS canvas.
+**Purpose:** Lays out and styles the battle interface.
 
-can edit:
-
-- Page background
-- Canvas positioning
-- Browser layout
-- Basic HTML styling
+It uses flexbox and grid, so the layout adapts to the screen: the side panel moves below the table under 900px wide, and the hand row stacks with a horizontal combo toggle under 640px. Colors are CSS custom properties set from `themes.js`.
 
 ✅ Safe for UI / presentation changes.
 
@@ -371,7 +344,7 @@ can edit:
 
 ### `index.html`, `public/card-icon.png` and `.github/workflows/deploy-pages.yml`
 
-`index.html` hosts the game container and references the browser tab icon in `public/card-icon.png`. The deployment workflow builds the Vite site with the Pages base path and publishes only `dist`.
+`index.html` holds the battle interface markup, the loading splash (styled inline so it shows before the main stylesheet loads) and references the browser tab icon in `public/card-icon.png`. The deployment workflow builds the Vite site with the Pages base path and publishes only `dist`.
 
 ---
 
@@ -456,48 +429,26 @@ Possible tasks:
 
 ### Deck / Card Logic
 
-A real deck system has not been implemented. The current demo restores the same five cards instead of drawing from a shuffled deck.
-
-Future files could include:
-
-```text
-src/systems/DeckSystem.js
-```
-
-This system could handle:
-
-- Creating the full playing-card deck, with deck size and Joker behavior agreed by the team
-- Shuffling
-- Drawing cards
-- Discarding cards
-- Reshuffling the discard pile
-
+`src/systems/DeckSystem.js` handles the 52-card deck: creating, shuffling, drawing, discarding and reshuffling the discard pile. Jokers are not in the deck yet; their behavior still needs to be agreed by the team.
 
 ---
 
 ### Turn System
 
-The current `End Turn` button delegates enemy damage and fixed-hand restoration to `src/systems/TurnSystem.js`.
-
-The current system is:
-
-```text
-src/systems/TurnSystem.js
-```
-
-It handles enemy resolution and resource restoration:
+The `End turn` button delegates enemy damage and the next draw to `src/systems/TurnSystem.js`:
 
 ```text
 Player plays cards
 → Enemy acts
 → Shield updates
-→ Used demo cards returned
-→ Same five demo cards restored
+→ Hand and played cards discarded
+→ 5 new cards drawn
 → Energy restored
+→ Enemy rolls its next attack
 → Next turn
 ```
 
-Real deck drawing and encounter progression remain future work.
+Rewards and deckbuilding between fights remain future work.
 
 ---
 
