@@ -5,8 +5,11 @@ import { getJoker, jokerSlots, sellPrice } from "../systems/JokerSystem.js";
 import { getCurse } from "../systems/CurseSystem.js";
 import { chooseCurse, chooseReward, eligibleCards, needsCard, skipCurse, skipReward, SKIP_CHIPS } from "../systems/RewardSystem.js";
 import { buyItem, canAfford, leaveShop, sellJoker, shopNeedsJokerSlot, POTION_HEAL } from "../systems/ShopSystem.js";
-import { FLOORS, getFloor } from "../systems/RunSystem.js";
+import { FLOORS } from "../systems/RunSystem.js";
 import { isTutorialActive } from "../systems/TutorialSystem.js";
+import { getRunMilestone } from "./runMilestones.js";
+import { getShopLesson } from "./tutorialLessons.js";
+import "./runProgress.css";
 
 const PICK_PROMPTS = {
     remove: "Choose a card to remove",
@@ -42,17 +45,77 @@ export class RunScreen {
 
     /** Opens, updates or closes the dialog to match the run state. */
     sync() {
+        if (this.run !== this.state.run) {
+            this.run = this.state.run;
+            this.seenMilestones = new Set();
+        }
         const { reward, curseChoice, shop } = this.state;
-        const needed = (reward && !reward.done) || (curseChoice && !curseChoice.done) || Boolean(shop);
+        const milestone = getRunMilestone(this.state, this.seenMilestones);
+        const needed = milestone || (reward && !reward.done) || (curseChoice && !curseChoice.done) || Boolean(shop);
         if (!needed || !document.getElementById("menu").hidden) {
             this.picking = null;
             if (this.dialog.open) this.dialog.close();
             return;
         }
-        if (!reward?.done) this.renderReward();
+        this.dialog.dataset.milestone = milestone?.kind ?? "";
+        const view = milestone?.key ?? (this.picking ? "picker" : !reward?.done ? "reward" :
+            curseChoice && !curseChoice.done ? "curse" : "shop");
+        if (milestone) this.renderMilestone(milestone);
+        else if (!reward?.done) this.renderReward();
         else if (curseChoice && !curseChoice.done) this.renderCurses();
         else this.renderShop();
         if (!this.dialog.open) this.dialog.showModal();
+        if (this.view !== view) this.dialog.querySelector("button:not(:disabled)")?.focus();
+        this.view = view;
+    }
+
+    notes(title, body, facts) {
+        const section = document.createElement("section");
+        section.className = "run-notes";
+        const heading = document.createElement("h3");
+        heading.textContent = title;
+        const text = document.createElement("p");
+        text.textContent = body;
+        const list = document.createElement("ol");
+        facts.forEach(fact => {
+            const item = document.createElement("li");
+            item.textContent = fact;
+            list.append(item);
+        });
+        section.append(heading, text, list);
+        return section;
+    }
+
+    renderMilestone(milestone) {
+        this.title.textContent = milestone.title;
+        this.subtitle.textContent = milestone.body;
+        this.message.textContent = "";
+        const crest = document.createElement("div");
+        crest.className = "milestone-crest";
+        crest.setAttribute("aria-hidden", "true");
+        crest.textContent = String(this.state.run.floor).padStart(2, "0");
+        const label = document.createElement("p");
+        label.className = "milestone-label";
+        label.textContent = milestone.label;
+        const notes = this.notes("", "", milestone.facts);
+        notes.classList.add("milestone-notes");
+        if (milestone.kind === "clear") {
+            const confetti = document.createElement("div");
+            confetti.className = "milestone-confetti";
+            confetti.setAttribute("aria-hidden", "true");
+            for (let i = 0; i < 18; i++) {
+                const chip = document.createElement("i");
+                chip.style.setProperty("--i", i);
+                confetti.append(chip);
+            }
+            crest.append(confetti);
+        }
+        this.body.replaceChildren(crest, label, notes);
+        const button = this.button(milestone.action, "button primary", () => {
+            this.seenMilestones.add(milestone.key);
+            this.onChange();
+        });
+        this.footer.replaceChildren(button);
     }
 
     changed(result) {
@@ -95,7 +158,7 @@ export class RunScreen {
             this.renderPicker();
             return;
         }
-        this.title.textContent = `${this.state.enemy.name} defeated`;
+        this.title.textContent = `${this.state.enemy.boss ? "Boss reward: " : ""}${this.state.enemy.name} defeated`;
         this.subtitle.textContent = `Choose one reward, or skip it for ${SKIP_CHIPS} chips.` +
             (isTutorialActive(this.state) ? " Rewards last the whole run: thin your deck, upgrade cards, or take a Joker." : "");
         const grid = document.createElement("div");
@@ -186,7 +249,7 @@ export class RunScreen {
         }
         const state = this.state;
         const nextFloor = FLOORS[state.run.floor];
-        this.title.textContent = `${getFloor(state).name} cleared`;
+        this.title.textContent = `Floor ${state.run.floor} / Shop`;
         this.subtitle.textContent = `Shop: you have ${state.run.gold} chips. Win blackjack rounds to earn more.`;
         const grid = document.createElement("div");
         grid.className = "offers";
@@ -226,9 +289,9 @@ export class RunScreen {
                 () => this.changed({ ok: sellJoker(state, index) })));
             owned.append(row);
         });
-        this.body.replaceChildren(grid, owned);
-        this.footer.replaceChildren(this.button(`Climb to ${nextFloor?.name ?? "the next floor"}`, "button primary",
+        const lesson = getShopLesson(state);
+        this.body.replaceChildren(...(lesson ? [this.notes(lesson.title, lesson.body, lesson.facts)] : []), grid, owned);
+        this.footer.replaceChildren(this.button(`Climb to floor ${state.run.floor + 1}: ${nextFloor?.name ?? "the next floor"}`, "button primary",
             () => this.changed({ ok: leaveShop(state) })));
     }
 }
-

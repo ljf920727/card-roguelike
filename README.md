@@ -29,7 +29,7 @@ Open the preview URL ending in `/card-roguelike/`, check that the game and tab i
 
 ### First-time tutorial
 
-**Play tutorial** teaches the loop in six short steps against a Goblin, by doing rather than reading: read the enemy's move, play a pair, mulligan, end the turn (shield blocks, then decays), and play a blackjack round where you can double down. Then the guidance steps back and you finish the fight your own way. Only the opening hand, the first blackjack cards and the Goblin's first two moves are scripted; every effect uses the normal rules. Completion is saved locally when you reach the second fight. **Replay tutorial** in Menu starts it again; **Hints** toggles optional combat tips. See the [tutorial spec](docs/tutorial-spec.md).
+**Play tutorial** teaches the loop in six short steps against a Goblin, by doing rather than reading: read the enemy's move, play a pair, mulligan, end the turn (shield blocks, then decays), and play a blackjack round where you can double down. Blackjack guidance explains that winning hands earn chips for shop perks. Then the guidance steps back and you finish the fight your own way. Only the opening hand, the first blackjack cards and the Goblin's first two moves are scripted; every effect uses the normal rules. Combat tutorial completion is saved locally when you reach the second fight. Floor and boss announcements explain the climb, and the first shop adds contextual tutorial guidance even after combat lessons finish. **Replay tutorial** in Menu starts it again; **Hints** toggles optional combat tips. See the [tutorial spec](docs/tutorial-spec.md).
 
 ### Normal runs
 
@@ -37,11 +37,13 @@ The game opens on a main menu. **Play** starts a run, **How to play** shows the 
 
 A run climbs the five floors of a casino. Each floor is two fights against enemies from that floor's pool, then its boss. From floor 2, each floor adds a house rule (the dealer hits soft 17, pushes don't refund, shield caps at 25). You start at 100 HP, recover up to 10 HP after a fight and 30 after a boss. Beating the floor 5 boss clears the casino.
 
+Each floor opens with an arrival announcement showing its boss and house rule. A progress strip tracks both fights and the boss. Bosses get a dedicated entrance; defeating one celebrates the floor clear before rewards, the optional Curse and the shop. Leaving the shop announces the next floor. The final boss celebrates clearing the casino instead. Celebration particles respect reduced-motion preferences.
+
 You have 3 energy per turn and a hand of 5 cards from your deck. Unplayed cards stay in your hand; at the start of each turn it tops back up to 5.
 
 - **Poker** (2 energy): select 1 to 5 cards and click **Play cards**. The best poker hand among them is played (table below), and only the played cards are discarded. One poker play fits in a turn, leaving 1 energy for a mulligan or a blackjack round.
 - **Mulligan** (1 energy): select up to 3 cards and swap them for new ones.
-- **Blackjack** (1 energy per Deal): you get 2 cards from your deck, the enemy dealer gets 2, one face down. Hit or stand; the dealer draws to 17. Win: damage equal to your total (a natural deals 30) plus chips (5, or 15 for a natural). Lose or bust: the enemy hits you for its average attack. A push refunds the energy. With your first two cards you can **Double down** (1 more energy, exactly one more card, double the result) or **Surrender** (take half the loss).
+- **Blackjack** (1 energy per Deal): you get 2 cards from your deck; the enemy dealer gets 2 from its own independent 52-card deck, one face down. Each side reshuffles only its own discards; each new enemy starts with a fresh dealer deck. Your jinxes and upgrades never enter the dealer's deck. Hit or stand; the dealer draws to 17. Win: damage equal to your total (a natural deals 30) plus chips (5, or 15 for a natural). Lose or bust: the enemy hits you for its average attack. A push refunds the energy. With your first two cards you can **Double down** (1 more energy, exactly one more card, double the result) or **Surrender** (take half the loss).
 
   | Hand | Effect |
   |---|---|
@@ -58,7 +60,7 @@ You have 3 energy per turn and a hand of 5 cards from your deck. Unplayed cards 
 
 **Shield** lasts one turn, then decays to half for one more turn, then vanishes. It caps at 40 and clears between enemies. Attacks spend the decaying part first.
 
-**Enemy intents.** Each enemy telegraphs its next move: **attack**; **pierce** (ignores shield); **shatter** (destroys all shield, then a light hit); **multi-hit** (three hits, each blocked separately); **charge** (nothing now, a heavy hit next turn); **jinx** (a light hit and a jinx card shuffled into your deck). Jinx cards can't be played in poker and count as 5 in blackjack; mulligan them away or remove them with a reward.
+**Enemy intents.** Each enemy telegraphs its next move: **attack**; **pierce** (ignores shield); **shatter** (destroys all shield, then a light hit); **multi-hit** (three hits, each blocked separately); **charge** (nothing now, a heavy hit next turn); **jinx** (a light hit and a jinx card shuffled into your deck). Jinx cards can't be played in poker and count as 0 in blackjack, wasting a draw without helping your total. Mulligan them away or remove them with a reward or in the shop.
 
 **Rewards.** After each fight, choose one of three: a deck edit (remove, repaint or raise a card), a card upgrade (gild: +5 damage when the card is in a played poker hand or a winning blackjack hand), or a Joker. Skipping pays 5 chips.
 

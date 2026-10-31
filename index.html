@@ -110,6 +110,7 @@
     <div class="layout">
       <main class="table" id="table">
         <p class="log" id="last-action" aria-live="polite"></p>
+        <div class="floor-route" id="floor-route" role="group" aria-label="Floor progress"></div>
 
         <section class="enemy" aria-label="Enemy">
           <div class="enemy-token" id="enemy-token">
@@ -118,6 +119,7 @@
             </span>
           </div>
           <div class="enemy-info">
+            <p class="boss-label" id="boss-label" hidden></p>
             <h2 class="enemy-name" id="enemy-name"></h2>
             <div class="enemy-health">
               <div class="hearts enemy-hearts" id="enemy-hearts" role="img"></div>
@@ -255,7 +257,7 @@
         </section>
         <section>
           <h3>Blackjack</h3>
-          <p>Deal (1 energy) draws from your deck; the enemy dealer draws to 17. Win: damage equal to your total (natural blackjack: 30) plus chips. Lose or bust: the enemy hits you. A push refunds the energy.</p>
+          <p>Deal (1 energy) draws from your deck; the enemy dealer has its own deck and draws to 17. Jinx cards count as 0. Win: damage equal to your total (natural blackjack: 30) plus chips to spend on perks in the shop. Lose or bust: the enemy hits you. A push refunds the energy.</p>
           <p>With your first two cards you can double down (1 more energy, one card, double the result) or surrender (take half the loss).</p>
         </section>
       </div>

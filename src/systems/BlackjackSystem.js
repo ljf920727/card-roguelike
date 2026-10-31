@@ -5,8 +5,8 @@ import { advanceTutorial, tutorialAllows } from "./TutorialSystem.js";
 import { hasJoker } from "./JokerSystem.js";
 import { hasCurse } from "./CurseSystem.js";
 
-/** A jinx card clogs a blackjack hand with an awkward 5. */
-export const JINX_VALUE = 5;
+/** A jinx wastes a draw without adding to the blackjack total. */
+export const JINX_VALUE = 0;
 
 export function getCardValue(rank) {
     if (rank === "J" ||rank === "Q" ||rank === "K"){
@@ -84,7 +84,7 @@ export function dealRound(state) {
     if (!canDeal(state)) return false;
     state.player.energy -= DEAL_COST;
     const player = [drawCard(state), drawCard(state)];
-    const dealer = [drawCard(state), drawCard(state)];
+    const dealer = [drawCard(state.enemy.deck), drawCard(state.enemy.deck)];
     state.blackjack = { player, dealer, status: "playing", outcome: null, doubled: false };
     advanceTutorial(state, "deal");
     if (isNatural(player)) finishRound(state);
@@ -142,7 +142,8 @@ export function surrender(state) {
     const hitResult = damagePlayer(state, penalty);
     Object.assign(round, { status: "done", outcome: "surrender", blocked: hitResult.blocked, damage: hitResult.damage,
         playerTotal: calculateBlackjackValue(round.player), dealerTotal: calculateBlackjackValue(round.dealer) });
-    state.discardPile.push(...round.player, ...round.dealer);
+    state.discardPile.push(...round.player);
+    state.enemy.deck.discardPile.push(...round.dealer);
     state.lastAction = `You surrendered: blocked ${hitResult.blocked}, lost ${hitResult.damage} HP.`;
     advanceTutorial(state, "round-done");
     return true;
@@ -152,7 +153,7 @@ export function surrender(state) {
 function finishRound(state) {
     const { dealer, player } = state.blackjack;
     if (!isNatural(player)) {
-        while (dealerShouldHit(state, dealer)) dealer.push(drawCard(state));
+        while (dealerShouldHit(state, dealer)) dealer.push(drawCard(state.enemy.deck));
     }
     resolveRound(state);
 }
@@ -185,7 +186,8 @@ function resolveRound(state) {
     advanceTutorial(state, "round-done");
     round.playerTotal = playerTotal;
     round.dealerTotal = dealerTotal;
-    state.discardPile.push(...round.player, ...round.dealer);
+    state.discardPile.push(...round.player);
+    state.enemy.deck.discardPile.push(...round.dealer);
 
     if (outcome === "win" || outcome === "natural") {
         const highRoller = hasJoker(state, "high-roller");

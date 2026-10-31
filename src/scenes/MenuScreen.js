@@ -60,6 +60,7 @@ export class MenuScreen {
         this.menu.hidden = true;
         this.gameRegions.forEach(region => { region.inert = false; });
         this.battle.refreshBattle();
+        if (this.battle.runScreen.isOpen()) return;
         if (this.battle.state.tutorial && this.battle.state.tutorial.step !== "complete") {
             return;
         }
