@@ -35,6 +35,8 @@ export class RunScreen {
         this.body = document.getElementById("run-body");
         this.footer = document.getElementById("run-footer");
         this.message = document.getElementById("run-message");
+        this.wallet = document.getElementById("shop-wallet");
+        this.chips = document.getElementById("shop-chips");
         this.picking = null;
         this.dialog.addEventListener("cancel", event => event.preventDefault());
     }
@@ -51,6 +53,8 @@ export class RunScreen {
         }
         const { reward, curseChoice, shop } = this.state;
         const milestone = getRunMilestone(this.state, this.seenMilestones);
+        this.wallet.hidden = !shop || Boolean(milestone);
+        this.chips.textContent = this.state.run.gold.toLocaleString();
         const needed = milestone || (reward && !reward.done) || (curseChoice && !curseChoice.done) || Boolean(shop);
         if (!needed || !document.getElementById("menu").hidden) {
             this.picking = null;
@@ -250,7 +254,7 @@ export class RunScreen {
         const state = this.state;
         const nextFloor = FLOORS[state.run.floor];
         this.title.textContent = `Floor ${state.run.floor} / Shop`;
-        this.subtitle.textContent = `Shop: you have ${state.run.gold} chips. Win blackjack rounds to earn more.`;
+        this.subtitle.textContent = "Trade chips for perks. Win blackjack hands to earn more.";
         const grid = document.createElement("div");
         grid.className = "offers";
         state.shop.items.forEach((item, index) => {

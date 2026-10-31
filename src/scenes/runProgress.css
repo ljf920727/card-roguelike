@@ -20,6 +20,24 @@
 
 .floor-route .cleared { color: var(--heal); border-color: var(--heal); }
 
+.shop-wallet:not([hidden]) {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 18px;
+    padding: 14px 16px;
+    border: 1px solid var(--rim);
+    border-radius: 12px;
+    background: var(--panel);
+    box-shadow: 0 6px 0 var(--panel);
+}
+
+.shop-wallet .chip-balance strong { font-size: 2rem; }
+.wallet-note { margin-left: auto; color: var(--secondary); font-size: 0.8rem; text-align: right; }
+
 .boss-label, .milestone-label {
     color: var(--attack);
     font-size: 0.75rem;

@@ -94,7 +94,10 @@
           </svg>
           <span class="shield-value"><span id="shield-text"></span><span class="shield-cap" id="shield-cap"></span></span>
         </div>
-        <span class="stat chips-badge" id="chips-text" title="Casino chips: won at blackjack, spent at the shop after each floor's boss."></span>
+        <div class="stat chips-badge" role="status" aria-live="polite" aria-atomic="true" title="Casino chips: won at blackjack, spent at the shop after each floor's boss.">
+          <span class="casino-chip" aria-hidden="true"></span>
+          <span class="chip-balance"><span class="chip-label">Chips</span><strong id="chips-text">0</strong></span>
+        </div>
         <div class="stat energy">
           <span class="energy-label">Energy</span>
           <div class="chips" id="energy-chips" role="img"></div>
@@ -270,6 +273,11 @@
     <dialog class="rules-dialog run-dialog" id="run-dialog" aria-labelledby="run-title" aria-describedby="run-subtitle">
       <h2 id="run-title"></h2>
       <p id="run-subtitle"></p>
+      <div class="shop-wallet" id="shop-wallet" role="status" aria-live="polite" aria-atomic="true" hidden>
+        <span class="casino-chip" aria-hidden="true"></span>
+        <span class="chip-balance"><span class="chip-label">Your chips</span><strong id="shop-chips">0</strong></span>
+        <span class="wallet-note">Spend on perks</span>
+      </div>
       <div class="run-body" id="run-body"></div>
       <p class="run-message" id="run-message" role="alert"></p>
       <div class="run-footer" id="run-footer"></div>

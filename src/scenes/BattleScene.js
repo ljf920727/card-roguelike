@@ -515,7 +515,7 @@ export class BattleScene {
         this.ui["shield-cap"].textContent = ` / ${cap}`;
         this.ui["shield-stat"].setAttribute("aria-label", `Shield ${shield} of ${cap}`);
         this.ui["shield-stat"].title = "Shield lasts one turn, then decays to half for one more turn, then vanishes. It clears between enemies. The faded part vanishes at the start of your next turn.";
-        this.ui["chips-text"].textContent = `Chips ${this.state.run.gold}`;
+        this.ui["chips-text"].textContent = this.state.run.gold.toLocaleString();
         this.ui["shield-stat"].classList.toggle("active", shield > 0);
         const chips = this.ui["energy-chips"];
         chips.replaceChildren(...Array.from({ length: maxEnergy }, (_, i) => {

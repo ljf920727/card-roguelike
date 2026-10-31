@@ -1294,12 +1294,46 @@ button {
 }
 
 .chips-badge {
-    padding: 4px 12px;
-    border-radius: 999px;
+    padding: 8px 14px;
+    border-radius: 12px;
     color: var(--attack);
-    font-weight: 600;
-    border: 1px solid color-mix(in srgb, var(--attack) 45%, transparent);
+    background: color-mix(in srgb, var(--attack) 10%, var(--panel));
+    border: 1px solid var(--rim);
     white-space: nowrap;
+}
+
+.casino-chip {
+    position: relative;
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    border: 3px dashed var(--attack);
+    border-radius: 50%;
+    background: var(--felt-edge);
+    box-shadow: 0 2px 0 var(--rim);
+}
+
+.casino-chip::after {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    border: 1px solid var(--attack);
+    border-radius: 50%;
+}
+
+.chip-balance { display: grid; gap: 2px; }
+.chip-label {
+    color: var(--secondary);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+.chip-balance strong {
+    color: var(--attack);
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
 }
 
 .house-rule {
