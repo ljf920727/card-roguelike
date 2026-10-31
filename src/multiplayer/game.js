@@ -1,9 +1,4 @@
-import { io } from 'socket.io-client';
-
-const socket = io(
-  import.meta.env.VITE_MULTIPLAYER_URL || 'http://localhost:3001',
-  { autoConnect: false, reconnection: true }
-);
+import { checkServer, createRoomCode, RoomConnection } from './connection.js';
 
 const $ = id => document.getElementById(id);
 
@@ -28,18 +23,55 @@ function message(text) {
   $('message').textContent = text;
 }
 
-function request(event, data = {}) {
-  return new Promise((resolve, reject) => {
-    if (!socket.connected) {
-      reject(new Error('Not connected to server'));
+const connection = new RoomConnection({
+  onOpen: joinCurrentRoom,
+  onUpdate: render,
+  onStatus: status => {
+    $('connection').textContent = status === 'connected'
+      ? '● Connected'
+      : '○ Disconnected — reconnecting';
+  },
+  onLatency: ms => {
+    lastRTT = ms;
+    $('latency').textContent = `Server RTT: ${ms} ms`;
+  },
+  onClosed: reason => {
+    forgetRoom();
+    showPage('lobby');
+    message(reason);
+  },
+});
+
+function request(type, data = {}) {
+  return connection.request(type, data);
+}
+
+function forgetRoom() {
+  sessionStorage.removeItem('juniper.room');
+  roomId = '';
+  state = null;
+  selectedCards.clear();
+}
+
+async function joinCurrentRoom() {
+  try {
+    const result = await request('join', {
+      name: saveIdentity(),
+      token,
+    });
+
+    if (!result.success) {
+      connection.close();
+      forgetRoom();
+      showPage('lobby');
+      message(result.error);
       return;
     }
 
-    socket.timeout(5000).emit(event, data, (err, response) => {
-      if (err) reject(new Error('Server request timed out'));
-      else resolve(response);
-    });
-  });
+    saveRoom(result.roomId);
+  } catch (err) {
+    message(err.message);
+  }
 }
 
 function makeText(tag, content, className = '') {
@@ -69,42 +101,26 @@ function showPage(page) {
 
 async function createRoom() {
   try {
-    const result = await request('createRoom', {
-      name: saveIdentity(),
-      token,
-    });
-
-    if (!result.success) {
-      message(result.error);
-      return;
-    }
-
-    saveRoom(result.roomId);
+    saveIdentity();
+    const id = await createRoomCode();
     message('Room created');
+    connection.open(id);
   } catch (err) {
     message(err.message);
   }
 }
 
-async function joinRoom() {
-  try {
-    const id = $('room-code').value.trim().toUpperCase();
+function joinRoom() {
+  const id = $('room-code').value.trim().toUpperCase();
 
-    const result = await request('joinRoom', {
-      name: saveIdentity(),
-      roomId: id,
-      token,
-    });
-
-    if (!result.success) {
-      message(result.error);
-      return;
-    }
-
-    saveRoom(result.roomId);
-  } catch (err) {
-    message(err.message);
+  if (!/^[0-9A-F]{6}$/.test(id)) {
+    message('Enter the 6-character room code');
+    return;
   }
+
+  saveIdentity();
+  message('');
+  connection.open(id);
 }
 
 async function ready() {
@@ -118,15 +134,13 @@ async function ready() {
 
 async function leave() {
   try {
-    await request('leaveRoom');
+    await request('leave');
   } catch {
     // Clear local room even when the server is unavailable.
   }
 
-  sessionStorage.removeItem('juniper.room');
-  roomId = '';
-  state = null;
-  selectedCards.clear();
+  connection.close();
+  forgetRoom();
   showPage('lobby');
   message('Left room');
 }
@@ -137,7 +151,7 @@ async function action(type, cardIds) {
   try {
     const result = await request(
       'action',
-      { type, cardIds }
+      { action: { type, cardIds } }
     );
 
     lastRTT = Math.round(performance.now() - start);
@@ -214,7 +228,7 @@ function renderHand(data) {
       } else if (selectedCards.size < 5) {
         selectedCards.add(card.id);
       }
-      renderHand(data);
+      renderBattle(data);
     };
 
     hand.appendChild(button);
@@ -306,40 +320,17 @@ function render(data) {
   }
 }
 
-socket.on('connect', async () => {
-  $('connection').textContent = '● Connected';
+checkServer()
+  .then(ok => {
+    $('connection').textContent = ok ? '● Server online' : '○ Server unavailable';
+  })
+  .catch(() => {
+    $('connection').textContent = '○ Server unavailable';
+  });
 
-  const reconnectRoom = roomId || savedRoom;
-  if (reconnectRoom) {
-    try {
-      const result = await request('joinRoom', {
-        roomId: reconnectRoom,
-        name: saveIdentity(),
-        token,
-      });
-
-      if (!result.success) {
-        sessionStorage.removeItem('juniper.room');
-        roomId = '';
-        showPage('lobby');
-        message(result.error);
-      }
-    } catch (err) {
-      message(err.message);
-    }
-  }
-});
-
-socket.on('disconnect', () => {
-  $('connection').textContent = '○ Disconnected — reconnecting';
-});
-
-socket.on('connect_error', err => {
-  $('connection').textContent = '○ Server unavailable';
-  message(err.message);
-});
-
-socket.on('roomUpdate', render);
+if (savedRoom) {
+  connection.open(savedRoom);
+}
 
 $('create').onclick = createRoom;
 $('join').onclick = joinRoom;
@@ -356,20 +347,4 @@ $('hit').onclick = () => action('hit');
 $('stand').onclick = () => action('stand');
 $('end-turn').onclick = () => action('endTurn');
 
-socket.connect();
-
-setInterval(async () => {
-  if (!socket.connected) return;
-
-  const start = performance.now();
-
-  try {
-    const response = await request('pingCheck');
-    if (response.success) {
-      lastRTT = Math.round(performance.now() - start);
-      $('latency').textContent = `Server RTT: ${lastRTT} ms`;
-    }
-  } catch {
-    // Reconnection status is handled by Socket.IO.
-  }
-}, 3000);
+setInterval(() => connection.ping(), 3000);

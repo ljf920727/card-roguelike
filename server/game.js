@@ -1,17 +1,4 @@
-
-import { Server } from 'socket.io';
-import { randomBytes } from 'node:crypto';
 import { evaluatePokerHand } from '../src/systems/rules/PokerRule.js';
-
-const PORT = Number(process.env.PORT || 3001);
-
-const io = new Server(PORT, {
-  cors: {
-    origin: true,
-  },
-});
-
-const rooms = new Map();
 
 const SUITS = ['♠', '♥', '♣', '♦'];
 const RANKS = [
@@ -19,25 +6,35 @@ const RANKS = [
   '10', 'J', 'Q', 'K', 'A',
 ];
 
-// Safely respond even if the client omitted an acknowledgement.
-function reply(ack, response) {
-  if (typeof ack === 'function') {
-    ack(response);
-  }
+export const MAX_PLAYERS = 2;
+
+export function createRoom(id) {
+  return {
+    id,
+    status: 'waiting',
+    players: [],
+    active: 0,
+    turn: 0,
+    enemy: null,
+    log: [],
+  };
 }
 
-// Generate a unique room code.
-function generateRoomCode() {
-  let id;
+export function validToken(token) {
+  return typeof token === 'string' &&
+    token.length >= 16 &&
+    token.length <= 200;
+}
 
-  do {
-    id = randomBytes(4)
-      .toString('hex')
-      .toUpperCase()
-      .slice(0, 6);
-  } while (rooms.has(id));
+export function findPlayer(room, token) {
+  return room.players.find(p => p.token === token) ?? null;
+}
 
-  return id;
+function randomId() {
+  return Array.from(
+    crypto.getRandomValues(new Uint8Array(6)),
+    byte => byte.toString(16).padStart(2, '0')
+  ).join('');
 }
 
 // Create a shuffled 52-card deck.
@@ -77,14 +74,13 @@ function drawCards(player, targetCount = 5) {
   }
 }
 
-function createPlayer(name, token, socket) {
+function createPlayer(name, token) {
   return {
     name: String(name || 'Player')
       .trim()
       .slice(0, 20) || 'Player',
 
     token,
-    socketId: socket.id,
     connected: true,
     ready: false,
 
@@ -104,7 +100,7 @@ function createPlayer(name, token, socket) {
 }
 
 // Only send each player their own cards.
-function getPublicState(room, viewer) {
+export function getPublicState(room, viewer) {
   return {
     roomId: room.id,
     status: room.status,
@@ -136,9 +132,9 @@ function getPublicState(room, viewer) {
       isYou: player === viewer,
     })),
 
-    hand: viewer.hand.map(card => ({ ...card })),
+    hand: viewer ? viewer.hand.map(card => ({ ...card })) : [],
 
-    blackjack: viewer.blackjack
+    blackjack: viewer?.blackjack
       ? {
           player: viewer.blackjack.player.map(
             card => ({ ...card })
@@ -152,43 +148,12 @@ function getPublicState(room, viewer) {
   };
 }
 
-function broadcastRoom(room) {
-  for (const player of room.players) {
-    if (!player.connected || !player.socketId) continue;
-
-    io.to(player.socketId).emit(
-      'roomUpdate',
-      getPublicState(room, player)
-    );
-  }
-}
-
 function addLog(room, text) {
   room.log.push(text);
 
   if (room.log.length > 30) {
     room.log.shift();
   }
-}
-
-function getMembership(socket) {
-  for (const room of rooms.values()) {
-    const player = room.players.find(
-      p => p.socketId === socket.id
-    );
-
-    if (player) {
-      return { room, player };
-    }
-  }
-
-  return null;
-}
-
-function validToken(token) {
-  return typeof token === 'string' &&
-    token.length >= 16 &&
-    token.length <= 200;
 }
 
 function isActivePlayer(room, player) {
@@ -199,6 +164,76 @@ function isActivePlayer(room, player) {
     player.hp > 0 &&
     room.players.every(p => p.connected)
   );
+}
+
+// Seat a new player, or give a returning player their seat back.
+export function joinRoom(room, { name, token }) {
+  if (!validToken(token)) {
+    return { error: 'Invalid session token' };
+  }
+
+  const existing = findPlayer(room, token);
+
+  if (existing) {
+    existing.connected = true;
+    addLog(room, `${existing.name} reconnected.`);
+    return { player: existing };
+  }
+
+  if (room.status !== 'waiting') {
+    return { error: 'Game already started' };
+  }
+
+  if (room.players.length >= MAX_PLAYERS) {
+    return { error: 'Room is full' };
+  }
+
+  const player = createPlayer(name, token);
+  room.players.push(player);
+  addLog(room, `${player.name} joined the room.`);
+
+  return { player };
+}
+
+export function setReady(room, player) {
+  if (room.status !== 'waiting') {
+    return 'Game already started';
+  }
+
+  player.ready = true;
+
+  if (
+    room.players.length === MAX_PLAYERS &&
+    room.players.every(p => p.ready && p.connected)
+  ) {
+    startGame(room);
+  }
+
+  return null;
+}
+
+// Active games keep a dropped player's seat for reconnection.
+export function disconnectPlayer(room, player) {
+  player.connected = false;
+  player.ready = false;
+
+  if (room.status === 'waiting') {
+    room.players.splice(room.players.indexOf(player), 1);
+  } else {
+    addLog(
+      room,
+      `${player.name} disconnected. Waiting for reconnection.`
+    );
+  }
+}
+
+export function leaveRoom(room, player) {
+  if (room.status === 'playing') {
+    room.status = 'finished';
+    addLog(room, `${player.name} forfeited the game.`);
+  }
+
+  room.players.splice(room.players.indexOf(player), 1);
 }
 
 // Start a new two-player cooperative battle.
@@ -234,8 +269,6 @@ function startGame(room) {
 
   addLog(room, 'Co-op battle started!');
   addLog(room, `Turn 1: ${room.players[0].name}`);
-
-  broadcastRoom(room);
 }
 
 // Determine victory or defeat.
@@ -378,7 +411,7 @@ function getBlackjackValue(cards) {
 
 function randomCard() {
   return {
-    id: randomBytes(6).toString('hex'),
+    id: randomId(),
     rank: RANKS[Math.floor(Math.random() * RANKS.length)],
     suit: SUITS[Math.floor(Math.random() * SUITS.length)],
   };
@@ -440,7 +473,7 @@ function resolveBlackjack(room, player) {
   checkBattleResult(room);
 }
 
-function handleAction(room, player, data) {
+export function handleAction(room, player, data) {
   if (!isActivePlayer(room, player)) {
     return 'Not your turn or waiting for opponent';
   }
@@ -586,284 +619,3 @@ function handleAction(room, player, data) {
 
   return 'Unknown action';
 }
-
-// Remove a socket from its room.
-// Active games keep the player slot for reconnection.
-function leaveSocketRooms(socket, explicit = false) {
-  for (const room of rooms.values()) {
-    const index = room.players.findIndex(
-      p => p.socketId === socket.id
-    );
-
-    if (index === -1) continue;
-
-    const player = room.players[index];
-
-    player.connected = false;
-    player.socketId = null;
-    player.ready = false;
-
-    if (room.status === 'waiting' || explicit) {
-      if (room.status === 'playing' && explicit) {
-        room.status = 'finished';
-        addLog(room, `${player.name} forfeited the game.`);
-      }
-
-      room.players.splice(index, 1);
-    } else {
-      addLog(
-        room,
-        `${player.name} disconnected. Waiting for reconnection.`
-      );
-    }
-
-    socket.leave(room.id);
-
-    if (room.players.length === 0) {
-      rooms.delete(room.id);
-    } else {
-      broadcastRoom(room);
-    }
-  }
-}
-
-// Socket.IO events.
-io.on('connection', socket => {
-  console.log('Connected:', socket.id);
-
-  // Create room.
-  socket.on('createRoom', (data, ack) => {
-    if (getMembership(socket)) {
-      return reply(ack, {
-        success: false,
-        error: 'Already in a room',
-      });
-    }
-
-    if (!data || !validToken(data.token)) {
-      return reply(ack, {
-        success: false,
-        error: 'Invalid session token',
-      });
-    }
-
-    const id = generateRoomCode();
-
-    const room = {
-      id,
-      status: 'waiting',
-      players: [
-        createPlayer(data.name, data.token, socket),
-      ],
-      active: 0,
-      turn: 0,
-      enemy: null,
-      log: [],
-    };
-
-    rooms.set(id, room);
-    socket.join(id);
-
-    reply(ack, {
-      success: true,
-      roomId: id,
-    });
-
-    broadcastRoom(room);
-    console.log('Room created:', id);
-  });
-
-  // Join or reconnect.
-  socket.on('joinRoom', (data, ack) => {
-    const id = String(data?.roomId || '')
-      .trim()
-      .toUpperCase();
-
-    const room = rooms.get(id);
-
-    if (!room) {
-      return reply(ack, {
-        success: false,
-        error: 'Room not found',
-      });
-    }
-
-    if (getMembership(socket)) {
-      return reply(ack, {
-        success: false,
-        error: 'Already in a room',
-      });
-    }
-
-    if (!validToken(data?.token)) {
-      return reply(ack, {
-        success: false,
-        error: 'Invalid session token',
-      });
-    }
-
-    const token = data.token;
-
-    let player = room.players.find(
-      p => p.token === token
-    );
-
-    if (player) {
-      // Reconnection with the same token.
-      const oldSocketId = player.socketId;
-
-      player.socketId = socket.id;
-      player.connected = true;
-
-      socket.join(id);
-
-      if (
-        oldSocketId &&
-        oldSocketId !== socket.id
-      ) {
-        io.sockets.sockets
-          .get(oldSocketId)
-          ?.disconnect(true);
-      }
-
-      addLog(
-        room,
-        `${player.name} reconnected.`
-      );
-    } else {
-      // New participant.
-      if (room.status !== 'waiting') {
-        return reply(ack, {
-          success: false,
-          error: 'Game already started',
-        });
-      }
-
-      if (room.players.length >= 2) {
-        return reply(ack, {
-          success: false,
-          error: 'Room is full',
-        });
-      }
-
-      player = createPlayer(
-        data.name,
-        token,
-        socket
-      );
-
-      room.players.push(player);
-      socket.join(id);
-
-      addLog(
-        room,
-        `${player.name} joined the room.`
-      );
-    }
-
-    reply(ack, {
-      success: true,
-      roomId: id,
-    });
-
-    broadcastRoom(room);
-  });
-
-  // Player ready.
-  socket.on('ready', (ack) => {
-    const member = getMembership(socket);
-
-    if (!member) {
-      return reply(ack, {
-        success: false,
-        error: 'Not in a room',
-      });
-    }
-
-    const { room, player } = member;
-
-    if (room.status !== 'waiting') {
-      return reply(ack, {
-        success: false,
-        error: 'Game already started',
-      });
-    }
-
-    player.ready = true;
-
-    if (
-      room.players.length === 2 &&
-      room.players.every(
-        p => p.ready && p.connected
-      )
-    ) {
-      startGame(room);
-    } else {
-      broadcastRoom(room);
-    }
-
-    reply(ack, { success: true });
-  });
-
-  // Player action.
-  socket.on('action', (data, ack) => {
-    const member = getMembership(socket);
-
-    if (!member) {
-      return reply(ack, {
-        success: false,
-        error: 'Not in a room',
-      });
-    }
-
-    const error = handleAction(
-      member.room,
-      member.player,
-      data
-    );
-
-    if (error) {
-      return reply(ack, {
-        success: false,
-        error,
-      });
-    }
-
-    broadcastRoom(member.room);
-
-    reply(ack, {
-      success: true,
-    });
-  });
-
-  // Latency test.
-  socket.on('pingCheck', (ack) => {
-    reply(ack, {
-      success: true,
-    });
-  });
-
-  // Leave room.
-  socket.on('leaveRoom', (ack) => {
-    leaveSocketRooms(socket, true);
-
-    reply(ack, {
-      success: true,
-    });
-  });
-
-  // Connection lost.
-  socket.on('disconnect', reason => {
-    console.log(
-      'Disconnected:',
-      socket.id,
-      reason
-    );
-
-    leaveSocketRooms(socket, false);
-  });
-});
-
-console.log(
-  `Juniper Multiplayer server running on port ${PORT}`
-);

@@ -25,6 +25,20 @@ npm run preview -- --base=/card-roguelike/
 
 Open the preview URL ending in `/card-roguelike/`, check that the game and tab icon load, then start a run. Switch to poker and play a pair: energy should fall to 1 and shield rise to 25, and the unplayed cards should stay in your hand. End turn: the hand should top back up to 5 cards and any remaining shield should halve. Repeat after deployment using the `github-pages` environment URL in Actions.
 
+## Multiplayer server
+
+Multiplayer co-op (`multiplayer.html`) talks to a Cloudflare Worker in `server/`. Each room code maps to one Durable Object (`GameRoom` in `server/worker.js`) that holds the match, both players' WebSockets and a saved copy of the room, so a room survives restarts and idle rooms cost nothing while they hibernate. The rules live in `server/game.js` and are covered by `tests/multiplayer.test.js`. Rooms nobody is connected to are deleted after 10 minutes.
+
+Run it locally with `npm run server` (Worker on `http://localhost:8787`) next to `npm run dev`, or both together with `npm run dev:all`. The client uses `VITE_MULTIPLAYER_URL`, which defaults to the local Worker.
+
+To deploy:
+
+1. Run `npx wrangler login` once, then `npm run deploy:server`. Wrangler prints the Worker URL, for example `https://card-roguelike-multiplayer.<subdomain>.workers.dev`.
+2. In **Settings → Secrets and variables → Actions**, add a **variable** `MULTIPLAYER_URL` with that URL. The Pages workflow builds the game against it.
+3. Optionally add the **secrets** `CLOUDFLARE_API_TOKEN` (with the "Edit Cloudflare Workers" template) and `CLOUDFLARE_ACCOUNT_ID`. `.github/workflows/deploy-worker.yml` then tests and redeploys the Worker on every push to `main`; without them the workflow skips its steps.
+
+The Worker only accepts browsers from the origins in `ALLOWED_ORIGINS` in `server/wrangler.jsonc`. Add a site's origin there if the game is hosted somewhere else.
+
 ## Play a run
 
 ### First-time tutorial
