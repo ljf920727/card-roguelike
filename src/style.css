@@ -1351,8 +1351,7 @@ button {
     border-color: color-mix(in srgb, var(--danger) 60%, transparent);
 }
 
-.intent[data-intent="charge"],
-.intent[data-intent="jinx"] {
+.intent[data-intent="charge"] {
     color: var(--shield);
     background: color-mix(in srgb, var(--shield) 14%, transparent);
     border-color: color-mix(in srgb, var(--shield) 60%, transparent);
@@ -1382,6 +1381,28 @@ button {
     color: #6b3fa0;
     background: #eee6f5;
 }
+
+.jinx-name {
+    margin-inline: -5px;
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.deck-card.jinx-choice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: min(100%, 320px);
+    padding: 8px;
+    border: 1px solid var(--panel-line);
+    background: var(--button);
+    text-align: left;
+}
+
+.jinx-choice .bj-card { flex-shrink: 0; }
+.jinx-effect { color: var(--text); font-size: 0.8rem; }
 
 .bj-card.gilded {
     background: #fcefc8;

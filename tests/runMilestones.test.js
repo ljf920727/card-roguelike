@@ -19,7 +19,7 @@ test("floor arrivals explain the boss, shop and next floor without repeating", (
 });
 
 test("ordinary fights have no announcement; bosses get an entrance and a separate celebration", () => {
-    const state = createInitialState();
+    const state = createInitialState({ tutorial: true });
     state.run.fight = 2;
     assert.equal(getRunMilestone(state), null);
     state.run.fight = 3;

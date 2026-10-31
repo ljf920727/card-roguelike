@@ -1,4 +1,5 @@
-import { FLOORS, getFloor, isBossFight, isFinalFight } from "../systems/RunSystem.js";
+import { FLOORS, getFloor, isBossFight, isFinalFight, encounterJinxText } from "../systems/RunSystem.js";
+import { JINXES } from "../systems/DeckSystem.js";
 
 /** Presentation-only milestones; acknowledgement never changes combat or reward state. */
 export function getRunMilestone(state, seen = new Set()) {
@@ -38,5 +39,19 @@ export function getRunMilestone(state, seen = new Set()) {
             action: run.floor === 1 ? "Enter the Lobby" : `Enter floor ${run.floor}`,
         };
     }
-    return milestone && !seen.has(milestone.key) ? milestone : null;
+    if (milestone && !seen.has(milestone.key)) {
+        if (!result && enemy.addedJinxes?.length) milestone.facts.push(encounterJinxText(enemy),
+            ...enemy.addedJinxes.map(type => `${JINXES[type].name}: ${JINXES[type].text}`));
+        return milestone;
+    }
+    if (!result && run.turn === 1 && enemy.addedJinxes?.length) {
+        const key = `${run.floor}:${run.fight}:jinx`;
+        // Floor and boss introductions already announce this encounter's additions.
+        const introduction = isBossFight(state) ? `${run.floor}:boss` : run.fight === 1 ? `${run.floor}:floor` : null;
+        if (!seen.has(key) && !seen.has(introduction)) return {
+            kind: "jinx", key, label: "Encounter hazard", title: `${enemy.name}'s Jinxes`, body: encounterJinxText(enemy),
+            facts: enemy.addedJinxes.map(type => `${JINXES[type].name}: ${JINXES[type].text}`), action: "Face the Jinxes",
+        };
+    }
+    return null;
 }

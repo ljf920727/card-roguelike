@@ -5,6 +5,7 @@ import{
     Text,
     Ticker,
 } from "pixi.js";
+import { getJinx } from "../systems/DeckSystem.js";
 
 const SUIT_SYMBOLS = {
     "hearts": "♥",
@@ -67,11 +68,11 @@ export class CardView extends Container {
             },
         });
         this.bottomRankText = new Text({
-            text: isJinx ? "JINX" : cardData.gilded ? `★ ${cardData.rank}` : `${suitSymbol} ${cardData.rank}`,
+            text: isJinx ? getJinx(cardData)?.name ?? "Jinx" : cardData.gilded ? `★ ${cardData.rank}` : `${suitSymbol} ${cardData.rank}`,
             style: {
                 fill: textColor,
                 fontFamily: CARD_FONT,
-                fontSize: 16,
+                fontSize: isJinx ? 13 : 16,
                 fontWeight: "700",
                 padding: 4,
             },

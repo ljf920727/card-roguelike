@@ -1,6 +1,6 @@
 /** Shows the between-fight dialog: the reward choice, the Curse choice, card and Joker pickers, and the shop. */
 import { createCardElement } from "../components/cardElement.js";
-import { deckCards, sortHand, DECK_EDITS } from "../systems/DeckSystem.js";
+import { deckCards, sortHand, getJinx, DECK_EDITS } from "../systems/DeckSystem.js";
 import { getJoker, jokerSlots, sellPrice } from "../systems/JokerSystem.js";
 import { getCurse } from "../systems/CurseSystem.js";
 import { chooseCurse, chooseReward, eligibleCards, needsCard, skipCurse, skipReward, SKIP_CHIPS } from "../systems/RewardSystem.js";
@@ -206,6 +206,7 @@ export class RunScreen {
         } else {
             this.title.textContent = PICK_PROMPTS[pick.kind];
             const cards = eligibleCards(this.state, pick, sortHand(deckCards(this.state)));
+            if (pick.kind === "remove") cards.sort((a, b) => Number(Boolean(getJinx(b))) - Number(Boolean(getJinx(a))));
             this.subtitle.textContent = `${cards.length} eligible ${cards.length === 1 ? "card" : "cards"} in your deck.`;
             grid.className = "deck-picker";
             cards.forEach(card => {
@@ -214,6 +215,14 @@ export class RunScreen {
                 button.className = "deck-card";
                 button.append(createCardElement(card));
                 button.setAttribute("aria-label", button.firstChild.getAttribute("aria-label"));
+                const jinx = getJinx(card);
+                if (jinx) {
+                    button.classList.add("jinx-choice");
+                    const effect = document.createElement("span");
+                    effect.className = "jinx-effect";
+                    effect.textContent = jinx.text;
+                    button.append(effect);
+                }
                 button.addEventListener("click", () => this.changed(pick.apply({ cardId: card.id })));
                 grid.append(button);
             });

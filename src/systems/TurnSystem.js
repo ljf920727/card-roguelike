@@ -7,7 +7,7 @@ import { hasCurse, DEVILS_BARGAIN_HP } from "./CurseSystem.js";
 
 const INTENT_LOG = {
     attack: "attacked", heavy: "unleashed its charged hit", pierce: "pierced your shield",
-    multi: "struck repeatedly", charge: "charged up", jinx: "jinxed your deck", shatter: "shattered your shield",
+    multi: "struck repeatedly", charge: "charged up", shatter: "shattered your shield",
 };
 
 /**
@@ -24,8 +24,7 @@ export function beginEndTurn(state) {
     state.selection = { cards: [], value: 0, results: [], primaryAction: null };
     const outcome = resolveIntent(state);
     advanceTutorial(state, "enemy-attack");
-    const extra = outcome.type === "charge" ? ` It will hit for ${state.enemy.charging} next turn.` :
-        outcome.jinxed ? " A jinx card was shuffled into your deck." : "";
+    const extra = outcome.type === "charge" ? ` It will hit for ${state.enemy.charging} next turn.` : "";
     state.lastAction = `${state.enemy.name} ${INTENT_LOG[outcome.type] ?? "attacked"}: blocked ${outcome.blocked}; lost ${outcome.damage} HP.${extra}`;
     return { allowed: true, ...outcome };
 }

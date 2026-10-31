@@ -1,5 +1,5 @@
 /** Builds the casino's floors, creates enemies, rolls their intents and moves the run forward. */
-import { createDeck, shuffle, discardHand, drawCards, HAND_SIZE } from "./DeckSystem.js";
+import { createDeck, shuffle, discardHand, drawCards, addCard, JINXES, JINX_RANK, JINX_SUIT, HAND_SIZE } from "./DeckSystem.js";
 import { advanceTutorial } from "./TutorialSystem.js";
 import { healPlayer } from "./CombatSystem.js";
 import { hasCurse } from "./CurseSystem.js";
@@ -13,7 +13,7 @@ export const FLOORS = [
         name: "The Lobby", rules: null,
         enemies: [
             { name: "Goblin", maxHp: 40, attack: [6, 9], moves: { attack: 3, multi: 1 } },
-            { name: "Slime", maxHp: 55, attack: [4, 7], moves: { attack: 2, jinx: 1 } },
+            { name: "Slime", maxHp: 55, attack: [4, 7], moves: { attack: 1 }, jinxPool: Object.keys(JINXES) },
             { name: "Wolf", maxHp: 35, attack: [8, 11], moves: { attack: 2, multi: 2 } },
         ],
         boss: { name: "Ogre", maxHp: 90, attack: [10, 13], moves: { attack: 2, charge: 1, shatter: 1 } },
@@ -23,15 +23,15 @@ export const FLOORS = [
         enemies: [
             { name: "Bandit", maxHp: 50, attack: [6, 11], moves: { attack: 2, pierce: 1 } },
             { name: "Skeleton", maxHp: 55, attack: [7, 10], moves: { attack: 2, shatter: 1 } },
-            { name: "Card Shark", maxHp: 50, attack: [6, 10], moves: { attack: 1, jinx: 1, pierce: 1 } },
+            { name: "Card Shark", maxHp: 50, attack: [6, 10], moves: { attack: 2, pierce: 1 }, jinxPool: ["debt", "house-edge", "bad-luck"] },
         ],
-        boss: { name: "Witch", maxHp: 105, attack: [9, 13], moves: { jinx: 2, pierce: 1, attack: 1 } },
+        boss: { name: "Witch", maxHp: 105, attack: [9, 13], moves: { pierce: 1, attack: 3 }, jinxPool: Object.keys(JINXES) },
     },
     {
         name: "The Vault", rules: { noPushRefund: true, label: "Pushes don't refund energy" },
         enemies: [
             { name: "Bouncer", maxHp: 65, attack: [7, 11], moves: { attack: 2, charge: 1, shatter: 1 } },
-            { name: "Croupier", maxHp: 55, attack: [7, 10], moves: { attack: 1, jinx: 1, multi: 1 } },
+            { name: "Croupier", maxHp: 55, attack: [7, 10], moves: { attack: 2, multi: 1 }, jinxPool: ["debt", "house-edge", "weakness"] },
             { name: "Loan Shark", maxHp: 55, attack: [7, 11], moves: { pierce: 2, attack: 1 } },
         ],
         boss: { name: "Pit Boss", maxHp: 110, attack: [9, 13], moves: { attack: 1, charge: 1, shatter: 1, multi: 1 } },
@@ -40,19 +40,19 @@ export const FLOORS = [
         name: "High Stakes", rules: { shieldCap: 25, label: "Shield caps at 25" },
         enemies: [
             { name: "Enforcer", maxHp: 70, attack: [8, 12], moves: { attack: 2, multi: 1, shatter: 1 } },
-            { name: "Cheat", maxHp: 65, attack: [8, 11], moves: { jinx: 1, pierce: 1, attack: 1 } },
+            { name: "Cheat", maxHp: 65, attack: [8, 11], moves: { pierce: 1, attack: 2 }, jinxPool: ["backlash", "house-edge", "bad-luck"] },
             { name: "Bookie", maxHp: 70, attack: [8, 12], moves: { charge: 1, attack: 2 } },
         ],
-        boss: { name: "The Dealer", maxHp: 125, attack: [10, 14], moves: { pierce: 1, jinx: 1, multi: 1, attack: 1 } },
+        boss: { name: "The Dealer", maxHp: 125, attack: [10, 14], moves: { pierce: 1, multi: 1, attack: 2 }, jinxPool: Object.keys(JINXES) },
     },
     {
         name: "The Penthouse", rules: { dealerHitsSoft17: true, noPushRefund: true, label: "Dealer hits soft 17; pushes don't refund" },
         enemies: [
             { name: "Gilded Golem", maxHp: 85, attack: [9, 13], moves: { attack: 2, shatter: 1, charge: 1 } },
-            { name: "Mimic", maxHp: 75, attack: [9, 13], moves: { jinx: 1, multi: 1, pierce: 1 } },
+            { name: "Mimic", maxHp: 75, attack: [9, 13], moves: { attack: 1, multi: 1, pierce: 1 }, jinxPool: ["weakness", "backlash", "bad-luck"] },
             { name: "Jackpot", maxHp: 75, attack: [9, 14], moves: { attack: 2, multi: 1 } },
         ],
-        boss: { name: "The House", maxHp: 150, attack: [11, 15], moves: { charge: 1, shatter: 1, pierce: 1, jinx: 1, multi: 1 } },
+        boss: { name: "The House", maxHp: 150, attack: [11, 15], moves: { charge: 1, shatter: 1, pierce: 1, attack: 1, multi: 1 }, jinxPool: Object.keys(JINXES) },
     },
 ];
 export const FIGHTS_BEFORE_BOSS = 2;
@@ -117,8 +117,20 @@ export function rollIntent(enemy) {
         move === "shatter" ? { type: "shatter", value: Math.round(roll * 0.5) } :
         move === "multi" ? { type: "multi", value: Math.ceil(roll * 0.45), hits: MULTI_HITS } :
         move === "charge" ? { type: "charge", value: 0, next: roll * 2 } :
-        move === "jinx" ? { type: "jinx", value: Math.round(roll * 0.5) } :
         { type: "attack", value: roll };
+}
+
+/** Called once per encounter, before the opening hand. Added cards stay until explicitly removed. */
+export function addEncounterJinxes(state) {
+    const pool = shuffle(state.enemy.jinxPool ?? []);
+    const count = state.enemy.boss ? (state.run.floor === 5 ? 3 : 2) : (state.run.floor >= 3 ? 2 : 1);
+    state.enemy.addedJinxes = pool.slice(0, count);
+    for (const jinxType of state.enemy.addedJinxes) addCard(state, JINX_RANK, JINX_SUIT, { jinxType });
+}
+
+export function encounterJinxText(enemy) {
+    return enemy.addedJinxes?.length ?
+        `${enemy.name} added ${enemy.addedJinxes.length} permanent Jinx ${enemy.addedJinxes.length === 1 ? "card" : "cards"}: ${enemy.addedJinxes.map(type => JINXES[type].name).join(", ")}.` : "";
 }
 
 export function isBossFight(state) {
@@ -166,12 +178,14 @@ export function startNextFight(state) {
     state.reward = null;
     state.curseChoice = null;
     discardHand(state);
+    addEncounterJinxes(state);
     drawCards(state, state.player.handSize ?? HAND_SIZE);
     state.result = null;
     state.phase = "player";
     state.lastAction = newFloor ?
         `Welcome to ${getFloor(state).name}. You recovered ${healed} HP. ${withArticle(state.enemy.name)} blocks the way.` :
         `You recovered ${healed} HP. ${withArticle(state.enemy.name)} blocks the way.`;
+    if (state.enemy.addedJinxes.length) state.lastAction += ` ${encounterJinxText(state.enemy)}`;
     advanceTutorial(state, "next-fight");
     return true;
 }

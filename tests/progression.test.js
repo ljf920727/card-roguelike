@@ -39,13 +39,14 @@ test("winning offers three rewards; the next fight waits until one is chosen", (
 
 test("deck-edit rewards change the deck permanently", () => {
     const state = createInitialState();
+    const before = deckCards(state).length;
     winFight(state);
     state.reward = { done: false, offers: [{ kind: "remove" }, { kind: "gild" }] };
     const target = deckCards(state)[0];
     assert.equal(chooseReward(state, 0, {}).ok, false);
     assert.equal(chooseReward(state, 0, { cardId: target.id }).ok, true);
     assert.equal(findCard(state, target.id), null);
-    assert.equal(deckCards(state).length, 51);
+    assert.equal(deckCards(state).length, before - 1);
     assert.equal(chooseReward(state, 1, { cardId: deckCards(state)[0].id }).ok, false);
 });
 
@@ -92,11 +93,12 @@ test("beating a boss offers Curses, then the shop; leaving it climbs a floor and
 
 test("the shop sells items for chips and buys Jokers back at half price", () => {
     const state = createInitialState();
+    const before = deckCards(state).length;
     state.run.gold = 30;
     state.shop = { items: [{ kind: "card", rank: "A", suit: "hearts", price: 6, sold: false },
         { kind: "joker", jokerId: "bulwark", price: 16, sold: false }, { kind: "gild", price: 12, sold: false }] };
     assert.equal(buyItem(state, 0).ok, true);
-    assert.equal(deckCards(state).length, 53);
+    assert.equal(deckCards(state).length, before + 1);
     assert.equal(buyItem(state, 0).ok, false);
     assert.equal(buyItem(state, 1).ok, true);
     assert.equal(state.run.gold, 8);

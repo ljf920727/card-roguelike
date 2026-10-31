@@ -60,7 +60,21 @@ You have 3 energy per turn and a hand of 5 cards from your deck. Unplayed cards 
 
 **Shield** lasts one turn, then decays to half for one more turn, then vanishes. It caps at 40 and clears between enemies. Attacks spend the decaying part first.
 
-**Enemy intents.** Each enemy telegraphs its next move: **attack**; **pierce** (ignores shield); **shatter** (destroys all shield, then a light hit); **multi-hit** (three hits, each blocked separately); **charge** (nothing now, a heavy hit next turn); **jinx** (a light hit and a jinx card shuffled into your deck). Jinx cards can't be played in poker and count as 0 in blackjack, wasting a draw without helping your total. Mulligan them away or remove them with a reward or in the shop.
+**Enemy intents.** Each enemy telegraphs its next move: **attack**; **pierce** (ignores shield); **shatter** (destroys all shield, then a light hit); **multi-hit** (three hits, each blocked separately); **charge** (nothing now, a heavy hit next turn).
+
+**Jinx encounters.** Only Jinx-themed enemies add Jinx cards, once at fight entry before the opening hand. Regular Jinx enemies add 1 on floors 1-2 and 2 on floors 3-5. Jinx bosses add 2, or 3 on floor 5. Each batch picks different types from the enemy's pool. Slime can add any of the five types on floor 1; later enemies have themed pools. Introductions announce exactly which cards were added. No combat intent adds more.
+
+All Jinxes are unplayable in poker and worth 0 in blackjack. Their fixed blackjack effects are:
+
+| Jinx | Effect |
+|---|---|
+| Debt | Winning chips reduced by 2 per copy, before multipliers; minimum 0. |
+| Weakness | Winning damage reduced by 5 per copy, before multipliers; minimum 0. |
+| Backlash | Take 3 shield-blockable damage on each blackjack draw, including the opening deal and double down. Surrender and Insurance do not undo it. |
+| House Edge | Ties become losses. Multiple copies do not stack. |
+| Bad Luck | Player bust limit drops by 2 per copy, minimum 0. Aces adapt to this limit; reaching it stands automatically. Dealer still busts above 21. |
+
+Jinxes persist between fights until removed through rewards or the shop. Mulligan only discards them temporarily. Removal pickers put Jinxes first and show each effect. Later floors increase counts, never individual effect strength. These counts are playtest values; monitor accumulation versus removal access before increasing them further.
 
 **Rewards.** After each fight, choose one of three: a deck edit (remove, repaint or raise a card), a card upgrade (gild: +5 damage when the card is in a played poker hand or a winning blackjack hand), or a Joker. Skipping pays 5 chips.
 
@@ -258,7 +272,7 @@ A hand can grant more than one action (a full house deals damage and gives shiel
 
 **Purpose:** Applies combat actions, shield decay and enemy intents to the game state.
 
-`damagePlayer()` spends decaying shield before fresh shield; `decayShield()` runs at the start of each turn. `resolveIntent()` carries out the enemy's telegraphed move (attack, pierce, shatter, multi-hit, charge, jinx) and `forecastIntent()` predicts it for the UI without changing state.
+`damagePlayer()` spends decaying shield before fresh shield; `decayShield()` runs at the start of each turn. `resolveIntent()` carries out the enemy's telegraphed move (attack, pierce, shatter, multi-hit, charge) and `forecastIntent()` predicts it for the UI without changing state. Encounter Jinx batches live in `RunSystem`; blackjack Jinx penalties live in `BlackjackSystem`.
 
 Current actions:
 

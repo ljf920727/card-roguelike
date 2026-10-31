@@ -38,7 +38,7 @@ export function getTutorialLesson(state) {
             { number: 5, target: canDoubleDown(state) ? "#double-button" : "#play-button", title: `You have ${calculateBlackjackValue(round.player)}`,
                 body: "With your first two cards you can double down (1 more energy, one card, double the result) or surrender (half the loss). Or just hit and stand. Your call." },
         free: { number: 6, target: "#side-intent", title: "Finish the Goblin your way",
-            body: "That's the loop. Enemies telegraph different moves: piercing hits, shatters, charges and jinxes. Read the move here before you choose. Your turn now ends on its own when you run out of energy." },
+            body: "That's the loop. Enemies telegraph piercing hits, shatters and charges. Jinx enemies add permanent cursed cards at fight entry, not each turn. Read the move here before you choose. Your turn now ends on its own when you run out of energy." },
     };
     const lesson = lessons[step];
     if (!lesson) return null;
