@@ -100,7 +100,7 @@ export class BattleScene {
             "rules-title", "rules-body", "restart-button", "table", "stand-button",
             "bj-dealer", "bj-player", "bj-dealer-total", "bj-player-total", "bj-dealer-label", "hand-inputs",
             "mulligan-button", "double-button", "surrender-button", "chips-text", "house-rule", "next-card",
-            "intent-detail", "joker-list", "jokers-title", "curse-list", "curses-section",
+            "intent-detail", "joker-list", "jokers-title", "curse-list", "curses-section", "floor-route", "boss-label",
         ].map(id => [id, document.getElementById(id)]));
         this.runScreen = new RunScreen(state, () => this.refreshBattle());
         this.modeOptions = [...document.querySelectorAll(".mode-option")];
@@ -499,6 +499,7 @@ export class BattleScene {
         this.ui["last-action"].textContent = this.state.lastAction;
         this.resize();
         this.runScreen.sync();
+        this.guide.refresh();
     }
 
     /** Displays player resources and whether battle input is available. */
@@ -514,7 +515,7 @@ export class BattleScene {
         this.ui["shield-cap"].textContent = ` / ${cap}`;
         this.ui["shield-stat"].setAttribute("aria-label", `Shield ${shield} of ${cap}`);
         this.ui["shield-stat"].title = "Shield lasts one turn, then decays to half for one more turn, then vanishes. It clears between enemies. The faded part vanishes at the start of your next turn.";
-        this.ui["chips-text"].textContent = `Chips ${this.state.run.gold}`;
+        this.ui["chips-text"].textContent = this.state.run.gold.toLocaleString();
         this.ui["shield-stat"].classList.toggle("active", shield > 0);
         const chips = this.ui["energy-chips"];
         chips.replaceChildren(...Array.from({ length: maxEnergy }, (_, i) => {
@@ -535,6 +536,8 @@ export class BattleScene {
     refreshEnemy() {
         const { name, hp, maxHp, intent, boss } = this.state.enemy;
         this.ui["enemy-name"].textContent = name;
+        this.ui["boss-label"].hidden = !boss;
+        this.ui["boss-label"].textContent = `Floor ${this.state.run.floor} boss`;
         this.ui["enemy-icon"].setAttribute("d", ENEMY_ICONS[name] ?? DEFAULT_ENEMY_ICON);
         this.ui["enemy-token"].classList.toggle("defeated", hp <= 0);
         renderHearts(this.ui["enemy-hearts"], hp, maxHp);
@@ -549,6 +552,14 @@ export class BattleScene {
     refreshSidePanel() {
         const { floor, fight, turn, encounters, rules, jokers, curses } = this.state.run;
         this.ui["fight-text"].textContent = `Floor ${floor}: ${getFloor(this.state).name}`;
+        this.ui["floor-route"].replaceChildren(...encounters.map((enemy, index) => {
+            const step = document.createElement("span");
+            const cleared = index + 1 < fight || (index + 1 === fight && this.state.result === "victory");
+            step.className = cleared ? "cleared" : index + 1 === fight ? "current" : "";
+            step.textContent = `${cleared ? "Cleared: " : ""}${enemy.boss ? `Boss: ${enemy.name}` : `Fight ${index + 1}`}`;
+            if (index + 1 === fight) step.setAttribute("aria-current", "step");
+            return step;
+        }));
         this.ui["turn-text"].textContent = `${isBossFight(this.state) ? "Boss fight" : `Fight ${fight} of ${encounters.length}`} · Turn ${turn}`;
         this.ui["house-rule"].textContent = rules ? `House rule: ${rules.label}` : "No house rule";
         const top = this.state.drawPile.slice(-CARD_COUNTER_REVEAL).reverse();

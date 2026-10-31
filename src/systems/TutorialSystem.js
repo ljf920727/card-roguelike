@@ -10,8 +10,9 @@ export const TUTORIAL_STEPS = ["intro", "pair", "mulligan", "end-turn", "blackja
 
 /** The opening hand: a pair to play, a King to keep, and two low cards worth swapping. */
 const OPENING_HAND = ["7:spades", "7:hearts", "K:spades", "2:diamonds", "3:clubs"];
-/** The first blackjack round, in draw order: you 6 + 5, the Goblin 10 + 7, then a 10 if you double down or hit. */
-const BLACKJACK_DRAWS = ["6:clubs", "5:diamonds", "10:spades", "7:diamonds", "10:diamonds"];
+/** Player draws 6 + 5, then a 10 if they double down or hit; the dealer has its own deck. */
+const BLACKJACK_DRAWS = ["6:clubs", "5:diamonds", "10:diamonds"];
+const DEALER_DRAWS = ["10:spades", "7:diamonds"];
 const OPENING_ATTACK = 9;
 /** Tough enough to survive a doubled 21, so the player always finishes the fight on their own. */
 const TUTORIAL_GOBLIN_HP = 60;
@@ -67,6 +68,9 @@ function stackBlackjack(state) {
     const wanted = BLACKJACK_DRAWS.map(id => state.drawPile.find(card => key(card) === id)).filter(Boolean);
     const rest = state.drawPile.filter(card => !wanted.includes(card));
     state.drawPile = [...rest, ...wanted.reverse()];
+    const deck = state.enemy.deck;
+    const dealer = DEALER_DRAWS.map(id => deck.drawPile.find(card => key(card) === id));
+    deck.drawPile = [...deck.drawPile.filter(card => !dealer.includes(card)), ...dealer.reverse()];
 }
 
 /** Called only after successful actions by the gameplay systems. */

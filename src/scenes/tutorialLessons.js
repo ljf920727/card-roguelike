@@ -32,7 +32,7 @@ export function getTutorialLesson(state) {
         "end-turn": { number: 4, target: "#end-turn-button", title: "End turn: the Goblin acts",
             body: `Your shield takes the hit first. Shield lasts one turn, then halves for one more turn, then vanishes, so time it against the enemy's moves.` },
         blackjack: state.mode === "poker" ? { number: 5, target: '.mode-option[data-mode="blackjack"]', title: "Blackjack: the gamble",
-            body: `Your leftover shield decayed to ${state.player.shield}. Now try blackjack. It draws from your deck: beat the dealer without going over 21 to deal your total as damage and win chips.` } :
+            body: `Your leftover shield decayed to ${state.player.shield}. Now try blackjack. Beat the dealer without going over 21 to deal damage and win chips. Spend those chips on perks in the shop after each floor's boss. You draw from your deck; the dealer has its own.` } :
             !round ? { number: 5, target: "#play-button", title: "Deal a round",
                 body: `Deal costs 1 energy. J/Q/K count 10, Aces 11 or 1, and the dealer draws to 17. Lose or bust and the Goblin hits you for ${lossPenalty(state)}.` } :
             { number: 5, target: canDoubleDown(state) ? "#double-button" : "#play-button", title: `You have ${calculateBlackjackValue(round.player)}`,
@@ -44,4 +44,16 @@ export function getTutorialLesson(state) {
     if (!lesson) return null;
     const blackjackKey = step === "blackjack" ? `:${state.mode}:${round?.status ?? ""}` : "";
     return { ...lesson, key: `${step}:${lesson.target}${blackjackKey}` };
+}
+
+/** Combat lessons finish early; shop guidance arrives when it can actually be used. */
+export function getShopLesson(state) {
+    if (!state.tutorial || !state.shop || state.run.floor !== 1) return null;
+    return {
+        title: "Blackjack winnings become perks",
+        body: "Every floor ends with a boss. You beat this one, so the shop is open before you move up.",
+        facts: ["Winning blackjack hands earns chips: 5 for a win, 15 for a natural. Double down doubles the payout.",
+            "Trade chips here for perks: healing, better cards, deck upgrades and passive Jokers. Purchases last this run.",
+            "Buy what helps, or save your chips. Choose Climb to enter the next floor; its boss unlocks the next shop."],
+    };
 }

@@ -65,7 +65,8 @@ export class GuideView {
         document.querySelectorAll(".guide-card-target").forEach(element => element.classList.remove("guide-card-target"));
         this.describedTarget?.removeAttribute("aria-describedby");
         this.lesson = lesson;
-        const visible = lesson && lesson.key !== this.dismissedKey && document.getElementById("menu").hidden;
+        const visible = lesson && lesson.key !== this.dismissedKey && document.getElementById("menu").hidden &&
+            !document.getElementById("run-dialog").open;
         this.panel.hidden = !visible;
         this.highlight.hidden = !visible;
         if (visible) {

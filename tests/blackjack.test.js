@@ -2,16 +2,18 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createInitialState } from "../src/gameState.js";
 import {
-    canDoubleDown, dealRound, doubleDown, hit, scoreHand, stand, surrender, NATURAL_CHIPS, WIN_CHIPS,
+    canDoubleDown, dealRound, doubleDown, hit, isNatural, scoreHand, stand, surrender, NATURAL_CHIPS, WIN_CHIPS,
 } from "../src/systems/BlackjackSystem.js";
+import { deckCards } from "../src/systems/DeckSystem.js";
 
 const card = (rank, id, extra = {}) => ({ id, rank, suit: "spades", selected: false, ...extra });
 
-/** Stacks the draw pile so cards come out in the listed order: player, player, dealer, dealer, then hits. */
-function stacked(order) {
+/** Stack independent piles: player opening, dealer opening, then player and dealer hits. */
+function stacked(order, dealerHits = []) {
     const state = createInitialState();
     state.mode = "blackjack";
-    state.drawPile = order.map((rank, i) => card(rank, 100 + i)).reverse();
+    state.drawPile = [...order.slice(0, 2), ...order.slice(4)].map((rank, i) => card(rank, 100 + i)).reverse();
+    state.enemy.deck = { drawPile: [...order.slice(2, 4), ...dealerHits].map((rank, i) => card(rank, 200 + i)).reverse(), discardPile: [] };
     state.enemy.hp = state.enemy.maxHp = 1000;
     state.enemy.penalty = 10;
     return state;
@@ -65,6 +67,8 @@ test("surrender takes half the loss penalty", () => {
 
 test("Insurance covers the first loss each fight only", () => {
     const state = stacked(["10", "6", "10", "9", "10", "6", "10", "9"]);
+    state.drawPile = ["6", "10", "6", "10"].map((rank, i) => card(rank, 100 + i));
+    state.enemy.deck.drawPile = ["9", "10", "9", "10"].map((rank, i) => card(rank, 200 + i));
     state.run.jokers = ["insurance"];
     dealRound(state);
     stand(state);
@@ -99,11 +103,11 @@ test("pushes refund energy unless the house rule says otherwise", () => {
 });
 
 test("under the soft 17 house rule the dealer hits a soft 17", () => {
-    const soft = stacked(["10", "8", "A", "6", "3"]);
+    const soft = stacked(["10", "8", "A", "6"], ["3"]);
     dealRound(soft);
     stand(soft);
     assert.equal(soft.blackjack.dealer.length, 2);
-    const strict = stacked(["10", "8", "A", "6", "3"]);
+    const strict = stacked(["10", "8", "A", "6"], ["3"]);
     strict.run.rules = { dealerHitsSoft17: true };
     dealRound(strict);
     stand(strict);
@@ -111,7 +115,38 @@ test("under the soft 17 house rule the dealer hits a soft 17", () => {
     assert.equal(strict.blackjack.outcome, "lose");
 });
 
-test("a jinx counts as 5 in blackjack and blocks a natural", () => {
-    assert.deepEqual(scoreHand([card("X", 1), card("K", 2)]), { total: 15, soft: false });
+test("a jinx counts as zero in blackjack and cannot create a natural", () => {
+    const jinx = card("X", 1, { suit: "jinx" });
+    assert.deepEqual(scoreHand([jinx, card("K", 2)]), { total: 10, soft: false });
+    assert.equal(isNatural([jinx, card("A", 2), card("K", 3)]), false);
     assert.deepEqual(scoreHand([card("A", 1), card("6", 2)]), { total: 17, soft: true });
+});
+
+test("dealer cards never consume or enter the player's deck, including on surrender", () => {
+    for (const finish of [stand, surrender]) {
+        const state = createInitialState();
+        const owned = new Set(deckCards(state));
+        state.drawPile.push(card("X", 99, { suit: "jinx" }), card("X", 100, { suit: "jinx" }));
+        owned.add(state.drawPile.at(-1));
+        owned.add(state.drawPile.at(-2));
+        const before = state.drawPile.length;
+        dealRound(state);
+        assert.equal(state.drawPile.length, before - 2);
+        assert.ok(state.blackjack.dealer.every(card => !owned.has(card) && card.suit !== "jinx"));
+        finish(state);
+        assert.deepEqual(new Set(deckCards(state)), owned);
+        assert.ok(state.blackjack.dealer.every(card => !state.discardPile.includes(card)));
+    }
+});
+
+test("the dealer reshuffles only its own discards", () => {
+    const state = stacked(["10", "9", "10", "7"]);
+    const dealerCards = [...state.enemy.deck.drawPile];
+    state.enemy.deck.discardPile = dealerCards;
+    state.enemy.deck.drawPile = [];
+    dealRound(state);
+    stand(state);
+    assert.equal(state.blackjack.outcome, "win");
+    assert.deepEqual(new Set(state.enemy.deck.discardPile), new Set(dealerCards));
+    assert.ok(state.discardPile.every(card => !dealerCards.includes(card)));
 });

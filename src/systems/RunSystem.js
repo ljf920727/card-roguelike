@@ -1,5 +1,5 @@
 /** Builds the casino's floors, creates enemies, rolls their intents and moves the run forward. */
-import { discardHand, drawCards, HAND_SIZE } from "./DeckSystem.js";
+import { createDeck, shuffle, discardHand, drawCards, HAND_SIZE } from "./DeckSystem.js";
 import { advanceTutorial } from "./TutorialSystem.js";
 import { healPlayer } from "./CombatSystem.js";
 import { hasCurse } from "./CurseSystem.js";
@@ -87,7 +87,7 @@ export function createEncounters(floor = 1, openingEnemy = null) {
 export function createEnemy(template) {
     const [min, max] = template.attack;
     const enemy = { ...template, hp: template.maxHp, penalty: Math.round((min + max) / 2), charging: null,
-        intent: { type: "attack", value: 0 } };
+        intent: { type: "attack", value: 0 }, deck: { drawPile: shuffle(createDeck()), discardPile: [] } };
     rollIntent(enemy);
     return enemy;
 }

@@ -23,6 +23,7 @@ test("each floor is two fights then its boss, with the floor's house rule", () =
 
 test("winning offers three rewards; the next fight waits until one is chosen", () => {
     const state = createInitialState();
+    const previousDeck = state.enemy.deck;
     winFight(state);
     assert.equal(ensureRewards(state), true);
     assert.equal(state.reward.offers.length, 3);
@@ -31,6 +32,9 @@ test("winning offers three rewards; the next fight waits until one is chosen", (
     assert.equal(state.run.gold, SKIP_CHIPS);
     assert.equal(startNextFight(state), true);
     assert.equal(state.run.fight, 2);
+    assert.notEqual(state.enemy.deck, previousDeck);
+    assert.equal(state.enemy.deck.drawPile.length, 52);
+    assert.equal(state.enemy.deck.discardPile.length, 0);
 });
 
 test("deck-edit rewards change the deck permanently", () => {

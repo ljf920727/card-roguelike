@@ -23,7 +23,8 @@ function setup(curse) {
 
 function stacked(state, order) {
     state.mode = "blackjack";
-    state.drawPile = order.map((rank, i) => card(rank, 200 + i)).reverse();
+    state.drawPile = order.slice(0, 2).map((rank, i) => card(rank, 200 + i)).reverse();
+    state.enemy.deck = { drawPile: order.slice(2).map((rank, i) => card(rank, 300 + i)).reverse(), discardPile: [] };
 }
 
 test("Blood Money doubles blackjack damage and losses", () => {
