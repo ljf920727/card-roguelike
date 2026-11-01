@@ -1,7 +1,9 @@
+/** Styles cooperative screens with the solo game's shared semantic theme palette. */
 :root {
-  font-family: Georgia, serif;
-  color: #f3e8cf;
-  background: #102922;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--text, #f3efe3);
+  background: var(--background, #0f2621);
+  line-height: 1.4;
 }
 
 * {
@@ -19,60 +21,72 @@ header {
   justify-content: space-between;
   gap: 16px;
   padding: 12px 30px;
-  background: #092019;
-  border-bottom: 2px solid #cba75c;
+  background: var(--panel);
+  border-bottom: 2px solid var(--rim);
 }
 
 header h1 {
   margin: 0;
-  color: #e5c785;
+  color: var(--attack);
+  font-family: "Palatino Linotype", Georgia, serif;
   letter-spacing: 4px;
 }
 
 header a {
-  color: #e5c785;
+  color: var(--attack);
   text-decoration: none;
 }
 
 main {
   max-width: 1100px;
-  margin: 30px auto;
+  margin: 20px auto;
   padding: 0 16px;
 }
 
 .panel {
-  padding: 24px;
-  margin-bottom: 20px;
-  background: #1a4035;
-  border: 1px solid #9d824d;
+  padding: 20px;
+  margin-bottom: 16px;
+  background: var(--panel);
+  border: 1px solid var(--panel-line);
   border-radius: 14px;
   box-shadow: 0 8px 24px #0003;
 }
 
 h2, h3 {
-  color: #e6cb92;
+  color: var(--attack);
+  margin: 0 0 12px;
 }
+
+#lobby, #room { max-width: 760px; margin-inline: auto; }
+.lobby-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; margin-top: 28px; }
+.lobby-options section { display: flex; flex-direction: column; align-items: stretch; }
+.lobby-options label { margin-top: 0; }
+.lobby-options button { margin-top: auto; }
+.lobby-options input { margin-bottom: 20px; }
+#room-id { letter-spacing: 3px; user-select: all; }
+#room-code { text-transform: uppercase; letter-spacing: 3px; }
 
 label {
   display: block;
   margin-top: 16px;
 }
 
-input {
+input, select {
   width: 100%;
   padding: 12px;
   margin-top: 6px;
   border-radius: 8px;
-  border: 1px solid #cba75c;
-  background: #f6f0df;
-  color: #142b22;
+  border: 1px solid var(--rim);
+  background: var(--button);
+  color: var(--text);
   font-size: 16px;
 }
 
 button {
   padding: 12px 18px;
-  background: #cba75c;
-  color: #102922;
+  background: var(--play-button);
+  color: var(--button-text);
+  font-family: inherit;
   font-weight: bold;
   border: none;
   border-radius: 8px;
@@ -81,7 +95,7 @@ button {
 }
 
 button:hover:not(:disabled) {
-  background: #ebd297;
+  filter: brightness(1.1);
   transform: translateY(-1px);
 }
 
@@ -89,6 +103,12 @@ button:disabled {
   opacity: .4;
   cursor: not-allowed;
 }
+
+button.secondary { background: var(--button); color: var(--text); border: 1px solid var(--rim); }
+summary { cursor: pointer; color: var(--secondary); font-weight: 600; }
+details[open] summary { margin-bottom: 12px; }
+.rules { margin-top: 16px; color: var(--muted); font-size: 14px; }
+.rules li + li { margin-top: 8px; }
 
 .buttons {
   display: flex;
@@ -106,15 +126,20 @@ button:disabled {
 }
 
 .player-card {
-  background: #245244;
+  background: var(--felt);
   padding: 16px;
-  border: 1px solid #6f916f;
+  border: 1px solid var(--panel-line);
   border-radius: 12px;
 }
 
 .player-card h3 {
-  margin-top: 0;
+  margin: 0;
 }
+
+.battle-top .panel { margin: 0; }
+.player-card.active { border-color: var(--attack); }
+.player-status { color: var(--muted); font-size: 13px; }
+.resources { display: flex; gap: 8px 20px; flex-wrap: wrap; margin-top: 12px; font-variant-numeric: tabular-nums; }
 
 .player-card p {
   margin: 6px 0;
@@ -123,14 +148,14 @@ button:disabled {
 .health-bar {
   height: 18px;
   border-radius: 20px;
-  background: #5f2929;
+  background: var(--enemy-ring);
   overflow: hidden;
 }
 
 #enemy-bar {
   width: 100%;
   height: 100%;
-  background: #c64b45;
+  background: var(--danger);
   transition: width .25s ease;
 }
 
@@ -153,11 +178,21 @@ button:disabled {
   box-shadow: 0 5px 10px #0004;
 }
 
+span.playing-card { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.playing-card:disabled { opacity: 1; }
+.card-back { background: var(--felt); color: var(--muted); }
+.blackjack-table { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.blackjack-hand { min-width: 0; }
+.blackjack-hand .cards { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 8px; }
+#blackjack-info { border-top: 1px solid var(--panel-line); padding-top: 16px; margin-top: 16px; }
+.round-result { color: var(--attack); font-weight: 600; }
+
 .playing-card.red {
   color: #b32632;
 }
 
-.playing-card.selected {
+.playing-card.selected,
+.playing-card.selected:hover:not(:disabled) {
   transform: translateY(-12px);
   border: 3px solid #e4b743;
   box-shadow: 0 0 12px #e4b743;
@@ -171,12 +206,25 @@ button:disabled {
 }
 
 #log p {
-  border-bottom: 1px solid #ffffff20;
+  border-bottom: 1px solid var(--panel-line);
   padding: 8px 0;
 }
 
 #message {
-  color: #f1c77f;
+  color: var(--attack);
+  min-height: 1.5em;
+  overflow-wrap: anywhere;
+}
+
+#message:empty { display: none; }
+
+.hint, #latency { color: var(--muted); font-size: 13px; }
+.player-card h3 { overflow-wrap: anywhere; }
+#poker-preview { min-height: 1.5em; color: var(--secondary); }
+:focus-visible { outline: 3px solid var(--shield); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; }
 }
 
 [hidden] {
@@ -194,12 +242,21 @@ button:disabled {
   }
 
   .player-list,
-  .battle-top {
+  .battle-top,
+  .lobby-options,
+  .blackjack-table {
     grid-template-columns: 1fr;
   }
 
+  .lobby-options { gap: 24px; }
+  .lobby-options button { margin-top: 8px; }
+  .lobby-options input { margin-bottom: 8px; }
+  .cards { gap: 6px; }
+  #hand { flex-wrap: nowrap; }
+
   .playing-card {
-    width: 58px;
+    width: min(58px, calc((100vw - 90px) / 5));
+    padding-inline: 0;
     height: 88px;
     font-size: 18px;
   }

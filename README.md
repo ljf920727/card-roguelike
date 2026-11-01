@@ -74,6 +74,21 @@ Outside the tutorial, your turn ends on its own about a second after you run out
 
 All numbers are placeholders for playtesting. Battle visuals use PixiJS drawing code and system fonts; no runtime requests to external asset services are needed.
 
+## Multiplayer co-op
+
+Run `npm run dev:all` to start the Vite client and local Socket.IO server (port 3001). Open **Multiplayer Co-op** from the menu in two separate tabs or browsers. The host chooses a room difficulty, creates a room and shares its six-character code. The second player joins; both press **Ready**. Each tab has its own reconnect identity, so local two-player testing does not replace the first player.
+
+Co-op currently consists of one shared Ogre battle, rather than the solo casino run. Normal Ogre stats are 260 HP and 12 attack; Easy uses 208 HP and 10 attack; Hard uses 325 HP and 15 attack. Both players see the room's fixed difficulty. The server owns combat state and sends each player only their private hand and public teammate stats.
+
+- Poker costs all 3 energy, discards the whole hand, resolves an Ogre attack and passes the turn. Select 1–5 cards to preview the hand's effect.
+- Blackjack costs 1 energy per deal. Win to deal damage, lose to take an Ogre attack, or push to recover the energy. Finish the round before ending your turn. This co-op prototype draws blackjack cards independently with replacement; it does not yet share solo deck, Joker, shop or chip progression.
+- Blackjack shows your total during play and a result after settlement; expand the result to inspect both hands and totals. Your latest result survives reconnection until the next deal or rematch. Rules and the battle log can be expanded when needed.
+- **End turn** resolves an Ogre attack and passes control to a living teammate. A player defeated by blackjack also passes control immediately. A shared victory counts for both players; defeat occurs when both players fall.
+- Battle controls pause while either player is disconnected. Reconnecting or reloading the active battle restores that tab's seat and private cards while the server is running. Leaving explicitly ends an active battle. Rooms are in memory and do not survive server restarts.
+- After a completed battle, both players can choose **Ready for another battle** to replay at the same difficulty. Leave and create a new room to change difficulty.
+
+Hosted clients require `VITE_MULTIPLAYER_URL` at build time, pointing to a reachable Socket.IO-compatible endpoint. GitHub Pages hosts only the static client; it does not run `server/index.js`. Without a configured hosted endpoint, the co-op page explains that it is unavailable and links back to solo play. Cloudflare Durable Objects deployment and protocol integration are separate work; this client is not a raw WebSocket client. The local suite starts isolated servers on available ports and needs no manually running server.
+
 ## What Each File Does
 
 Tutorial lesson setup, restrictions, and action-driven progression live in
@@ -89,7 +104,7 @@ verification. No additional test dependencies are required.
 
 This project separates the UI, game rules, combat logic, and game data so team members can work on different parts without interfering with each other.
 
-`src/systems/DifficultySystem.js` owns the shared presets; `src/difficultyPreferences.js` stores only the next solo run's preference.
+`src/systems/DifficultySystem.js` owns the shared presets; `src/difficultyPreferences.js` stores only the next solo run's preference. `src/multiplayer/viewState.js` derives control availability and status text from authoritative multiplayer snapshots. `server/index.js` exports an isolated server factory for integration tests and starts the local server when executed directly.
 
 ### `src/gameState.js`
 
