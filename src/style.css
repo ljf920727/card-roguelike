@@ -968,6 +968,29 @@ button {
     font-weight: 500;
 }
 
+.difficulty-settings {
+    width: min(360px, 100%);
+    padding: 12px 16px;
+    border: 1px solid var(--panel-line);
+    border-radius: 12px;
+    background: var(--panel);
+    color: var(--secondary);
+    font-size: 13px;
+}
+
+.difficulty-settings select {
+    margin: 0 0 8px 12px;
+    padding: 6px 12px;
+    border: 1px solid var(--rim);
+    border-radius: 6px;
+    background: var(--button);
+    color: var(--text);
+    font: inherit;
+}
+
+#difficulty-note { margin-top: 6px; color: var(--muted); }
+.difficulty-badge { color: var(--secondary); font-size: 12px; }
+
 .menu-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1031,6 +1054,16 @@ button {
 
 .menu-button[hidden] {
     display: none;
+}
+
+@media (max-height: 800px) {
+    .menu { padding-block: 20px; }
+    .menu-fan { display: none; }
+    .menu-content { gap: 12px; }
+    .menu-title { font-size: clamp(3rem, 8vw, 4.5rem); }
+    .menu-actions { gap: 12px; margin-top: 0; }
+    .menu-button { padding: 10px 16px; font-size: 1.15rem; }
+    .menu-button.play { padding-block: 12px; font-size: 1.3rem; }
 }
 
 .rules-dialog {

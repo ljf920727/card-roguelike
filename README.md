@@ -35,6 +35,8 @@ Open the preview URL ending in `/card-roguelike/`, check that the game and tab i
 
 The game opens on a main menu. **Play** starts a run, **How to play** shows the rules, and the theme button switches between light and dark. During a run, **Menu** in the top bar or the Esc key brings the menu back with **Continue run** and **New run**.
 
+Choose **Easy**, **Normal** or **Hard** before starting a solo run. Easy multiplies enemy HP and attack ranges by 0.8; Normal preserves the standard balance; Hard multiplies them by 1.25. Values round to whole points. Blackjack loss penalties and enemy intents use the scaled attack range. Card effects, rewards, healing and energy costs stay the same. The difficulty badge shows the active run's setting; changing the menu selection affects only the next run. The preference is saved locally when storage is available. **Play tutorial** is a separate option and always uses Normal. Difficulty scaling applies to all five floors and stacks with Loaded Deck's HP multiplier. These presets are playtest values, not finalized balance.
+
 A run climbs the five floors of a casino. Each floor is two fights against enemies from that floor's pool, then its boss. From floor 2, each floor adds a house rule (the dealer hits soft 17, pushes don't refund, shield caps at 25). You start at 100 HP, recover up to 10 HP after a fight and 30 after a boss. Beating the floor 5 boss clears the casino.
 
 You have 3 energy per turn and a hand of 5 cards from your deck. Unplayed cards stay in your hand; at the start of each turn it tops back up to 5.
@@ -86,6 +88,8 @@ Run `npm test` for the Node built-in test suite, and `npm run build` for product
 verification. No additional test dependencies are required.
 
 This project separates the UI, game rules, combat logic, and game data so team members can work on different parts without interfering with each other.
+
+`src/systems/DifficultySystem.js` owns the shared presets; `src/difficultyPreferences.js` stores only the next solo run's preference.
 
 ### `src/gameState.js`
 

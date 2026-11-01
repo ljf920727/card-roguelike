@@ -103,6 +103,7 @@
       <div class="topbar-end">
         <span class="phase" id="phase-text"></span>
         <button type="button" class="button secondary small" id="theme-button"></button>
+        <span id="run-difficulty" class="difficulty-badge" aria-label="Run difficulty">Normal</span>
         <button type="button" class="button secondary small" id="menu-button" aria-keyshortcuts="Escape">Menu</button>
       </div>
     </header>
@@ -229,6 +230,12 @@
           <span>J</span><span>u</span><span>n</span><span>i</span><span>p</span><span>e</span><span>r</span>
         </h2>
         <p class="menu-tagline">Blackjack and poker, one run at a time.</p>
+        <div class="difficulty-settings">
+          <label for="menu-difficulty">Difficulty</label>
+          <select id="menu-difficulty" aria-describedby="difficulty-description difficulty-note"></select>
+          <p id="difficulty-description"></p>
+          <p id="difficulty-note"></p>
+        </div>
         <div class="menu-actions">
           <button type="button" class="menu-button play" id="menu-play">Play</button>
           <button type="button" class="menu-button new-run" id="menu-new-run" hidden>New run</button>

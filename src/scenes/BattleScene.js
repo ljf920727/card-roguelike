@@ -17,8 +17,10 @@ import { ensureRewards } from "../systems/RewardSystem.js";
 import { getJoker, hasJoker, jokerSlots, CARD_COUNTER_REVEAL } from "../systems/JokerSystem.js";
 import { getCurse } from "../systems/CurseSystem.js";
 import { resetGameState } from "../gameState.js";
+import { getPreferredDifficulty } from "../difficultyPreferences.js";
+import { getDifficulty } from "../systems/DifficultySystem.js";
 import { BATTLE_THEMES, getPreferredTheme, savePreferredTheme } from "../themes.js";
-import { isTutorialActive, tutorialAllows, tutorialHoldsTurn, TUTORIAL_AVAILABLE } from "../systems/TutorialSystem.js";
+import { isTutorialActive, tutorialAllows, tutorialHoldsTurn } from "../systems/TutorialSystem.js";
 import { hasCompletedTutorial, markTutorialComplete } from "../tutorialPreferences.js";
 import { GuideView } from "./GuideView.js";
 import { RunScreen } from "./RunScreen.js";
@@ -465,9 +467,10 @@ export class BattleScene {
         }, ENEMY_PHASE_MS);
     }
 
-    startRun({ tutorial = TUTORIAL_AVAILABLE && !this.tutorialComplete } = {}) {
+    /** Starts a run with a fixed difficulty; the tutorial always uses Normal. */
+    startRun({ tutorial = false, difficulty = getPreferredDifficulty() } = {}) {
         this.runStarted = true;
-        this.restart({ tutorial });
+        this.restart({ tutorial, difficulty });
     }
 
     isRunInProgress() {
@@ -503,6 +506,7 @@ export class BattleScene {
 
     /** Displays player resources and whether battle input is available. */
     refreshHUD() {
+        document.getElementById("run-difficulty").textContent = getDifficulty(this.state.run.difficulty).label;
         const { hp, maxHp, shield, shieldOld, energy, maxEnergy } = this.state.player;
         renderHearts(this.ui["hp-hearts"], hp, maxHp);
         this.ui["hp-text"].textContent = `${hp} / ${maxHp}`;
