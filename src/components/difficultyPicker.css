@@ -1,0 +1,59 @@
+/** Gives difficulty radios the raised, tactile finish of the game's menu buttons. */
+.difficulty-picker {
+    display: flex;
+    gap: 10px;
+    min-width: 0;
+    padding: 0;
+    margin: 0;
+    border: 0;
+}
+
+.difficulty-picker legend {
+    width: 100%;
+    margin-bottom: 12px;
+    color: var(--secondary);
+    font: 600 11px/1.2 var(--ui-font, system-ui);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+}
+
+.difficulty-picker label { position: relative; flex: 1; margin: 0; cursor: pointer; }
+.difficulty-picker input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.difficulty-chip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 8px 14px;
+    border: 1px solid var(--panel-line);
+    border-radius: 24px;
+    background: var(--button);
+    color: var(--secondary);
+    box-shadow: 0 4px 0 var(--felt-edge), 0 7px 12px #0002;
+    font: 700 1rem var(--display-font, Georgia);
+    transition: translate 220ms cubic-bezier(.2, 1.5, .4, 1), background 160ms, color 160ms, box-shadow 160ms;
+}
+
+.difficulty-pips { font: 700 12px system-ui; letter-spacing: 1px; color: var(--rim); }
+.difficulty-picker label:hover .difficulty-chip { translate: 0 -3px; }
+.difficulty-picker input:checked + .difficulty-chip {
+    color: var(--button-text);
+    background: var(--play-button);
+    border-color: var(--rim);
+    box-shadow: 0 4px 0 color-mix(in srgb, var(--play-button) 55%, black), 0 8px 14px #0003;
+    translate: 0 -2px;
+}
+.difficulty-picker input:checked + .difficulty-chip .difficulty-pips { color: inherit; }
+.difficulty-picker input:focus-visible + .difficulty-chip { outline: 3px solid var(--shield); outline-offset: 5px; }
+.difficulty-picker label:active .difficulty-chip { translate: 0 2px; box-shadow: 0 1px 0 var(--felt-edge); }
+
+@media (prefers-reduced-motion: reduce) {
+    .difficulty-chip { transition: none; }
+}

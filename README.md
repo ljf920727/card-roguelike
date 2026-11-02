@@ -82,7 +82,7 @@ Co-op currently consists of one shared Ogre battle, rather than the solo casino 
 
 - Poker costs all 3 energy, discards the whole hand, resolves an Ogre attack and passes the turn. Select 1–5 cards to preview the hand's effect.
 - Blackjack costs 1 energy per deal. Win to deal damage, lose to take an Ogre attack, or push to recover the energy. Finish the round before ending your turn. This co-op prototype draws blackjack cards independently with replacement; it does not yet share solo deck, Joker, shop or chip progression.
-- Blackjack shows your total during play and a result after settlement; expand the result to inspect both hands and totals. Your latest result survives reconnection until the next deal or rematch. Rules and the battle log can be expanded when needed.
+- Blackjack shows your total during play and reveals both hands at settlement. The result can be collapsed and survives reconnection until the next deal or rematch. Rules and the battle log can be expanded when needed.
 - **End turn** resolves an Ogre attack and passes control to a living teammate. A player defeated by blackjack also passes control immediately. A shared victory counts for both players; defeat occurs when both players fall.
 - Battle controls pause while either player is disconnected. Reconnecting or reloading the active battle restores that tab's seat and private cards while the server is running. Leaving explicitly ends an active battle. Rooms are in memory and do not survive server restarts.
 - After a completed battle, both players can choose **Ready for another battle** to replay at the same difficulty. Leave and create a new room to change difficulty.
@@ -105,6 +105,8 @@ verification. No additional test dependencies are required.
 This project separates the UI, game rules, combat logic, and game data so team members can work on different parts without interfering with each other.
 
 `src/systems/DifficultySystem.js` owns the shared presets; `src/difficultyPreferences.js` stores only the next solo run's preference. `src/multiplayer/viewState.js` derives control availability and status text from authoritative multiplayer snapshots. `server/index.js` exports an isolated server factory for integration tests and starts the local server when executed directly.
+
+Solo and co-op share `DifficultyPicker`, `healthDisplay`, and the HTML card faces in `src/components/`. `src/multiplayer/battleView.js` reconciles cards and seats in place so selection, focus, and damage feedback survive room snapshots. It handles presentation only; the server owns combat and turn rules. Motion respects the system's reduced-motion preference.
 
 ### `src/gameState.js`
 

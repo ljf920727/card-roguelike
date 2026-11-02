@@ -1,9 +1,13 @@
 /** Connects the cooperative lobby and battle UI to authoritative room snapshots. */
 import { io } from 'socket.io-client';
-import { DIFFICULTIES, getDifficulty } from '../systems/DifficultySystem.js';
+import { getDifficulty } from '../systems/DifficultySystem.js';
 import { evaluatePokerHand } from '../systems/rules/PokerRule.js';
 import { BATTLE_THEMES, getPreferredTheme, savePreferredTheme } from '../themes.js';
 import { canAct, battleStatus } from './viewState.js';
+import { DifficultyPicker } from '../components/DifficultyPicker.js';
+import { renderHearts } from '../components/healthDisplay.js';
+import { ENEMY_ICONS } from '../enemyIcons.js';
+import { renderPlayerSeats, renderPokerCards, renderBlackjackTable } from './battleView.js';
 
 /** Hosted builds need an explicit endpoint; local development uses the local server. */
 const serverUrl = import.meta.env.VITE_MULTIPLAYER_URL ||
@@ -36,12 +40,14 @@ if (!token) {
 const savedName = readStorage('localStorage', 'juniper.playerName');
 
 $('name').value = savedName;
-$('difficulty').replaceChildren(...DIFFICULTIES.map(preset => new Option(preset.label, preset.id)));
-$('difficulty').value = 'normal';
-$('difficulty').onchange = () => {
-  $('difficulty-description').textContent = getDifficulty($('difficulty').value).description;
-};
-$('difficulty').onchange();
+const difficulty = new DifficultyPicker($('difficulty'), 'normal', value => {
+  $('difficulty-description').textContent = getDifficulty(value).description;
+});
+$('difficulty-description').textContent = getDifficulty(difficulty.value).description;
+$('enemy-icon').setAttribute('d', ENEMY_ICONS.Ogre);
+$('blackjack-info').addEventListener('toggle', () => {
+  if (state?.blackjack) $('blackjack-info').open = true;
+});
 applyTheme();
 
 /** Reads optional browser persistence without blocking play in restricted storage environments. */
@@ -125,6 +131,7 @@ function saveRoom(id) {
 
 /** Displays the lobby, waiting room or battle while preserving global status feedback. */
 function showPage(page) {
+  document.body.dataset.page = page;
   $('lobby').hidden = page !== 'lobby';
   $('room').hidden = page !== 'room';
   $('battle').hidden = page !== 'battle';
@@ -136,7 +143,7 @@ async function createRoom() {
     const result = await request('createRoom', {
       name: saveIdentity(),
       token,
-      difficulty: $('difficulty').value,
+      difficulty: difficulty.value,
     });
 
     if (!result.success) {
@@ -210,6 +217,7 @@ async function leave() {
 async function action(type, cardIds) {
   if (!isMyTurn(state)) return;
   const start = performance.now();
+  const source = document.activeElement;
 
   try {
     const result = await request(
@@ -226,38 +234,21 @@ async function action(type, cardIds) {
       selectedCards.clear();
       message('');
       if (state) render(state);
+      if (['deal', 'hit', 'stand'].includes(source.id) &&
+          [document.body, source].includes(document.activeElement)) {
+        const next = !source.hidden ? source : state?.blackjack ? $('hit') :
+          !$('deal').disabled ? $('deal') : $('end-turn');
+        if (!next.disabled) next.focus({ preventScroll: true });
+      }
     }
   } catch (err) {
     message(err.message);
   }
 }
 
-/** Displays public player resources and connection or readiness state. */
+/** Updates persistent player seats with the latest resources and turn ownership. */
 function renderPlayers(container, players) {
-  container.replaceChildren();
-
-  players.forEach(p => {
-    const card = document.createElement('article');
-    const active = state?.status === 'playing' && state.players[state.activeIndex] === p;
-    card.className = `player-card${active ? ' active' : ''}`;
-
-    card.append(
-      makeText('h3', `${p.name}${p.isYou ? ' (You)' : ''}`),
-      makeText('p', !p.connected ? 'Disconnected' : p.hp <= 0 ? 'Defeated' :
-        state?.status === 'playing' ? (active ? 'Playing' : 'Waiting') : p.ready ? 'Ready' : 'Not ready', 'player-status')
-    );
-    if (state?.status !== 'waiting') {
-      const resources = makeText('div', '', 'resources');
-      resources.append(
-        makeText('span', `HP ${p.hp}/100`),
-        makeText('span', `Shield ${p.shield}`),
-        makeText('span', `Energy ${p.energy}/3`)
-      );
-      card.append(resources);
-    }
-
-    container.appendChild(card);
-  });
+  renderPlayerSeats(container, players, state?.status, state?.activeIndex);
 }
 
 /** Displays the locked difficulty and the next step for the waiting room. */
@@ -279,44 +270,15 @@ function renderLobby(data) {
   $('ready').textContent = me?.ready ? 'Ready ✓' : 'Ready';
 }
 
-/** Draws selectable poker cards, preserving keyboard focus when the same card remains available. */
+/** Preserves card nodes across selection and room updates so only new draws animate. */
 function renderHand(data) {
-  const hand = $('hand');
-  const focusedCard = hand.contains(document.activeElement) ? document.activeElement.dataset.cardId : null;
-  hand.replaceChildren();
-
-  const validIds = new Set(data.hand.map(c => c.id));
-  selectedCards = new Set(
-    [...selectedCards].filter(id => validIds.has(id))
-  );
-
-  for (const card of data.hand) {
-    const button = document.createElement('button');
-    button.className =
-      `playing-card ${selectedCards.has(card.id) ? 'selected' : ''}`;
-
-    button.textContent = `${card.rank}${card.suit}`;
-
-    if (card.suit === '♥' || card.suit === '♦') {
-      button.classList.add('red');
-    }
-
-    button.disabled = !isMyTurn(data) || !!data.blackjack;
-    button.setAttribute('aria-pressed', String(selectedCards.has(card.id)));
-
-    button.onclick = () => {
-      if (selectedCards.has(card.id)) {
-        selectedCards.delete(card.id);
-      } else if (selectedCards.size < 5) {
-        selectedCards.add(card.id);
-      }
-      renderBattle(state);
-    };
-    button.dataset.cardId = card.id;
-
-    hand.appendChild(button);
-  }
-  if (focusedCard) hand.querySelector(`[data-card-id="${focusedCard}"]:not(:disabled)`)?.focus();
+  const ids = new Set(data.hand.map(card => card.id));
+  selectedCards = new Set([...selectedCards].filter(id => ids.has(id)));
+  renderPokerCards($('hand'), data.hand, selectedCards, isMyTurn(data) && !data.blackjack, id => {
+    if (selectedCards.has(id)) selectedCards.delete(id);
+    else if (selectedCards.size < 5) selectedCards.add(id);
+    renderBattle(state);
+  }, !data.blackjack);
 }
 
 /** Combines transport readiness with authoritative turn ownership. */
@@ -324,61 +286,29 @@ function isMyTurn(data) {
   return canAct(data, socket.connected && synced, pending);
 }
 
-/** Renders a blackjack hand with its visible total and an unrevealed dealer card when needed. */
-function blackjackHand(label, cards, total) {
-  const group = makeText('div', '', 'blackjack-hand');
-  group.append(makeText('h3', total == null ? label : `${label} · ${total}`));
-  const row = makeText('div', '', 'cards');
-  for (const card of cards) {
-    const red = card.suit === '♥' || card.suit === '♦';
-    const face = makeText('span', card.hidden ? '?' : `${card.rank}${card.suit}`,
-      `playing-card${red ? ' red' : ''}${card.hidden ? ' card-back' : ''}`);
-    if (card.hidden) face.setAttribute('aria-label', 'Hidden card');
-    row.append(face);
-  }
-  group.append(row);
-  return group;
-}
-
-/** Displays the private blackjack round, retaining revealed cards and the result after settlement. */
-function renderBlackjack(data) {
-  const info = $('blackjack-info');
-  const expanded = info.querySelector('details')?.open ?? false;
-  info.replaceChildren();
-  const bj = data.blackjack || data.lastBlackjack;
-  info.hidden = !bj;
-  if (!bj) return;
-  const table = makeText('div', '', 'blackjack-table');
-  table.append(blackjackHand('You', bj.player, bj.playerTotal), blackjackHand('Dealer', bj.dealer, bj.dealerTotal));
-  if (data.lastBlackjack && !data.blackjack) {
-    const outcome = bj.outcome === 'win' ? `Win · ${bj.damage} damage` :
-      bj.outcome === 'push' ? `Push · +${bj.refund} energy` :
-        `${bj.outcome === 'bust' ? 'Bust' : 'Loss'} · −${bj.damage} HP${bj.blocked ? ` · ${bj.blocked} blocked` : ''}`;
-    const result = document.createElement('details');
-    result.open = expanded;
-    result.append(makeText('summary', `Blackjack · ${outcome}`, 'round-result'), table);
-    info.append(result);
-  } else {
-    info.append(table);
-  }
-}
-
 /** Renders battle feedback, selection effects, replay readiness and enabled actions. */
 function renderBattle(data) {
-  $('turn').textContent = battleStatus(data, socket.connected && synced);
-  $('battle-difficulty').textContent = `${getDifficulty(data.difficulty).label} difficulty`;
+  const turn = $('turn');
+  const label = battleStatus(data, socket.connected && synced);
+  if (turn.textContent !== label) {
+    turn.textContent = label;
+    turn.classList.remove('turn-arrived');
+    void turn.offsetWidth;
+    turn.classList.add('turn-arrived');
+  }
+  $('battle-difficulty').textContent = getDifficulty(data.difficulty).label;
   $('enemy-intent').textContent = `Attack · ${data.enemy.attack}`;
 
   $('enemy-name').textContent = data.enemy.name;
   $('enemy-hp').textContent =
     `HP ${data.enemy.hp}/${data.enemy.maxHp}`;
 
-  $('enemy-bar').style.width =
-    `${100 * data.enemy.hp / data.enemy.maxHp}%`;
+  renderHearts($('enemy-hearts'), data.enemy.hp, data.enemy.maxHp);
+  $('enemy-token').classList.toggle('defeated', data.enemy.hp <= 0);
 
   renderPlayers($('battle-players'), data.players);
   renderHand(data);
-  renderBlackjack(data);
+  renderBlackjackTable(data);
 
   const myTurn = isMyTurn(data);
   const me = data.players.find(p => p.isYou);
@@ -386,7 +316,7 @@ function renderBattle(data) {
   $('poker-preview').textContent = evaluation
     ? `${evaluation.label} · ${evaluation.actions.map(effect => `${effect.amount} ${effect.type === 'attack' ? 'damage' : effect.type === 'defend' ? 'shield' : 'healing'}`).join(' · ')} · Ends turn`
     : 'Select 1–5 cards';
-  $('hand').hidden = $('poker-preview').hidden = Boolean(data.blackjack);
+  $('poker-area').hidden = Boolean(data.blackjack);
   $('hand-title').textContent = data.blackjack ? 'Blackjack' : 'Your hand';
   $('hit').hidden = $('stand').hidden = !data.blackjack;
   $('deal').hidden = $('play-poker').hidden = Boolean(data.blackjack);

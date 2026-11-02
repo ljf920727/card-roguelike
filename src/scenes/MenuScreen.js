@@ -1,6 +1,7 @@
 /** Shows the main menu over the battle and routes its buttons to the battle scene. */
 import { TUTORIAL_AVAILABLE } from "../systems/TutorialSystem.js";
-import { DIFFICULTIES, getDifficulty } from "../systems/DifficultySystem.js";
+import { getDifficulty } from "../systems/DifficultySystem.js";
+import { DifficultyPicker } from "../components/DifficultyPicker.js";
 import { getPreferredDifficulty, savePreferredDifficulty } from "../difficultyPreferences.js";
 
 export class MenuScreen {
@@ -13,11 +14,8 @@ export class MenuScreen {
         this.themeButton = document.getElementById("menu-theme");
         this.rulesDialog = document.getElementById("rules-dialog");
         this.gameRegions = [document.querySelector(".topbar"), document.querySelector(".layout")];
-        this.difficulty = document.getElementById("menu-difficulty");
-        this.difficulty.replaceChildren(...DIFFICULTIES.map(preset => new Option(preset.label, preset.id)));
-        this.difficulty.value = getPreferredDifficulty();
-        this.difficulty.addEventListener("change", () => {
-            savePreferredDifficulty(this.difficulty.value);
+        this.difficulty = new DifficultyPicker(document.getElementById("menu-difficulty"), getPreferredDifficulty(), value => {
+            savePreferredDifficulty(value);
             this.refresh();
         });
 
