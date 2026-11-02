@@ -1,4 +1,4 @@
-/** Presents shared difficulty presets as keyboard-accessible casino chips. */
+/** Presents shared difficulty presets as accessible chips marked by one to three spades. */
 import { DIFFICULTIES, getDifficulty } from "../systems/DifficultySystem.js";
 
 export class DifficultyPicker {
@@ -21,7 +21,7 @@ export class DifficultyPicker {
             const pips = document.createElement("span");
             pips.className = "difficulty-pips";
             pips.setAttribute("aria-hidden", "true");
-            pips.textContent = "•".repeat(index + 1);
+            pips.textContent = "♠".repeat(index + 1);
             const title = document.createElement("span");
             title.textContent = preset.label;
             face.append(pips, title);
