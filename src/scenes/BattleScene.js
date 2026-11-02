@@ -1,4 +1,5 @@
 /** Binds the HTML battle interface to game state and draws the hand with PixiJS. */
+import { renderHearts } from "../components/healthDisplay.js";
 import { Container } from "pixi.js";
 
 import { CardView, CARD_SELECTED_LIFT } from "../components/CardView.js";
@@ -17,8 +18,10 @@ import { ensureRewards } from "../systems/RewardSystem.js";
 import { getJoker, hasJoker, jokerSlots, CARD_COUNTER_REVEAL } from "../systems/JokerSystem.js";
 import { getCurse } from "../systems/CurseSystem.js";
 import { resetGameState } from "../gameState.js";
+import { getPreferredDifficulty } from "../difficultyPreferences.js";
+import { getDifficulty } from "../systems/DifficultySystem.js";
 import { BATTLE_THEMES, getPreferredTheme, savePreferredTheme } from "../themes.js";
-import { isTutorialActive, tutorialAllows, tutorialHoldsTurn, TUTORIAL_AVAILABLE } from "../systems/TutorialSystem.js";
+import { isTutorialActive, tutorialAllows, tutorialHoldsTurn } from "../systems/TutorialSystem.js";
 import { hasCompletedTutorial, markTutorialComplete } from "../tutorialPreferences.js";
 import { GuideView } from "./GuideView.js";
 import { RunScreen } from "./RunScreen.js";
@@ -30,46 +33,6 @@ const ENEMY_PHASE_MS = 400;
 const AUTO_END_TURN_MS = 1000;
 
 const ACTION_COLORS = { attack: "attack", defend: "shield", heal: "heal" };
-const HEARTS = 10;
-
-function renderHearts(container, hp, maxHp) {
-    if (container.children.length !== HEARTS) {
-        container.replaceChildren(...Array.from({ length: HEARTS }, () => {
-            const heart = document.createElement("span");
-            heart.className = "heart";
-            const lost = document.createElement("span");
-            lost.className = "heart-lost";
-            const fill = document.createElement("span");
-            fill.className = "heart-fill";
-            heart.append(lost, fill);
-            return heart;
-        }));
-    }
-    const perHeart = maxHp / HEARTS;
-    [...container.children].forEach((heart, i) => {
-        heart.style.setProperty("--fill", `${Math.max(0, Math.min(1, (hp - i * perHeart) / perHeart)) * 100}%`);
-    });
-    container.setAttribute("aria-label", `Health ${Math.max(0, hp)} of ${maxHp}`);
-    const previous = Number(container.dataset.hp);
-    const sameScale = Number(container.dataset.maxHp) === maxHp;
-    container.dataset.hp = String(hp);
-    container.dataset.maxHp = String(maxHp);
-    if (sameScale && hp < previous) showHeartHit(container, previous - Math.max(0, hp), Math.max(0, hp), perHeart);
-}
-
-function showHeartHit(container, amount, hp, perHeart) {
-    container.classList.remove("hit");
-    void container.offsetWidth;
-    container.classList.add("hit");
-    const heart = container.children[Math.min(HEARTS - 1, Math.floor(hp / perHeart))];
-    const pop = document.createElement("span");
-    pop.className = "damage-pop";
-    pop.textContent = `-${amount}`;
-    pop.style.left = `${container.offsetLeft + heart.offsetLeft + heart.offsetWidth / 2}px`;
-    container.parentElement.append(pop);
-    setTimeout(() => pop.remove(), 1000);
-}
-
 const CARD_WIDTH = 100;
 const CARD_HEIGHT = 140;
 const CARD_SPACING = 112;
@@ -465,9 +428,10 @@ export class BattleScene {
         }, ENEMY_PHASE_MS);
     }
 
-    startRun({ tutorial = TUTORIAL_AVAILABLE && !this.tutorialComplete } = {}) {
+    /** Starts a run with a fixed difficulty; the tutorial always uses Normal. */
+    startRun({ tutorial = false, difficulty = getPreferredDifficulty() } = {}) {
         this.runStarted = true;
-        this.restart({ tutorial });
+        this.restart({ tutorial, difficulty });
     }
 
     isRunInProgress() {
@@ -503,6 +467,7 @@ export class BattleScene {
 
     /** Displays player resources and whether battle input is available. */
     refreshHUD() {
+        document.getElementById("run-difficulty").textContent = getDifficulty(this.state.run.difficulty).label;
         const { hp, maxHp, shield, shieldOld, energy, maxEnergy } = this.state.player;
         renderHearts(this.ui["hp-hearts"], hp, maxHp);
         this.ui["hp-text"].textContent = `${hp} / ${maxHp}`;

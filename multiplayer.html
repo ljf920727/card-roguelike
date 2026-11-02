@@ -1,90 +1,129 @@
 <!doctype html>
+<!-- Presents the cooperative lobby, private hand and shared battle status. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Juniper Multiplayer</title>
+  <link rel="icon" type="image/png" href="/card-icon.png">
   <link rel="stylesheet" href="/src/multiplayer/style.css">
 </head>
 <body>
-  <header>
-    <a href="./index.html">← Single Player</a>
-    <h1>JUNIPER</h1>
-    <span id="connection">Connecting...</span>
+  <header class="topbar">
+    <a class="brand" href="./index.html"><img src="/logo.png" alt=""><span>Juniper</span></a>
+    <span class="topbar-label">Co-op</span>
+    <span id="connection" role="status">Connecting...</span>
+    <button id="theme" class="secondary small" type="button">Light mode</button>
   </header>
 
   <main>
-    <section id="lobby" class="panel">
-      <h2>Multiplayer Co-op</h2>
-      <p>Play Blackjack and Poker together against the Ogre.</p>
+    <p id="message" role="status" aria-live="polite"></p>
+    <section id="lobby" class="lobby-screen screen">
+      <div class="lobby-mark" aria-hidden="true"><span>♠</span><span>♥</span></div>
+      <h1>Take a seat.</h1>
 
-      <label>Player Name</label>
+      <label for="name">Player name</label>
       <input id="name" maxlength="20" placeholder="Your name">
 
-      <label>Room Code</label>
-      <input id="room-code" maxlength="6" placeholder="ABC123">
-
-      <div class="buttons">
-        <button id="create">Create Room</button>
-        <button id="join">Join Room</button>
+      <div class="lobby-options">
+        <section>
+          <h3>Create a room</h3>
+          <fieldset id="difficulty" aria-describedby="difficulty-description"></fieldset>
+          <p id="difficulty-description" class="hint"></p>
+          <button id="create">Create room</button>
+        </section>
+        <section>
+          <h3>Join a room</h3>
+          <label for="room-code">Room code</label>
+          <input id="room-code" maxlength="6" placeholder="ABC123" autocapitalize="characters" autocomplete="off" spellcheck="false">
+          <button id="join" class="secondary">Join room</button>
+        </section>
       </div>
-
-      <p id="message"></p>
     </section>
 
-    <section id="room" class="panel" hidden>
-      <h2>Room: <span id="room-id"></span></h2>
+    <section id="room" class="lobby-screen screen" hidden>
+      <p class="eyebrow">Your table</p>
+      <h1 id="room-id"></h1>
+      <p id="room-difficulty" class="difficulty-badge"></p>
       <div id="players" class="player-list"></div>
       <p id="room-status"></p>
 
       <div class="buttons">
         <button id="ready">Ready</button>
-        <button id="leave">Leave Room</button>
+        <button id="leave" class="secondary">Leave room</button>
       </div>
     </section>
 
-    <section id="battle" hidden>
-      <div class="battle-top">
-        <div class="panel">
-          <h2>Co-op Battle</h2>
-          <p id="turn"></p>
-          <p id="latency">Server RTT: -- ms</p>
-        </div>
-        <div class="panel">
-          <h2 id="enemy-name">Ogre</h2>
-          <div class="health-bar">
-            <div id="enemy-bar"></div>
+    <section id="battle" class="screen" hidden>
+      <div class="battle-heading">
+        <span id="battle-difficulty" class="difficulty-badge"></span>
+        <p id="turn" role="status" aria-live="polite"></p>
+        <button id="battle-leave" class="secondary small">Leave room</button>
+      </div>
+      <div class="coop-table">
+        <div class="enemy-stage">
+          <div id="enemy-token" class="enemy-token" aria-hidden="true">
+            <svg class="enemy-icon" viewBox="0 0 512 512"><path id="enemy-icon"></path></svg>
           </div>
-          <p id="enemy-hp"></p>
+          <div class="enemy-info">
+            <h2 id="enemy-name">Ogre</h2>
+            <div class="enemy-health">
+              <div id="enemy-hearts" class="hearts enemy-hearts" role="img" aria-label="Enemy health"></div>
+              <span id="enemy-hp"></span>
+            </div>
+            <p id="enemy-intent"></p>
+          </div>
         </div>
+
+        <div id="battle-players" class="player-list"></div>
+
+        <section class="hand-panel">
+          <div class="hand-content">
+            <div id="poker-area">
+              <h3 id="hand-title" class="eyebrow">Your hand</h3>
+              <div id="hand" class="cards"></div>
+              <p id="poker-preview" aria-live="polite"></p>
+            </div>
+
+            <details id="blackjack-info" hidden>
+              <summary id="round-summary"></summary>
+              <div class="blackjack-table">
+                <div><h3 id="bj-player-total">You</h3><div id="bj-player" class="cards"></div></div>
+                <div><h3 id="bj-dealer-total">Dealer</h3><div id="bj-dealer" class="cards"></div></div>
+              </div>
+            </details>
+          </div>
+
+          <div class="buttons battle-actions">
+            <button id="play-poker">Play poker <span class="cost">3 energy</span></button>
+            <button id="deal">Deal blackjack <span class="cost">1 energy</span></button>
+            <button id="hit" hidden>Hit</button>
+            <button id="stand" hidden>Stand</button>
+            <button id="end-turn" class="secondary">End turn</button>
+          </div>
+        </section>
       </div>
 
-      <div id="battle-players" class="player-list"></div>
+      <div class="buttons replay-actions">
+        <button id="rematch" hidden>Ready for another battle</button>
+      </div>
 
-      <section class="panel">
-        <h3>Your Hand</h3>
-        <div id="hand" class="cards"></div>
-
-        <div class="buttons">
-          <button id="play-poker">Play Poker</button>
-          <button id="deal">Blackjack Deal</button>
-          <button id="hit">Hit</button>
-          <button id="stand">Stand</button>
-          <button id="end-turn">End Turn</button>
-        </div>
-
-        <div id="blackjack-info"></div>
-      </section>
-
-      <section class="panel">
-        <h3>Battle Log</h3>
+      <details class="battle-log">
+        <summary>Battle log</summary>
         <div id="log"></div>
-      </section>
+        <p id="latency">Latency: -- ms</p>
+      </details>
 
-      <div class="buttons">
-        <button id="battle-leave">Leave Room</button>
-      </div>
     </section>
+    <details class="rules">
+      <summary>How to play</summary>
+      <ul>
+        <li>Share the room code. Both players press Ready to begin.</li>
+        <li>Poker: 3 energy. Play 1–5 cards, discard your hand, then end your turn.</li>
+        <li>Blackjack: 1 energy. Beat the dealer to deal damage. A loss triggers an attack; a push refunds the energy.</li>
+        <li>End turn: the Ogre attacks, then play passes to your teammate. Defeat the Ogre together.</li>
+      </ul>
+    </details>
   </main>
 
   <script type="module" src="/src/multiplayer/game.js"></script>

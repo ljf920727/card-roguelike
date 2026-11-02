@@ -103,6 +103,7 @@
       <div class="topbar-end">
         <span class="phase" id="phase-text"></span>
         <button type="button" class="button secondary small" id="theme-button"></button>
+        <span id="run-difficulty" class="difficulty-badge" aria-label="Run difficulty">Normal</span>
         <button type="button" class="button secondary small" id="menu-button" aria-keyshortcuts="Escape">Menu</button>
       </div>
     </header>
@@ -217,6 +218,13 @@
     </section>
     <div class="menu" id="menu" hidden>
       <div class="menu-backdrop" aria-hidden="true"></div>
+      <button type="button" class="menu-theme" id="menu-theme">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <g class="theme-sun"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"></path></g>
+          <path class="theme-moon" d="M20.5 14A9 9 0 0 1 10 3.5 9 9 0 1 0 20.5 14Z"></path>
+        </svg>
+        <span id="menu-theme-label"></span>
+      </button>
       <div class="menu-content">
         <div class="menu-fan" aria-hidden="true">
           <span class="menu-card black">A<i>♠</i></span>
@@ -230,12 +238,30 @@
         </h2>
         <p class="menu-tagline">Blackjack and poker, one run at a time.</p>
         <div class="menu-actions">
-          <button type="button" class="menu-button play" id="menu-play">Play</button>
+          <div class="play-settings" id="play-settings">
+            <div class="play-split">
+              <button type="button" class="menu-button play" id="menu-play">Play</button>
+              <button type="button" class="menu-button play play-options-toggle" id="play-options-toggle" aria-label="Play options" aria-expanded="false" aria-controls="play-options">
+                <span class="play-options-heart" aria-hidden="true">♥</span>
+              </button>
+            </div>
+            <div class="play-options" id="play-options" hidden>
+              <button type="button" class="difficulty-toggle" id="difficulty-toggle" aria-expanded="false" aria-controls="difficulty-options">
+                <span>Difficulty</span>
+                <span id="difficulty-current" class="difficulty-pips" aria-hidden="true"></span>
+                <span class="menu-chevron" aria-hidden="true"></span>
+              </button>
+              <div class="difficulty-settings" id="difficulty-options" hidden>
+                <fieldset id="menu-difficulty" aria-describedby="difficulty-description difficulty-note"></fieldset>
+                <p id="difficulty-description"></p>
+                <p id="difficulty-note"></p>
+              </div>
+            </div>
+          </div>
           <button type="button" class="menu-button new-run" id="menu-new-run" hidden>New run</button>
           <button type="button" class="menu-button play" onclick="window.location.href='./multiplayer.html'">Multiplayer Co-op</button>
           <button type="button" class="menu-button rules" id="menu-rules">How to play</button>
           <button type="button" class="menu-button rules" id="menu-tutorial" hidden>Replay tutorial</button>
-          <button type="button" class="menu-button theme" id="menu-theme"></button>
         </div>
       </div>
     </div>
