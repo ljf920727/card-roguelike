@@ -112,7 +112,8 @@ export class MenuScreen {
         difficultyNote.hidden = !inProgress || this.difficulty.value === this.battle.state.run.difficulty;
         difficultyNote.textContent = `Next run only · Current: ${getDifficulty(this.battle.state.run.difficulty).label}`;
         this.newRunButton.hidden = !inProgress;
-        this.themeButton.textContent = this.battle.themeName === "dark" ? "Light mode" : "Dark mode";
+        this.themeButton.dataset.targetTheme = this.battle.themeName === "dark" ? "light" : "dark";
+        document.getElementById("menu-theme-label").textContent = this.battle.themeName === "dark" ? "Light mode" : "Dark mode";
     }
 
     /** Opens the main menu with the split button collapsed and focus on the primary action. */

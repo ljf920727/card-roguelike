@@ -729,7 +729,7 @@ button {
     display: grid;
     place-items: center;
     overflow: hidden auto;
-    padding: 32px var(--gutter);
+    padding: 76px var(--gutter) 32px;
     background: var(--background);
 }
 
@@ -922,9 +922,50 @@ button {
     --label: var(--accent-text);
 }
 
-.menu-button.theme {
-    --face: var(--panel);
-    --lip: color-mix(in srgb, var(--panel) 55%, black);
+.menu-theme {
+    position: fixed;
+    top: clamp(16px, 3vw, 28px);
+    right: clamp(16px, 3vw, 28px);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 9px 14px;
+    border: 1px solid var(--panel-line);
+    border-radius: 999px;
+    background: var(--panel);
+    color: var(--secondary);
+    box-shadow: 0 3px 0 var(--felt-edge), 0 6px 12px rgb(0 0 0 / 0.15);
+    font: 600 .8rem var(--ui-font);
+    cursor: pointer;
+    transition: translate 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.menu-theme:hover {
+    color: var(--text);
+    border-color: var(--rim);
+    translate: 0 -2px;
+}
+
+.menu-theme:active {
+    translate: 0 2px;
+    box-shadow: 0 1px 0 var(--felt-edge);
+}
+
+.menu-theme svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.menu-theme[data-target-theme="light"] .theme-moon,
+.menu-theme[data-target-theme="dark"] .theme-sun {
+    display: none;
 }
 
 .menu-button[hidden] {
@@ -1058,7 +1099,7 @@ button {
 }
 
 @media (max-height: 800px) {
-    .menu { padding-block: 20px; }
+    .menu { padding-block: 76px 20px; }
     .menu-fan { display: none; }
     .menu-content { gap: 12px; }
     .menu-title { font-size: clamp(3rem, 8vw, 4.5rem); }
