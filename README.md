@@ -25,6 +25,20 @@ npm run preview -- --base=/card-roguelike/
 
 Open the preview URL ending in `/card-roguelike/`, check that the game and tab icon load, then start a run. Switch to poker and play a pair: energy should fall to 1 and shield rise to 25, and the unplayed cards should stay in your hand. End turn: the hand should top back up to 5 cards and any remaining shield should halve. Repeat after deployment using the `github-pages` environment URL in Actions.
 
+## Multiplayer server
+
+Multiplayer co-op (`multiplayer.html`) talks to a Cloudflare Worker in `server/`. Each room code maps to one Durable Object (`GameRoom` in `server/worker.js`) that holds the match, both players' WebSockets and a saved copy of the room, so a room survives restarts and idle rooms cost nothing while they hibernate. The rules live in `server/game.js` and are covered by `tests/multiplayer.test.js`. Rooms nobody is connected to are deleted after 10 minutes.
+
+Run it locally with `npm run server` (Worker on `http://localhost:8787`) next to `npm run dev`, or both together with `npm run dev:all`. The client uses `VITE_MULTIPLAYER_URL`, which defaults to the local Worker when the page is served from localhost.
+
+To deploy:
+
+1. Run `npx wrangler login` once, then `npm run deploy:server`. Wrangler prints the Worker URL, for example `https://card-roguelike-multiplayer.<subdomain>.workers.dev`.
+2. In **Settings → Secrets and variables → Actions**, add a **variable** `MULTIPLAYER_URL` with that URL. The Pages workflow builds the game against it.
+3. Optionally add the **secrets** `CLOUDFLARE_API_TOKEN` (with the "Edit Cloudflare Workers" template) and `CLOUDFLARE_ACCOUNT_ID`. `.github/workflows/deploy-worker.yml` then tests and redeploys the Worker on every push to `main`; without them the workflow skips its steps.
+
+The Worker only accepts browsers from the origins in `ALLOWED_ORIGINS` in `server/wrangler.jsonc`. Add a site's origin there if the game is hosted somewhere else.
+
 ## Play a run
 
 ### First-time tutorial
@@ -76,7 +90,7 @@ All numbers are placeholders for playtesting. Battle visuals use PixiJS drawing 
 
 ## Multiplayer co-op
 
-Run `npm run dev:all` to start the Vite client and local Socket.IO server (port 3001). Open **Multiplayer Co-op** from the menu in two separate tabs or browsers. The host chooses a room difficulty, creates a room and shares its six-character code. The second player joins; both press **Ready**. Each tab has its own reconnect identity, so local two-player testing does not replace the first player.
+Run `npm run dev:all` to start the Vite client and the local multiplayer Worker (port 8787). Open **Multiplayer Co-op** from the menu in two separate tabs or browsers. The host chooses a room difficulty, creates a room and shares its six-character code. The second player joins; both press **Ready**. Each tab has its own reconnect identity, so local two-player testing does not replace the first player.
 
 Co-op currently consists of one shared Ogre battle, rather than the solo casino run. Normal Ogre stats are 260 HP and 12 attack; Easy uses 208 HP and 10 attack; Hard uses 325 HP and 15 attack. Both players see the room's fixed difficulty. The server owns combat state and sends each player only their private hand and public teammate stats.
 
@@ -84,10 +98,10 @@ Co-op currently consists of one shared Ogre battle, rather than the solo casino 
 - Blackjack costs 1 energy per deal. Win to deal damage, lose to take an Ogre attack, or push to recover the energy. Finish the round before ending your turn. This co-op prototype draws blackjack cards independently with replacement; it does not yet share solo deck, Joker, shop or chip progression.
 - Blackjack shows your total during play and reveals both hands at settlement. The result can be collapsed and survives reconnection until the next deal or rematch. Rules and the battle log can be expanded when needed.
 - **End turn** resolves an Ogre attack and passes control to a living teammate. A player defeated by blackjack also passes control immediately. A shared victory counts for both players; defeat occurs when both players fall.
-- Battle controls pause while either player is disconnected. Reconnecting or reloading the active battle restores that tab's seat and private cards while the server is running. Leaving explicitly ends an active battle. Rooms are in memory and do not survive server restarts.
+- Battle controls pause while either player is disconnected. Reconnecting or reloading the active battle restores that tab's seat and private cards. Leaving explicitly ends an active battle. Rooms are saved by their Durable Object, so they survive Worker restarts and redeploys.
 - After a completed battle, both players can choose **Ready for another battle** to replay at the same difficulty. Leave and create a new room to change difficulty.
 
-Hosted clients require `VITE_MULTIPLAYER_URL` at build time, pointing to a reachable Socket.IO-compatible endpoint. GitHub Pages hosts only the static client; it does not run `server/index.js`. Without a configured hosted endpoint, the co-op page explains that it is unavailable and links back to solo play. Cloudflare Durable Objects deployment and protocol integration are separate work; this client is not a raw WebSocket client. The local suite starts isolated servers on available ports and needs no manually running server.
+Hosted clients require `VITE_MULTIPLAYER_URL` at build time, pointing to the deployed Worker (see [Multiplayer server](#multiplayer-server)). GitHub Pages hosts only the static client. Without a configured hosted endpoint, the co-op page explains that it is unavailable and links back to solo play. The test suite runs the room rules in `server/game.js` directly and needs no running server.
 
 ## What Each File Does
 
@@ -104,7 +118,7 @@ verification. No additional test dependencies are required.
 
 This project separates the UI, game rules, combat logic, and game data so team members can work on different parts without interfering with each other.
 
-`src/systems/DifficultySystem.js` owns the shared presets; `src/difficultyPreferences.js` stores only the next solo run's preference. `src/multiplayer/viewState.js` derives control availability and status text from authoritative multiplayer snapshots. `server/index.js` exports an isolated server factory for integration tests and starts the local server when executed directly.
+`src/systems/DifficultySystem.js` owns the shared presets; `src/difficultyPreferences.js` stores only the next solo run's preference. `src/multiplayer/viewState.js` derives control availability and status text from authoritative multiplayer snapshots. `server/game.js` holds the co-op room rules; `server/worker.js` runs each room in a Durable Object, and `src/multiplayer/connection.js` is the browser's WebSocket client for it.
 
 Solo and co-op share `DifficultyPicker`, `healthDisplay`, and the HTML card faces in `src/components/`. `src/multiplayer/battleView.js` reconciles cards and seats in place so selection, focus, and damage feedback survive room snapshots. It handles presentation only; the server owns combat and turn rules. Motion respects the system's reduced-motion preference.
 

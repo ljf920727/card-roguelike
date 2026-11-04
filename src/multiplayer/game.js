@@ -1,5 +1,5 @@
 /** Connects the cooperative lobby and battle UI to authoritative room snapshots. */
-import { io } from 'socket.io-client';
+import { SERVER_URL, checkServer, createRoomCode, RoomConnection } from './connection.js';
 import { getDifficulty } from '../systems/DifficultySystem.js';
 import { evaluatePokerHand } from '../systems/rules/PokerRule.js';
 import { BATTLE_THEMES, getPreferredTheme, savePreferredTheme } from '../themes.js';
@@ -9,13 +9,32 @@ import { renderHearts } from '../components/healthDisplay.js';
 import { ENEMY_ICONS } from '../enemyIcons.js';
 import { renderPlayerSeats, renderPokerCards, renderBlackjackTable } from './battleView.js';
 
-/** Hosted builds need an explicit endpoint; local development uses the local server. */
-const serverUrl = import.meta.env.VITE_MULTIPLAYER_URL ||
-  (['localhost', '127.0.0.1', '[::1]'].includes(location.hostname) ? 'http://localhost:3001' : null);
-const socket = io(
-  serverUrl || location.origin,
-  { autoConnect: false, reconnection: true }
-);
+const connection = new RoomConnection({
+  onOpen: joinCurrentRoom,
+  onUpdate: data => {
+    if (!synced) message('');
+    synced = true;
+    saveRoom(data.roomId);
+    render(data);
+  },
+  onStatus: status => {
+    if (status === 'reconnecting') {
+      synced = false;
+      requestVersion++;
+      pending = false;
+    }
+    $('connection').textContent = status === 'connected' ? '● Connected' : '○ Disconnected — reconnecting';
+    refreshControls();
+  },
+  onLatency: ms => {
+    lastRTT = ms;
+    $('latency').textContent = `Latency: ${lastRTT} ms`;
+  },
+  onClosed: reason => {
+    forgetRoom();
+    message(reason);
+  },
+});
 
 /** Finds a cooperative UI element by its stable ID. */
 const $ = id => document.getElementById(id);
@@ -79,31 +98,48 @@ function message(text) {
 }
 
 /**
- * Sends one acknowledged action at a time and restores controls after success or timeout.
- * @param {string} event Socket.IO event name; ping requests do not lock gameplay.
+ * Sends one acknowledged request at a time and restores controls after success or timeout.
+ * @param {string} type Room request type: join, ready, action or leave.
  * @param {Object} [data] Request payload validated by the server.
  * @returns {Promise<Object>} The server acknowledgement.
  * @throws {Error} When disconnected, busy or the acknowledgement times out.
  */
-async function request(event, data = {}) {
-  const interactive = event !== 'pingCheck';
-  if (interactive && pending) throw new Error('Waiting for the previous action.');
-  const version = interactive ? ++requestVersion : requestVersion;
-  if (interactive) { pending = true; refreshControls(); }
+async function request(type, data = {}) {
+  if (pending) throw new Error('Waiting for the previous action.');
+  const version = ++requestVersion;
+  pending = true;
+  refreshControls();
   try {
-    return await new Promise((resolve, reject) => {
-      if (!socket.connected) {
-        reject(new Error('Not connected to server'));
-        return;
-      }
-
-      socket.timeout(5000).emit(event, data, (err, response) => {
-        if (err) reject(new Error('Server request timed out'));
-        else resolve(response);
-      });
-    });
+    return await connection.request(type, data);
   } finally {
-    if (interactive && version === requestVersion) { pending = false; refreshControls(); }
+    if (version === requestVersion) { pending = false; refreshControls(); }
+  }
+}
+
+/** Clears this tab's room so it returns to the lobby. */
+function forgetRoom() {
+  writeStorage('sessionStorage', 'juniper.room', '');
+  roomId = '';
+  state = null;
+  synced = false;
+  selectedCards.clear();
+  showPage('lobby');
+  refreshControls();
+}
+
+/** Claims or reclaims this tab's seat each time the room socket opens. */
+async function joinCurrentRoom() {
+  synced = false;
+  try {
+    const result = await request('join', { name: saveIdentity(), token });
+
+    if (!result.success) {
+      connection.close();
+      forgetRoom();
+      message(result.error);
+    }
+  } catch (err) {
+    message(err.message);
   }
 }
 
@@ -140,45 +176,30 @@ function showPage(page) {
 /** Creates a cooperative room with a difficulty fixed for both players and replays. */
 async function createRoom() {
   try {
-    const result = await request('createRoom', {
-      name: saveIdentity(),
-      token,
-      difficulty: difficulty.value,
-    });
-
-    if (!result.success) {
-      message(result.error);
-      return;
-    }
-
-    saveRoom(result.roomId);
+    saveIdentity();
+    pending = true;
+    refreshControls();
+    const id = await createRoomCode(difficulty.value);
+    saveRoom(id);
     message('');
+    connection.open(id);
   } catch (err) {
     message(err.message);
+  } finally {
+    pending = false;
+    refreshControls();
   }
 }
 
 /** Joins the room selected by its six-character code. */
-async function joinRoom() {
-  try {
-    const id = $('room-code').value.trim().toUpperCase();
-    if (!/^[A-F0-9]{6}$/.test(id)) { message('Enter the six-character room code.'); return; }
+function joinRoom() {
+  const id = $('room-code').value.trim().toUpperCase();
+  if (!/^[A-F0-9]{6}$/.test(id)) { message('Enter the six-character room code.'); return; }
 
-    const result = await request('joinRoom', {
-      name: saveIdentity(),
-      roomId: id,
-      token,
-    });
-
-    if (!result.success) {
-      message(result.error);
-      return;
-    }
-
-    saveRoom(result.roomId);
-  } catch (err) {
-    message(err.message);
-  }
+  saveIdentity();
+  saveRoom(id);
+  message('');
+  connection.open(id);
 }
 
 /** Readies the local player for the first battle or a shared replay. */
@@ -195,22 +216,15 @@ async function ready() {
 async function leave() {
   if (pending) return;
   try {
-    const result = await request('leaveRoom');
+    const result = await request('leave');
     if (!result.success) { message(result.error); return; }
   } catch {
-    // Drop the transport so an unacknowledged leave cannot retain socket membership.
-    socket.disconnect();
+    // Closing the socket below releases the seat even without an acknowledgement.
   }
 
-  writeStorage('sessionStorage', 'juniper.room', '');
-  roomId = '';
-  state = null;
-  synced = false;
-  selectedCards.clear();
-  showPage('lobby');
+  connection.close();
+  forgetRoom();
   message('Left room');
-  if (serverUrl && !socket.connected) socket.connect();
-  refreshControls();
 }
 
 /** Sends a combat action and presents errors without interrupting the battle with alerts. */
@@ -222,7 +236,7 @@ async function action(type, cardIds) {
   try {
     const result = await request(
       'action',
-      { type, cardIds }
+      { action: { type, cardIds } }
     );
 
     lastRTT = Math.round(performance.now() - start);
@@ -266,7 +280,7 @@ function renderLobby(data) {
 
   const me = data.players.find(p => p.isYou);
 
-  $('ready').disabled = pending || !socket.connected || !synced || !me || me.ready || data.players.length < 2;
+  $('ready').disabled = pending || !connection.connected || !synced || !me || me.ready || data.players.length < 2;
   $('ready').textContent = me?.ready ? 'Ready ✓' : 'Ready';
 }
 
@@ -283,13 +297,13 @@ function renderHand(data) {
 
 /** Combines transport readiness with authoritative turn ownership. */
 function isMyTurn(data) {
-  return canAct(data, socket.connected && synced, pending);
+  return canAct(data, connection.connected && synced, pending);
 }
 
 /** Renders battle feedback, selection effects, replay readiness and enabled actions. */
 function renderBattle(data) {
   const turn = $('turn');
-  const label = battleStatus(data, socket.connected && synced);
+  const label = battleStatus(data, connection.connected && synced);
   if (turn.textContent !== label) {
     turn.textContent = label;
     turn.classList.remove('turn-arrived');
@@ -321,7 +335,7 @@ function renderBattle(data) {
   $('hit').hidden = $('stand').hidden = !data.blackjack;
   $('deal').hidden = $('play-poker').hidden = Boolean(data.blackjack);
   $('rematch').hidden = data.status !== 'finished' || data.players.length !== 2;
-  $('rematch').disabled = pending || !socket.connected || !synced || me?.ready || !data.players.every(player => player.connected);
+  $('rematch').disabled = pending || !connection.connected || !synced || me?.ready || !data.players.every(player => player.connected);
   $('rematch').textContent = me?.ready ? 'Waiting for teammate' : 'Ready for another battle';
 
   $('play-poker').disabled =
@@ -360,59 +374,10 @@ function render(data) {
 
 /** Refreshes controls immediately when connection or request state changes. */
 function refreshControls() {
-  $('create').disabled = $('join').disabled = !socket.connected || pending || Boolean(roomId);
+  $('create').disabled = $('join').disabled = !SERVER_URL || pending || Boolean(roomId);
   $('leave').disabled = $('battle-leave').disabled = pending;
   if (state) render(state);
 }
-
-socket.on('connect', async () => {
-  $('connection').textContent = '● Connected';
-  synced = false;
-
-  const reconnectRoom = roomId;
-  if (reconnectRoom) {
-    try {
-      const result = await request('joinRoom', {
-        roomId: reconnectRoom,
-        name: saveIdentity(),
-        token,
-      });
-
-      if (!result.success) {
-        writeStorage('sessionStorage', 'juniper.room', '');
-        roomId = '';
-        state = null;
-        selectedCards.clear();
-        showPage('lobby');
-        message(result.error);
-      }
-    } catch (err) {
-      message(err.message);
-    }
-  }
-  refreshControls();
-});
-
-socket.on('disconnect', () => {
-  synced = false;
-  requestVersion++;
-  pending = false;
-  $('connection').textContent = '○ Disconnected — reconnecting';
-  refreshControls();
-});
-
-socket.on('connect_error', err => {
-  $('connection').textContent = '○ Server unavailable';
-  message('Cannot reach the co-op server. Check your connection; we will retry automatically.');
-  refreshControls();
-});
-
-socket.on('roomUpdate', data => {
-  if (!synced) message('');
-  synced = true;
-  saveRoom(data.roomId);
-  render(data);
-});
 
 $('create').onclick = createRoom;
 $('join').onclick = joinRoom;
@@ -436,24 +401,21 @@ $('stand').onclick = () => action('stand');
 $('end-turn').onclick = () => action('endTurn');
 
 refreshControls();
-if (serverUrl) socket.connect();
-else {
+if (!SERVER_URL) {
   $('connection').textContent = 'Co-op unavailable';
   message('Co-op is not available on this host yet. You can still play a solo run.');
+} else if (roomId) {
+  connection.open(roomId);
+} else {
+  checkServer()
+    .then(ok => {
+      $('connection').textContent = ok ? '● Server online' : '○ Server unavailable';
+      if (!ok) message('Cannot reach the co-op server. Check your connection and try again.');
+    })
+    .catch(() => {
+      $('connection').textContent = '○ Server unavailable';
+      message('Cannot reach the co-op server. Check your connection and try again.');
+    });
 }
 
-setInterval(async () => {
-  if (!socket.connected) return;
-
-  const start = performance.now();
-
-  try {
-    const response = await request('pingCheck');
-    if (response.success) {
-      lastRTT = Math.round(performance.now() - start);
-      $('latency').textContent = `Latency: ${lastRTT} ms`;
-    }
-  } catch {
-    // Reconnection status is handled by Socket.IO.
-  }
-}, 3000);
+setInterval(() => connection.ping(), 3000);

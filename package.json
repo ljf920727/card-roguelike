@@ -4,21 +4,21 @@
   "private": true,
   "type": "module",
   "scripts": {
-  "test": "node --test",
-  "dev": "vite",
-  "server": "node server/index.js",
-  "dev:all": "concurrently \"npm run server\" \"npm run dev\"",
-  "build": "vite build",
-  "preview": "vite preview"
+    "test": "node --test",
+    "dev": "vite",
+    "server": "wrangler dev --config server/wrangler.jsonc",
+    "deploy:server": "wrangler deploy --config server/wrangler.jsonc",
+    "dev:all": "concurrently \"npm run server\" \"npm run dev\"",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "devDependencies": {
     "concurrently": "^10.0.6",
-    "vite": "^8.3.0"
+    "vite": "^8.3.0",
+    "wrangler": "^4.156.0"
   },
   "dependencies": {
     "@pixi/ui": "^2.4.1",
-    "pixi.js": "^8.22.0",
-    "socket.io": "^4.8.4",
-    "socket.io-client": "^4.8.4"
+    "pixi.js": "^8.22.0"
   }
 }
