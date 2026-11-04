@@ -1,17 +1,6 @@
-
-import { Server } from 'socket.io';
-import { randomBytes } from 'node:crypto';
+/** Authoritative two-player cooperative rules, shared by the Durable Object and the tests. */
 import { evaluatePokerHand } from '../src/systems/rules/PokerRule.js';
-
-const PORT = Number(process.env.PORT || 3001);
-
-const io = new Server(PORT, {
-  cors: {
-    origin: true,
-  },
-});
-
-const rooms = new Map();
+import { getDifficulty, scaleEnemyStat } from '../src/systems/DifficultySystem.js';
 
 const SUITS = ['♠', '♥', '♣', '♦'];
 const RANKS = [
@@ -19,28 +8,48 @@ const RANKS = [
   '10', 'J', 'Q', 'K', 'A',
 ];
 
-// Safely respond even if the client omitted an acknowledgement.
-function reply(ack, response) {
-  if (typeof ack === 'function') {
-    ack(response);
-  }
+export const MAX_PLAYERS = 2;
+
+let random = Math.random;
+
+/** Replaces card randomness, so tests can deal known cards; call with no argument to restore it. */
+export function useRandom(source = Math.random) {
+  random = source;
 }
 
-// Generate a unique room code.
-function generateRoomCode() {
-  let id;
-
-  do {
-    id = randomBytes(4)
-      .toString('hex')
-      .toUpperCase()
-      .slice(0, 6);
-  } while (rooms.has(id));
-
-  return id;
+export function createRoom(id, difficulty) {
+  return {
+    id,
+    status: 'waiting',
+    result: null,
+    difficulty: getDifficulty(difficulty).id,
+    players: [],
+    active: 0,
+    turn: 0,
+    enemy: null,
+    log: [],
+  };
 }
 
-// Create a shuffled 52-card deck.
+/** Validates the opaque reconnect token without exposing it in room snapshots. */
+export function validToken(token) {
+  return typeof token === 'string' &&
+    token.length >= 16 &&
+    token.length <= 200;
+}
+
+export function findPlayer(room, token) {
+  return room.players.find(p => p.token === token) ?? null;
+}
+
+function randomId() {
+  return Array.from(
+    crypto.getRandomValues(new Uint8Array(6)),
+    byte => byte.toString(16).padStart(2, '0')
+  ).join('');
+}
+
+/** Creates an independent shuffled 52-card deck for a player's poker hand. */
 function createDeck() {
   const cards = SUITS.flatMap(suit =>
     RANKS.map(rank => ({
@@ -54,9 +63,10 @@ function createDeck() {
   return cards;
 }
 
+/** Shuffles cards in place with Fisher-Yates. */
 function shuffle(cards) {
   for (let i = cards.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(random() * (i + 1));
 
     [cards[i], cards[j]] = [cards[j], cards[i]];
   }
@@ -64,12 +74,14 @@ function shuffle(cards) {
   return cards;
 }
 
+/** Tops up the poker hand, recycling only that player's discard pile. */
 function drawCards(player, targetCount = 5) {
   while (player.hand.length < targetCount) {
     if (player.deck.length === 0) {
       if (player.discard.length === 0) break;
 
-      player.deck = shuffle([...player.discard]);
+      player.deck = [...player.discard];
+      shuffle(player.deck);
       player.discard = [];
     }
 
@@ -77,14 +89,14 @@ function drawCards(player, targetCount = 5) {
   }
 }
 
-function createPlayer(name, token, socket) {
+/** Creates a reconnectable seat with private cards and public combat resources. */
+function createPlayer(name, token) {
   return {
     name: String(name || 'Player')
       .trim()
       .slice(0, 20) || 'Player',
 
     token,
-    socketId: socket.id,
     connected: true,
     ready: false,
 
@@ -100,14 +112,17 @@ function createPlayer(name, token, socket) {
     discard: [],
 
     blackjack: null,
+    lastBlackjack: null,
   };
 }
 
-// Only send each player their own cards.
-function getPublicState(room, viewer) {
+/** Builds a viewer-specific snapshot without tokens, deck order or teammate cards. */
+export function getPublicState(room, viewer) {
   return {
     roomId: room.id,
     status: room.status,
+    result: room.result,
+    difficulty: room.difficulty,
     turn: room.turn,
 
     activeIndex: room.active,
@@ -136,10 +151,11 @@ function getPublicState(room, viewer) {
       isYou: player === viewer,
     })),
 
-    hand: viewer.hand.map(card => ({ ...card })),
+    hand: viewer ? viewer.hand.map(card => ({ ...card })) : [],
 
-    blackjack: viewer.blackjack
+    blackjack: viewer?.blackjack
       ? {
+          playerTotal: getBlackjackValue(viewer.blackjack.player),
           player: viewer.blackjack.player.map(
             card => ({ ...card })
           ),
@@ -149,20 +165,11 @@ function getPublicState(room, viewer) {
           ],
         }
       : null,
+    lastBlackjack: viewer?.lastBlackjack ? structuredClone(viewer.lastBlackjack) : null,
   };
 }
 
-function broadcastRoom(room) {
-  for (const player of room.players) {
-    if (!player.connected || !player.socketId) continue;
-
-    io.to(player.socketId).emit(
-      'roomUpdate',
-      getPublicState(room, player)
-    );
-  }
-}
-
+/** Keeps a bounded history for the room's battle log. */
 function addLog(room, text) {
   room.log.push(text);
 
@@ -171,26 +178,7 @@ function addLog(room, text) {
   }
 }
 
-function getMembership(socket) {
-  for (const room of rooms.values()) {
-    const player = room.players.find(
-      p => p.socketId === socket.id
-    );
-
-    if (player) {
-      return { room, player };
-    }
-  }
-
-  return null;
-}
-
-function validToken(token) {
-  return typeof token === 'string' &&
-    token.length >= 16 &&
-    token.length <= 200;
-}
-
+/** Allows actions only from the living active player while both seats are connected. */
 function isActivePlayer(room, player) {
   return (
     room.status === 'playing' &&
@@ -201,17 +189,95 @@ function isActivePlayer(room, player) {
   );
 }
 
-// Start a new two-player cooperative battle.
+/** Seats a new player, or gives a returning player their seat back. */
+export function joinRoom(room, { name, token }) {
+  if (!validToken(token)) {
+    return { error: 'Invalid session token' };
+  }
+
+  const existing = findPlayer(room, token);
+
+  if (existing) {
+    existing.connected = true;
+    addLog(room, `${existing.name} reconnected.`);
+    return { player: existing };
+  }
+
+  if (room.status !== 'waiting') {
+    return { error: 'Game already started' };
+  }
+
+  if (room.players.length >= MAX_PLAYERS) {
+    return { error: 'Room is full' };
+  }
+
+  const player = createPlayer(name, token);
+  room.players.push(player);
+  addLog(room, `${player.name} joined the room.`);
+
+  return { player };
+}
+
+/** Readies the player for the first battle or a shared replay. */
+export function setReady(room, player) {
+  if (room.status !== 'waiting' && room.status !== 'finished') {
+    return 'Game already started';
+  }
+
+  if (room.players.length !== MAX_PLAYERS || !room.players.every(p => p.connected)) {
+    return 'Wait for both players to connect';
+  }
+
+  player.ready = true;
+
+  if (room.players.every(p => p.ready && p.connected)) {
+    startGame(room);
+  }
+
+  return null;
+}
+
+/** Reserves an active game's seat for reconnection; lobby seats are freed. */
+export function disconnectPlayer(room, player) {
+  player.connected = false;
+  player.ready = false;
+
+  if (room.status === 'waiting') {
+    room.players.splice(room.players.indexOf(player), 1);
+    room.players.forEach(remaining => { remaining.ready = false; });
+  } else {
+    addLog(
+      room,
+      `${player.name} disconnected. Waiting for reconnection.`
+    );
+  }
+}
+
+/** Leaving mid-battle forfeits it for both players. */
+export function leaveRoom(room, player) {
+  if (room.status === 'playing') {
+    room.status = 'finished';
+    room.result = 'abandoned';
+    addLog(room, `${player.name} forfeited the game.`);
+  }
+
+  room.players.splice(room.players.indexOf(player), 1);
+  room.players.forEach(remaining => { remaining.ready = false; });
+}
+
+/** Starts or replays a cooperative battle using the room's locked difficulty. */
 function startGame(room) {
   room.status = 'playing';
+  room.result = null;
   room.turn = 1;
   room.active = 0;
 
+  const difficulty = getDifficulty(room.difficulty);
   room.enemy = {
     name: 'Ogre',
-    hp: 260,
-    maxHp: 260,
-    attack: 12,
+    hp: scaleEnemyStat(260, difficulty.hpScale),
+    maxHp: scaleEnemyStat(260, difficulty.hpScale),
+    attack: scaleEnemyStat(12, difficulty.attackScale),
   };
 
   room.log = [];
@@ -226,6 +292,7 @@ function startGame(room) {
     player.hand = [];
 
     player.blackjack = null;
+    player.lastBlackjack = null;
     player.ready = false;
     player.games++;
 
@@ -234,17 +301,16 @@ function startGame(room) {
 
   addLog(room, 'Co-op battle started!');
   addLog(room, `Turn 1: ${room.players[0].name}`);
-
-  broadcastRoom(room);
 }
 
-// Determine victory or defeat.
+/** Records a terminal result once, including shared victory statistics. */
 function checkBattleResult(room) {
   if (room.status !== 'playing') return;
 
   if (room.enemy.hp <= 0) {
     room.enemy.hp = 0;
     room.status = 'finished';
+    room.result = 'victory';
 
     for (const player of room.players) {
       player.wins++;
@@ -260,11 +326,12 @@ function checkBattleResult(room) {
 
   if (room.players.every(p => p.hp <= 0)) {
     room.status = 'finished';
+    room.result = 'defeat';
     addLog(room, 'Defeat! Both players were defeated.');
   }
 }
 
-// Server-authoritative combat effects.
+/** Applies server-calculated poker and blackjack effects within resource bounds. */
 function applyActions(room, player, actions) {
   for (const action of actions) {
     if (action.type === 'attack') {
@@ -292,6 +359,7 @@ function applyActions(room, player, actions) {
   checkBattleResult(room);
 }
 
+/** Resolves the Ogre's attack against shield, then HP, and checks the outcome. */
 function enemyAttack(room, player) {
   if (room.status !== 'playing') return;
 
@@ -318,6 +386,7 @@ function enemyAttack(room, player) {
   checkBattleResult(room);
 }
 
+/** Passes the turn to a living player and replenishes that player's cards and energy. */
 function nextTurn(room) {
   if (room.status !== 'playing') return;
 
@@ -353,6 +422,7 @@ function nextTurn(room) {
   );
 }
 
+/** Totals blackjack cards, reducing aces from eleven to one when needed. */
 function getBlackjackValue(cards) {
   let total = 0;
   let aces = 0;
@@ -376,14 +446,16 @@ function getBlackjackValue(cards) {
   return total;
 }
 
+/** Draws a standalone blackjack card using this prototype's replacement model. */
 function randomCard() {
   return {
-    id: randomBytes(6).toString('hex'),
-    rank: RANKS[Math.floor(Math.random() * RANKS.length)],
-    suit: SUITS[Math.floor(Math.random() * SUITS.length)],
+    id: randomId(),
+    rank: RANKS[Math.floor(random() * RANKS.length)],
+    suit: SUITS[Math.floor(random() * SUITS.length)],
   };
 }
 
+/** Retains the private round result and passes control if a blackjack loss defeats the player. */
 function resolveBlackjack(room, player) {
   const bj = player.blackjack;
 
@@ -399,6 +471,9 @@ function resolveBlackjack(room, player) {
   const natural =
     bj.player.length === 2 &&
     playerValue === 21;
+  const previousHp = player.hp;
+  const previousShield = player.shield;
+  const previousEnemyHp = room.enemy.hp;
 
   let result = 'push';
 
@@ -436,11 +511,23 @@ function resolveBlackjack(room, player) {
     );
   }
 
+  player.lastBlackjack = {
+    player: bj.player,
+    dealer: bj.dealer,
+    playerTotal: playerValue,
+    dealerTotal: dealerValue,
+    outcome: playerValue > 21 ? 'bust' : result,
+    damage: result === 'win' ? previousEnemyHp - room.enemy.hp : previousHp - player.hp,
+    blocked: previousShield - player.shield,
+    refund: result === 'push' ? 1 : 0,
+  };
   player.blackjack = null;
   checkBattleResult(room);
+  if (player.hp <= 0 && room.status === 'playing') nextTurn(room);
 }
 
-function handleAction(room, player, data) {
+/** Validates a requested action against the authoritative room and private hand. */
+export function handleAction(room, player, data) {
   if (!isActivePlayer(room, player)) {
     return 'Not your turn or waiting for opponent';
   }
@@ -525,6 +612,7 @@ function handleAction(room, player, data) {
     }
 
     player.energy--;
+    player.lastBlackjack = null;
 
     player.blackjack = {
       player: [randomCard(), randomCard()],
@@ -586,284 +674,3 @@ function handleAction(room, player, data) {
 
   return 'Unknown action';
 }
-
-// Remove a socket from its room.
-// Active games keep the player slot for reconnection.
-function leaveSocketRooms(socket, explicit = false) {
-  for (const room of rooms.values()) {
-    const index = room.players.findIndex(
-      p => p.socketId === socket.id
-    );
-
-    if (index === -1) continue;
-
-    const player = room.players[index];
-
-    player.connected = false;
-    player.socketId = null;
-    player.ready = false;
-
-    if (room.status === 'waiting' || explicit) {
-      if (room.status === 'playing' && explicit) {
-        room.status = 'finished';
-        addLog(room, `${player.name} forfeited the game.`);
-      }
-
-      room.players.splice(index, 1);
-    } else {
-      addLog(
-        room,
-        `${player.name} disconnected. Waiting for reconnection.`
-      );
-    }
-
-    socket.leave(room.id);
-
-    if (room.players.length === 0) {
-      rooms.delete(room.id);
-    } else {
-      broadcastRoom(room);
-    }
-  }
-}
-
-// Socket.IO events.
-io.on('connection', socket => {
-  console.log('Connected:', socket.id);
-
-  // Create room.
-  socket.on('createRoom', (data, ack) => {
-    if (getMembership(socket)) {
-      return reply(ack, {
-        success: false,
-        error: 'Already in a room',
-      });
-    }
-
-    if (!data || !validToken(data.token)) {
-      return reply(ack, {
-        success: false,
-        error: 'Invalid session token',
-      });
-    }
-
-    const id = generateRoomCode();
-
-    const room = {
-      id,
-      status: 'waiting',
-      players: [
-        createPlayer(data.name, data.token, socket),
-      ],
-      active: 0,
-      turn: 0,
-      enemy: null,
-      log: [],
-    };
-
-    rooms.set(id, room);
-    socket.join(id);
-
-    reply(ack, {
-      success: true,
-      roomId: id,
-    });
-
-    broadcastRoom(room);
-    console.log('Room created:', id);
-  });
-
-  // Join or reconnect.
-  socket.on('joinRoom', (data, ack) => {
-    const id = String(data?.roomId || '')
-      .trim()
-      .toUpperCase();
-
-    const room = rooms.get(id);
-
-    if (!room) {
-      return reply(ack, {
-        success: false,
-        error: 'Room not found',
-      });
-    }
-
-    if (getMembership(socket)) {
-      return reply(ack, {
-        success: false,
-        error: 'Already in a room',
-      });
-    }
-
-    if (!validToken(data?.token)) {
-      return reply(ack, {
-        success: false,
-        error: 'Invalid session token',
-      });
-    }
-
-    const token = data.token;
-
-    let player = room.players.find(
-      p => p.token === token
-    );
-
-    if (player) {
-      // Reconnection with the same token.
-      const oldSocketId = player.socketId;
-
-      player.socketId = socket.id;
-      player.connected = true;
-
-      socket.join(id);
-
-      if (
-        oldSocketId &&
-        oldSocketId !== socket.id
-      ) {
-        io.sockets.sockets
-          .get(oldSocketId)
-          ?.disconnect(true);
-      }
-
-      addLog(
-        room,
-        `${player.name} reconnected.`
-      );
-    } else {
-      // New participant.
-      if (room.status !== 'waiting') {
-        return reply(ack, {
-          success: false,
-          error: 'Game already started',
-        });
-      }
-
-      if (room.players.length >= 2) {
-        return reply(ack, {
-          success: false,
-          error: 'Room is full',
-        });
-      }
-
-      player = createPlayer(
-        data.name,
-        token,
-        socket
-      );
-
-      room.players.push(player);
-      socket.join(id);
-
-      addLog(
-        room,
-        `${player.name} joined the room.`
-      );
-    }
-
-    reply(ack, {
-      success: true,
-      roomId: id,
-    });
-
-    broadcastRoom(room);
-  });
-
-  // Player ready.
-  socket.on('ready', (ack) => {
-    const member = getMembership(socket);
-
-    if (!member) {
-      return reply(ack, {
-        success: false,
-        error: 'Not in a room',
-      });
-    }
-
-    const { room, player } = member;
-
-    if (room.status !== 'waiting') {
-      return reply(ack, {
-        success: false,
-        error: 'Game already started',
-      });
-    }
-
-    player.ready = true;
-
-    if (
-      room.players.length === 2 &&
-      room.players.every(
-        p => p.ready && p.connected
-      )
-    ) {
-      startGame(room);
-    } else {
-      broadcastRoom(room);
-    }
-
-    reply(ack, { success: true });
-  });
-
-  // Player action.
-  socket.on('action', (data, ack) => {
-    const member = getMembership(socket);
-
-    if (!member) {
-      return reply(ack, {
-        success: false,
-        error: 'Not in a room',
-      });
-    }
-
-    const error = handleAction(
-      member.room,
-      member.player,
-      data
-    );
-
-    if (error) {
-      return reply(ack, {
-        success: false,
-        error,
-      });
-    }
-
-    broadcastRoom(member.room);
-
-    reply(ack, {
-      success: true,
-    });
-  });
-
-  // Latency test.
-  socket.on('pingCheck', (ack) => {
-    reply(ack, {
-      success: true,
-    });
-  });
-
-  // Leave room.
-  socket.on('leaveRoom', (ack) => {
-    leaveSocketRooms(socket, true);
-
-    reply(ack, {
-      success: true,
-    });
-  });
-
-  // Connection lost.
-  socket.on('disconnect', reason => {
-    console.log(
-      'Disconnected:',
-      socket.id,
-      reason
-    );
-
-    leaveSocketRooms(socket, false);
-  });
-});
-
-console.log(
-  `Juniper Multiplayer server running on port ${PORT}`
-);

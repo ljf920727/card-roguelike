@@ -3,6 +3,7 @@ import { createDeck, shuffle, discardHand, drawCards, addCard, JINXES, JINX_RANK
 import { advanceTutorial } from "./TutorialSystem.js";
 import { healPlayer } from "./CombatSystem.js";
 import { hasCurse } from "./CurseSystem.js";
+import { getDifficulty, scaleEnemyStat } from "./DifficultySystem.js";
 
 /**
  * Each floor: a pool of enemies (two are picked), a boss and an optional house rule.
@@ -84,9 +85,18 @@ export function createEncounters(floor = 1, openingEnemy = null) {
     return fights;
 }
 
-export function createEnemy(template) {
-    const [min, max] = template.attack;
-    const enemy = { ...template, hp: template.maxHp, penalty: Math.round((min + max) / 2), charging: null,
+/**
+ * Creates an independent enemy, applying difficulty before rolling its first intent.
+ * @param {Object} template Unscaled encounter data from the floor definition.
+ * @param {string} [difficulty="normal"] Difficulty locked for this run.
+ * @returns {Object} Scaled combat state with an independent shuffled dealer deck.
+ */
+export function createEnemy(template, difficulty = "normal") {
+    const preset = getDifficulty(difficulty);
+    const attack = template.attack.map(value => scaleEnemyStat(value, preset.attackScale));
+    const [min, max] = attack;
+    const maxHp = scaleEnemyStat(template.maxHp, preset.hpScale);
+    const enemy = { ...template, attack, maxHp, hp: maxHp, penalty: Math.round((min + max) / 2), charging: null,
         intent: { type: "attack", value: 0 }, deck: { drawPile: shuffle(createDeck()), discardPile: [] } };
     rollIntent(enemy);
     return enemy;
@@ -166,7 +176,7 @@ export function startNextFight(state) {
         state.run.fight += 1;
     }
     state.run.turn = 1;
-    state.enemy = createEnemy(state.run.encounters[state.run.fight - 1]);
+    state.enemy = createEnemy(state.run.encounters[state.run.fight - 1], state.run.difficulty);
     const scale = state.run.enemyHpScale ?? 1;
     state.enemy.hp = state.enemy.maxHp = Math.round(state.enemy.maxHp * scale);
     const healed = hasCurse(state, "greed") ? 0 : healPlayer(state, newFloor ? HEAL_BETWEEN_FLOORS : HEAL_BETWEEN_FIGHTS);
