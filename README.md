@@ -101,7 +101,7 @@ Co-op currently consists of one shared Ogre battle, rather than the solo casino 
 - Battle controls pause while either player is disconnected. Reconnecting or reloading the active battle restores that tab's seat and private cards. Leaving explicitly ends an active battle. Rooms are saved by their Durable Object, so they survive Worker restarts and redeploys.
 - After a completed battle, both players can choose **Ready for another battle** to replay at the same difficulty. Leave and create a new room to change difficulty.
 
-Hosted clients require `VITE_MULTIPLAYER_URL` at build time, pointing to the deployed Worker (see [Multiplayer server](#multiplayer-server)). GitHub Pages hosts only the static client. Without a configured hosted endpoint, the co-op page explains that it is unavailable and links back to solo play. The test suite runs the room rules in `server/game.js` directly and needs no running server.
+Hosted clients require `VITE_MULTIPLAYER_URL` at build time, pointing to the deployed Worker (see [Multiplayer server](#multiplayer-server)). GitHub Pages hosts only the static client. Without a configured hosted endpoint, the co-op page explains that it is unavailable and links back to solo play. The test suite checks room rules and client recovery, and starts an isolated local Worker for WebSocket membership tests. It needs no manually running server or Cloudflare credentials and does not retain test rooms.
 
 ## What Each File Does
 
