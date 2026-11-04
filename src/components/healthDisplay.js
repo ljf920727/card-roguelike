@@ -41,4 +41,3 @@ function showHeartHit(container, amount, hp, perHeart) {
     container.parentElement.append(pop);
     setTimeout(() => pop.remove(), 1000);
 }
-

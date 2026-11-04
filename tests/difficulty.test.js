@@ -17,6 +17,12 @@ test('all floors scale independent enemies and blackjack penalties without chang
                 assert.equal(enemy.hp, enemy.maxHp);
                 assert.deepEqual(enemy.attack, template.attack.map(value => Math.round(value * difficulty.attackScale)));
                 assert.equal(enemy.penalty, Math.round((enemy.attack[0] + enemy.attack[1]) / 2));
+                assert.equal(enemy.deck.drawPile.length, 52);
+                assert.equal(new Set(enemy.deck.drawPile.map(card => card.id)).size, 52);
+                assert.deepEqual(enemy.deck.discardPile, []);
+                const other = createEnemy(template, difficulty.id);
+                assert.notEqual(enemy.deck, other.deck);
+                assert.ok(enemy.deck.drawPile.every(card => !other.deck.drawPile.includes(card)));
             }
         }
     }

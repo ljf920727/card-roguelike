@@ -1,5 +1,4 @@
 /** Applies combat effects, shield decay and enemy intents to battle data. */
-import { addCard, JINX_RANK, JINX_SUIT } from "./DeckSystem.js";
 import { hasJoker } from "./JokerSystem.js";
 import { hasCurse, THORNS_EXTRA_DAMAGE } from "./CurseSystem.js";
 
@@ -85,7 +84,7 @@ export function applyEnemyAttack(state) {
  */
 export function resolveIntent(state) {
     const intent = state.enemy.intent ?? { type: "attack", value: 0 };
-    const outcome = { blocked: 0, damage: 0, shattered: 0, jinxed: false, type: intent.type };
+    const outcome = { blocked: 0, damage: 0, shattered: 0, type: intent.type };
     const extra = hasCurse(state, "thorns") ? THORNS_EXTRA_DAMAGE : 0;
     const hit = (amount, pierce = false) => {
         const result = damagePlayer(state, amount + extra, pierce);
@@ -104,11 +103,6 @@ export function resolveIntent(state) {
             for (let i = 0; i < intent.hits && !state.result; i++) hit(intent.value);
             break;
         case "charge": state.enemy.charging = intent.next; break;
-        case "jinx":
-            addCard(state, JINX_RANK, JINX_SUIT);
-            outcome.jinxed = true;
-            hit(intent.value);
-            break;
         default: hit(intent.value);
     }
     return outcome;

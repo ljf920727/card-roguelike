@@ -1,12 +1,20 @@
 /** Card values and blackjack rounds against the enemy dealer, including double down and surrender. */
-import { drawCard, isJinx, GILDED_DAMAGE } from "./DeckSystem.js";
+import { drawCard, isJinx, JINXES, GILDED_DAMAGE } from "./DeckSystem.js";
 import { applyAction, damagePlayer } from "./CombatSystem.js";
 import { advanceTutorial, tutorialAllows } from "./TutorialSystem.js";
 import { hasJoker } from "./JokerSystem.js";
 import { hasCurse } from "./CurseSystem.js";
 
-/** A jinx card clogs a blackjack hand with an awkward 5. */
-export const JINX_VALUE = 5;
+/** Jinxes add penalties, never points. */
+export const JINX_VALUE = 0;
+
+function jinxCount(cards, type) {
+    return cards.filter(card => isJinx(card) && card.jinxType === type).length;
+}
+
+export function bustLimit(cards) {
+    return Math.max(0, 21 - jinxCount(cards, "bad-luck") * JINXES["bad-luck"].amount);
+}
 
 export function getCardValue(rank) {
     if (rank === "J" ||rank === "Q" ||rank === "K"){
@@ -25,6 +33,7 @@ export function getCardValue(rank) {
 export function scoreHand(cards) {
     let total = 0;
     let aceCount = 0;
+    const limit = bustLimit(cards);
     for (const card of cards) {
         total += getCardValue(
             card.rank
@@ -34,7 +43,7 @@ export function scoreHand(cards) {
         }
     }
     while (
-        total > 21 &&
+        total > limit &&
         aceCount > 0
     ) {
         total -= 10;
@@ -83,21 +92,43 @@ export function canDeal(state) {
 export function dealRound(state) {
     if (!canDeal(state)) return false;
     state.player.energy -= DEAL_COST;
-    const player = [drawCard(state), drawCard(state)];
-    const dealer = [drawCard(state), drawCard(state)];
-    state.blackjack = { player, dealer, status: "playing", outcome: null, doubled: false };
+    const dealer = [drawCard(state.enemy.deck), drawCard(state.enemy.deck)];
+    state.blackjack = { player: [], dealer, status: "playing", outcome: null, doubled: false, backlashDamage: 0, backlashBlocked: 0 };
+    if (!drawPlayerCard(state) || !drawPlayerCard(state)) return true;
     advanceTutorial(state, "deal");
-    if (isNatural(player)) finishRound(state);
+    if (isNatural(state.blackjack.player)) finishRound(state);
+    return true;
+}
+
+/** Apply on-draw damage immediately; lethal damage or Thorns ends combat without resolving a bet. */
+function drawPlayerCard(state) {
+    const round = state.blackjack;
+    const card = drawCard(state);
+    round.player.push(card);
+    if (isJinx(card) && card.jinxType === "backlash") {
+        const result = damagePlayer(state, JINXES.backlash.amount);
+        round.backlashDamage += result.damage;
+        round.backlashBlocked += result.blocked;
+        if (state.result) {
+            Object.assign(round, { status: "done", outcome: "interrupted", playerTotal: calculateBlackjackValue(round.player),
+                dealerTotal: calculateBlackjackValue(round.dealer) });
+            state.discardPile.push(...round.player);
+            state.enemy.deck.discardPile.push(...round.dealer);
+            state.lastAction = `Backlash: blocked ${result.blocked}, lost ${result.damage} HP. Combat ended.`;
+            return false;
+        }
+    }
     return true;
 }
 
 export function hit(state) {
     if (!isRoundActive(state) || !tutorialAllows(state, "hit")) return false;
-    state.blackjack.player.push(drawCard(state));
+    if (!drawPlayerCard(state)) return true;
     const total = calculateBlackjackValue(state.blackjack.player);
-    if (total > 21) {
+    const limit = bustLimit(state.blackjack.player);
+    if (total > limit) {
         resolveRound(state);
-    } else if (total === 21) {
+    } else if (total === limit) {
         finishRound(state);
     }
     advanceTutorial(state, "hit");
@@ -124,8 +155,8 @@ export function doubleDown(state) {
     if (!canDoubleDown(state)) return false;
     state.player.energy -= DOUBLE_COST;
     state.blackjack.doubled = true;
-    state.blackjack.player.push(drawCard(state));
-    if (calculateBlackjackValue(state.blackjack.player) > 21) resolveRound(state);
+    if (!drawPlayerCard(state)) return true;
+    if (calculateBlackjackValue(state.blackjack.player) > bustLimit(state.blackjack.player)) resolveRound(state);
     else finishRound(state);
     return true;
 }
@@ -142,7 +173,8 @@ export function surrender(state) {
     const hitResult = damagePlayer(state, penalty);
     Object.assign(round, { status: "done", outcome: "surrender", blocked: hitResult.blocked, damage: hitResult.damage,
         playerTotal: calculateBlackjackValue(round.player), dealerTotal: calculateBlackjackValue(round.dealer) });
-    state.discardPile.push(...round.player, ...round.dealer);
+    state.discardPile.push(...round.player);
+    state.enemy.deck.discardPile.push(...round.dealer);
     state.lastAction = `You surrendered: blocked ${hitResult.blocked}, lost ${hitResult.damage} HP.`;
     advanceTutorial(state, "round-done");
     return true;
@@ -152,7 +184,7 @@ export function surrender(state) {
 function finishRound(state) {
     const { dealer, player } = state.blackjack;
     if (!isNatural(player)) {
-        while (dealerShouldHit(state, dealer)) dealer.push(drawCard(state));
+        while (dealerShouldHit(state, dealer)) dealer.push(drawCard(state.enemy.deck));
     }
     resolveRound(state);
 }
@@ -166,7 +198,7 @@ function resolveRound(state) {
     const name = state.enemy.name;
     const multiplier = round.doubled ? 2 : 1;
     let outcome;
-    if (playerTotal > 21) {
+    if (playerTotal > bustLimit(round.player)) {
         outcome = "bust";
     } else if (playerNatural && dealerNatural) {
         outcome = "push";
@@ -175,7 +207,7 @@ function resolveRound(state) {
     } else if (dealerTotal > 21 || playerTotal > dealerTotal) {
         outcome = "win";
     } else if (playerTotal === dealerTotal) {
-        outcome = "push";
+        outcome = jinxCount(round.player, "house-edge") ? "lose" : "push";
     } else {
         outcome = "lose";
     }
@@ -185,13 +217,16 @@ function resolveRound(state) {
     advanceTutorial(state, "round-done");
     round.playerTotal = playerTotal;
     round.dealerTotal = dealerTotal;
-    state.discardPile.push(...round.player, ...round.dealer);
+    state.discardPile.push(...round.player);
+    state.enemy.deck.discardPile.push(...round.dealer);
 
     if (outcome === "win" || outcome === "natural") {
         const highRoller = hasJoker(state, "high-roller");
-        const base = (outcome === "natural" ? NATURAL_DAMAGE : playerTotal) +
-            round.player.filter(card => card.gilded).length * GILDED_DAMAGE + (highRoller ? HIGH_ROLLER_DAMAGE : 0);
-        const chips = ((outcome === "natural" ? NATURAL_CHIPS : WIN_CHIPS) + (highRoller ? HIGH_ROLLER_CHIPS : 0)) * multiplier *
+        const base = Math.max(0, (outcome === "natural" ? NATURAL_DAMAGE : playerTotal) +
+            round.player.filter(card => card.gilded).length * GILDED_DAMAGE + (highRoller ? HIGH_ROLLER_DAMAGE : 0) -
+            jinxCount(round.player, "weakness") * JINXES.weakness.amount);
+        const chips = Math.max(0, (outcome === "natural" ? NATURAL_CHIPS : WIN_CHIPS) + (highRoller ? HIGH_ROLLER_CHIPS : 0) -
+            jinxCount(round.player, "debt") * JINXES.debt.amount) * multiplier *
             (hasCurse(state, "greed") ? 2 : 1);
         const before = state.enemy.hp;
         applyAction(state, { type: "attack", amount: base * multiplier * (hasCurse(state, "blood-money") ? 2 : 1) });

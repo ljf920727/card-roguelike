@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createInitialState } from "../src/gameState.js";
-import { createDeck, deckCards, isJinx } from "../src/systems/DeckSystem.js";
+import { createDeck } from "../src/systems/DeckSystem.js";
 import { evaluatePlay, mulligan, playSelectedCards, validatePlay } from "../src/systems/PlaySystem.js";
 import { beginEndTurn, completeEndTurn } from "../src/systems/TurnSystem.js";
 import { applyAction, forecastIntent } from "../src/systems/CombatSystem.js";
@@ -128,15 +128,6 @@ test("a charge deals nothing, then the next intent is its heavy hit", () => {
     assert.deepEqual(state.enemy.intent, { type: "heavy", value: 22 });
     beginEndTurn(state);
     assert.equal(state.player.hp, 78);
-});
-
-test("a jinx adds a jinx card to the deck", () => {
-    const state = setup([], { type: "jinx", value: 3 });
-    const before = deckCards(state).length;
-    beginEndTurn(state);
-    assert.equal(deckCards(state).length, before + 1);
-    assert.equal(deckCards(state).filter(isJinx).length, 1);
-    assert.equal(state.player.hp, 97);
 });
 
 test("rolled intents only use an enemy's listed moves", () => {

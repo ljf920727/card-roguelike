@@ -1,0 +1,133 @@
+.floor-route {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    color: var(--secondary);
+    font-size: 0.75rem;
+}
+
+.floor-route span {
+    padding: 5px 10px;
+    border-bottom: 2px solid var(--panel-line);
+}
+
+.floor-route .current {
+    color: var(--attack);
+    border-color: var(--attack);
+    font-weight: 700;
+}
+
+.floor-route .cleared { color: var(--heal); border-color: var(--heal); }
+
+.shop-wallet:not([hidden]) {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 18px;
+    padding: 14px 16px;
+    border: 1px solid var(--rim);
+    border-radius: 12px;
+    background: var(--panel);
+    box-shadow: 0 6px 0 var(--panel);
+}
+
+.shop-wallet .chip-balance strong { font-size: 2rem; }
+.wallet-note { margin-left: auto; color: var(--secondary); font-size: 0.8rem; text-align: right; }
+
+.boss-label, .milestone-label {
+    color: var(--attack);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.run-dialog[open][data-milestone]:not([data-milestone=""]) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    width: min(600px, calc(100% - 24px));
+    padding: clamp(20px, 5vw, 40px);
+    border: 1px solid var(--rim);
+    background: radial-gradient(ellipse at 50% 0, var(--felt), transparent 70%), var(--panel);
+    text-align: center;
+}
+
+.run-dialog[data-milestone]:not([data-milestone=""]) .run-body { display: contents; }
+.run-dialog[data-milestone]:not([data-milestone=""]) #run-title {
+    grid-row: 3;
+    font: 700 clamp(2rem, 7vw, 3.5rem)/1.05 var(--display-font);
+    margin: 0;
+    text-wrap: balance;
+}
+.run-dialog[data-milestone]:not([data-milestone=""]) #run-subtitle { grid-row: 4; margin: 0; }
+.run-dialog[data-milestone]:not([data-milestone=""]) .run-message { display: none; }
+.run-dialog[data-milestone]:not([data-milestone=""]) .run-footer { grid-row: 6; justify-content: center; }
+.run-dialog[data-milestone="boss"] { --rim: var(--danger); }
+.run-dialog[data-milestone="boss"] .milestone-label { color: var(--danger); }
+.run-dialog[data-milestone="clear"] #run-title { color: var(--attack); }
+
+.milestone-crest {
+    grid-row: 1;
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 100px;
+    height: 100px;
+    margin: 0 auto;
+    border: 1px solid var(--rim);
+    outline: 1px solid var(--rim);
+    outline-offset: -8px;
+    border-radius: 50%;
+    color: var(--attack);
+    font: 700 2.75rem/1 var(--display-font);
+    background: repeating-conic-gradient(from 0deg, transparent 0deg 28deg, color-mix(in srgb, var(--rim) 15%, transparent) 28deg 30deg);
+}
+
+.milestone-label { grid-row: 2; }
+
+.run-notes {
+    padding: 16px;
+    margin-bottom: 18px;
+    border: 1px solid var(--rim);
+    background: color-mix(in srgb, var(--attack) 6%, var(--panel));
+    text-align: left;
+}
+
+.run-notes h3 { margin: 0 0 8px; font-family: var(--display-font); font-size: 1.3rem; }
+.run-notes p { color: var(--secondary); }
+.run-notes ol { margin: 12px 0 0; padding-left: 22px; }
+.run-notes li { padding-left: 4px; margin-top: 8px; }
+.run-notes li::marker { color: var(--attack); font-weight: 700; }
+.milestone-notes { grid-row: 5; margin: 0; border-width: 1px 0; background: none; }
+.milestone-notes h3, .milestone-notes p { display: none; }
+.milestone-notes ol { margin-top: 0; }
+
+.milestone-confetti { position: absolute; inset: 0; pointer-events: none; }
+.milestone-confetti i {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 7px;
+    height: 12px;
+    background: var(--attack);
+    opacity: 0;
+    --angle: calc(var(--i) * 20deg);
+    animation: victory-chips 1.6s ease-out both;
+    animation-delay: calc(var(--i) * 20ms);
+}
+.milestone-confetti i:nth-child(3n) { background: var(--heal); }
+.milestone-confetti i:nth-child(3n + 1) { background: var(--text); }
+
+@keyframes victory-chips {
+    10% { opacity: 1; }
+    100% { opacity: 0; transform: rotate(var(--angle)) translateY(-170px) rotate(220deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .milestone-confetti { display: none; }
+}

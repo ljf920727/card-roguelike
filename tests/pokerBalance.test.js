@@ -30,7 +30,7 @@ test("shield lasts a turn, decays to half for one more turn, then vanishes; it c
     const state = createInitialState();
     state.enemy.intent = { type: "attack", value: 9 };
     applyAction(state, { type: "defend", amount: 25 });
-    assert.deepEqual(beginEndTurn(state), { allowed: true, blocked: 9, damage: 0, shattered: 0, jinxed: false, type: "attack" });
+    assert.deepEqual(beginEndTurn(state), { allowed: true, blocked: 9, damage: 0, shattered: 0, type: "attack" });
     assert.equal(state.player.shield, 16);
     completeEndTurn(state);
     assert.equal(state.player.shield, 8);

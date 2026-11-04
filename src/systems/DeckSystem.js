@@ -2,9 +2,20 @@
 export const SUITS = ["spades", "hearts", "diamonds", "clubs"];
 export const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 export const HAND_SIZE = 5;
-/** Jinx cards come from enemy intents; they can't be played in poker and clog blackjack. */
+/** Jinx cards are permanent encounter hazards, unplayable in poker and worth 0 in blackjack. */
 export const JINX_RANK = "X";
 export const JINX_SUIT = "jinx";
+export const JINXES = {
+    debt: { name: "Debt", amount: 2, text: "Winning chips reduced by 2 per copy, before multipliers (minimum 0)." },
+    weakness: { name: "Weakness", amount: 5, text: "Winning damage reduced by 5 per copy, before multipliers (minimum 0)." },
+    backlash: { name: "Backlash", amount: 3, text: "Take 3 damage when drawn in blackjack. Shield blocks it normally." },
+    "house-edge": { name: "House Edge", text: "Blackjack ties become losses. Extra copies do not stack." },
+    "bad-luck": { name: "Bad Luck", amount: 2, text: "Your blackjack bust limit drops by 2 per copy this round. Aces adapt to the lower limit." },
+};
+
+export function getJinx(card) {
+    return isJinx(card) ? JINXES[card.jinxType] : null;
+}
 /** Extra damage from each gilded card in a played poker hand or a winning blackjack hand. */
 export const GILDED_DAMAGE = 5;
 
@@ -128,6 +139,6 @@ export const DECK_EDITS = {
 };
 
 export function describeCard(card) {
-    if (isJinx(card)) return "a jinx";
+    if (isJinx(card)) return `${getJinx(card)?.name ?? "Unknown"} Jinx`;
     return `${card.rank} of ${card.suit}`;
 }

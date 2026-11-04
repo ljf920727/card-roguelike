@@ -94,7 +94,10 @@
           </svg>
           <span class="shield-value"><span id="shield-text"></span><span class="shield-cap" id="shield-cap"></span></span>
         </div>
-        <span class="stat chips-badge" id="chips-text" title="Casino chips: won at blackjack, spent at the shop after each floor's boss."></span>
+        <div class="stat chips-badge" role="status" aria-live="polite" aria-atomic="true" title="Casino chips: won at blackjack, spent at the shop after each floor's boss.">
+          <span class="casino-chip" aria-hidden="true"></span>
+          <span class="chip-balance"><span class="chip-label">Chips</span><strong id="chips-text">0</strong></span>
+        </div>
         <div class="stat energy">
           <span class="energy-label">Energy</span>
           <div class="chips" id="energy-chips" role="img"></div>
@@ -111,6 +114,7 @@
     <div class="layout">
       <main class="table" id="table">
         <p class="log" id="last-action" aria-live="polite"></p>
+        <div class="floor-route" id="floor-route" role="group" aria-label="Floor progress"></div>
 
         <section class="enemy" aria-label="Enemy">
           <div class="enemy-token" id="enemy-token">
@@ -119,6 +123,7 @@
             </span>
           </div>
           <div class="enemy-info">
+            <p class="boss-label" id="boss-label" hidden></p>
             <h2 class="enemy-name" id="enemy-name"></h2>
             <div class="enemy-health">
               <div class="hearts enemy-hearts" id="enemy-hearts" role="img"></div>
@@ -271,7 +276,7 @@
       <p>Climb the five floors of the casino. Each floor is two fights and a boss; from floor 2 each floor adds a house rule. You start at 100 HP, recover 10 HP after a fight and 30 after a boss.</p>
       <h3>Your turn</h3>
       <p>You have 3 energy and a hand of 5 cards from your deck. Spend energy on poker plays (2), mulligans (1) and blackjack rounds (1). Unplayed cards stay in your hand, which tops back up to 5 at the start of each turn.</p>
-      <p>The enemy shows its next move. Attacks hit your shield first; piercing hits ignore it; shatter destroys it; multi-hits strike three times; a charge is followed by a heavy hit; a jinx shuffles a jinx card into your deck.</p>
+      <p>The enemy shows its next move. Attacks hit your shield first; piercing hits ignore it; shatter destroys it; multi-hits strike three times; a charge is followed by a heavy hit. Jinx enemies add a fixed batch of permanent Jinx cards when the fight starts, never more during combat.</p>
       <div class="rules-columns">
         <section>
           <h3>Poker</h3>
@@ -281,7 +286,9 @@
         </section>
         <section>
           <h3>Blackjack</h3>
-          <p>Deal (1 energy) draws from your deck; the enemy dealer draws to 17. Win: damage equal to your total (natural blackjack: 30) plus chips. Lose or bust: the enemy hits you. A push refunds the energy.</p>
+           <p>Deal (1 energy) draws from your deck; the enemy dealer has its own deck and draws to 17. Win: damage equal to your total (natural blackjack: 30) plus chips to spend on perks in the shop. Lose or bust: the enemy hits you. A push refunds the energy.</p>
+           <p>All five Jinx types can appear from floor 1. Each counts as 0 but adds a penalty: Debt reduces winning chips by 2; Weakness reduces winning damage by 5 (both per copy, before multipliers, minimum 0); Backlash deals 3 shield-blockable damage on draw; House Edge makes ties lose (does not stack); Bad Luck lowers your bust limit by 2 per copy, with Aces adapting to the lower limit. Jinxes stay in your deck until removed through rewards or the shop.</p>
+           <p>Only Jinx-themed enemies add them. Regular Jinx enemies add 1 on floors 1-2 and 2 on floors 3-5. Jinx bosses add 2, or 3 on floor 5. Each entry batch has different types; effects never scale with floor.</p>
           <p>With your first two cards you can double down (1 more energy, one card, double the result) or surrender (take half the loss).</p>
         </section>
       </div>
@@ -294,6 +301,11 @@
     <dialog class="rules-dialog run-dialog" id="run-dialog" aria-labelledby="run-title" aria-describedby="run-subtitle">
       <h2 id="run-title"></h2>
       <p id="run-subtitle"></p>
+      <div class="shop-wallet" id="shop-wallet" role="status" aria-live="polite" aria-atomic="true" hidden>
+        <span class="casino-chip" aria-hidden="true"></span>
+        <span class="chip-balance"><span class="chip-label">Your chips</span><strong id="shop-chips">0</strong></span>
+        <span class="wallet-note">Spend on perks</span>
+      </div>
       <div class="run-body" id="run-body"></div>
       <p class="run-message" id="run-message" role="alert"></p>
       <div class="run-footer" id="run-footer"></div>

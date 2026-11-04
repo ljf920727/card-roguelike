@@ -1,6 +1,6 @@
 /** Creates and resets state for a run up the casino's floors, drawn from a shuffled deck. */
 import { createDeck, drawCards, shuffle, HAND_SIZE } from "./systems/DeckSystem.js";
-import { createEncounters, createEnemy, withArticle, FLOORS } from "./systems/RunSystem.js";
+import { createEncounters, createEnemy, addEncounterJinxes, encounterJinxText, withArticle, FLOORS } from "./systems/RunSystem.js";
 import { setupTutorial } from "./systems/TutorialSystem.js";
 import { JOKER_SLOTS } from "./systems/JokerSystem.js";
 import { getDifficulty } from "./systems/DifficultySystem.js";
@@ -38,6 +38,8 @@ export function createInitialState({ tutorial = false, difficulty = "normal" } =
     };
     state.lastAction = `A new run begins in ${FLOORS[0].name}. ${withArticle(state.enemy.name)} blocks the way.`;
     if (tutorial) setupTutorial(state);
+    addEncounterJinxes(state);
+    if (state.enemy.addedJinxes.length) state.lastAction += ` ${encounterJinxText(state.enemy)}`;
     drawCards(state, HAND_SIZE);
     return state;
 }
