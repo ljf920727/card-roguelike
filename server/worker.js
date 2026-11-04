@@ -67,10 +67,12 @@ export default {
     }
 
     if (url.pathname === '/rooms' && request.method === 'POST') {
+      const difficulty = url.searchParams.get('difficulty') ?? '';
       for (let attempt = 0; attempt < 5; attempt++) {
         const code = newRoomCode();
         const stub = env.GAME_ROOM.get(env.GAME_ROOM.idFromName(code));
-        const created = await stub.fetch(`https://room/create?code=${code}`, { method: 'POST' });
+        const query = new URLSearchParams({ code, difficulty });
+        const created = await stub.fetch(`https://room/create?${query}`, { method: 'POST' });
         if (created.ok) return json({ roomId: code }, 201, origin);
       }
       return json({ error: 'Could not create a room' }, 503, origin);
@@ -108,7 +110,7 @@ export class GameRoom extends DurableObject {
 
     if (url.pathname === '/create') {
       if (this.room) return new Response('Room code taken', { status: 409 });
-      this.room = createRoom(url.searchParams.get('code'));
+      this.room = createRoom(url.searchParams.get('code'), url.searchParams.get('difficulty'));
       await this.save();
       await this.ctx.storage.setAlarm(Date.now() + EMPTY_ROOM_TTL_MS);
       return new Response('Created', { status: 201 });

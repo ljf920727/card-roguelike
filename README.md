@@ -29,7 +29,7 @@ Open the preview URL ending in `/card-roguelike/`, check that the game and tab i
 
 Multiplayer co-op (`multiplayer.html`) talks to a Cloudflare Worker in `server/`. Each room code maps to one Durable Object (`GameRoom` in `server/worker.js`) that holds the match, both players' WebSockets and a saved copy of the room, so a room survives restarts and idle rooms cost nothing while they hibernate. The rules live in `server/game.js` and are covered by `tests/multiplayer.test.js`. Rooms nobody is connected to are deleted after 10 minutes.
 
-Run it locally with `npm run server` (Worker on `http://localhost:8787`) next to `npm run dev`, or both together with `npm run dev:all`. The client uses `VITE_MULTIPLAYER_URL`, which defaults to the local Worker.
+Run it locally with `npm run server` (Worker on `http://localhost:8787`) next to `npm run dev`, or both together with `npm run dev:all`. The client uses `VITE_MULTIPLAYER_URL`, which defaults to the local Worker when the page is served from localhost.
 
 To deploy:
 
@@ -47,7 +47,9 @@ The Worker only accepts browsers from the origins in `ALLOWED_ORIGINS` in `serve
 
 ### Normal runs
 
-The game opens on a main menu. **Play** starts a run, **How to play** shows the rules, and the theme button switches between light and dark. During a run, **Menu** in the top bar or the Esc key brings the menu back with **Continue run** and **New run**.
+The game opens on a main menu. **Play** starts a run; its right-hand heart opens settings, then **Difficulty** reveals Easy (♠), Normal (♠♠), and Hard (♠♠♠). **How to play** shows the rules, and the theme button switches between light and dark. During a run, **Menu** in the top bar or the Esc key brings the menu back with **Continue run** and **New run**. Esc closes each settings level before returning to the battle.
+
+Choose **Easy**, **Normal** or **Hard** before starting a solo run. Easy multiplies enemy HP and attack ranges by 0.8; Normal preserves the standard balance; Hard multiplies them by 1.25. Values round to whole points. Blackjack loss penalties and enemy intents use the scaled attack range. Card effects, rewards, healing and energy costs stay the same. The difficulty badge shows the active run's setting; changing the menu selection affects only the next run. The preference is saved locally when storage is available. **Play tutorial** is a separate option and always uses Normal. Difficulty scaling applies to all five floors and stacks with Loaded Deck's HP multiplier. These presets are playtest values, not finalized balance.
 
 A run climbs the five floors of a casino. Each floor is two fights against enemies from that floor's pool, then its boss. From floor 2, each floor adds a house rule (the dealer hits soft 17, pushes don't refund, shield caps at 25). You start at 100 HP, recover up to 10 HP after a fight and 30 after a boss. Beating the floor 5 boss clears the casino.
 
@@ -86,6 +88,21 @@ Outside the tutorial, your turn ends on its own about a second after you run out
 
 All numbers are placeholders for playtesting. Battle visuals use PixiJS drawing code and system fonts; no runtime requests to external asset services are needed.
 
+## Multiplayer co-op
+
+Run `npm run dev:all` to start the Vite client and the local multiplayer Worker (port 8787). Open **Multiplayer Co-op** from the menu in two separate tabs or browsers. The host chooses a room difficulty, creates a room and shares its six-character code. The second player joins; both press **Ready**. Each tab has its own reconnect identity, so local two-player testing does not replace the first player.
+
+Co-op currently consists of one shared Ogre battle, rather than the solo casino run. Normal Ogre stats are 260 HP and 12 attack; Easy uses 208 HP and 10 attack; Hard uses 325 HP and 15 attack. Both players see the room's fixed difficulty. The server owns combat state and sends each player only their private hand and public teammate stats.
+
+- Poker costs all 3 energy, discards the whole hand, resolves an Ogre attack and passes the turn. Select 1–5 cards to preview the hand's effect.
+- Blackjack costs 1 energy per deal. Win to deal damage, lose to take an Ogre attack, or push to recover the energy. Finish the round before ending your turn. This co-op prototype draws blackjack cards independently with replacement; it does not yet share solo deck, Joker, shop or chip progression.
+- Blackjack shows your total during play and reveals both hands at settlement. The result can be collapsed and survives reconnection until the next deal or rematch. Rules and the battle log can be expanded when needed.
+- **End turn** resolves an Ogre attack and passes control to a living teammate. A player defeated by blackjack also passes control immediately. A shared victory counts for both players; defeat occurs when both players fall.
+- Battle controls pause while either player is disconnected. Reconnecting or reloading the active battle restores that tab's seat and private cards. Leaving explicitly ends an active battle. Rooms are saved by their Durable Object, so they survive Worker restarts and redeploys.
+- After a completed battle, both players can choose **Ready for another battle** to replay at the same difficulty. Leave and create a new room to change difficulty.
+
+Hosted clients require `VITE_MULTIPLAYER_URL` at build time, pointing to the deployed Worker (see [Multiplayer server](#multiplayer-server)). GitHub Pages hosts only the static client. Without a configured hosted endpoint, the co-op page explains that it is unavailable and links back to solo play. The test suite runs the room rules in `server/game.js` directly and needs no running server.
+
 ## What Each File Does
 
 Tutorial lesson setup, restrictions, and action-driven progression live in
@@ -100,6 +117,10 @@ Run `npm test` for the Node built-in test suite, and `npm run build` for product
 verification. No additional test dependencies are required.
 
 This project separates the UI, game rules, combat logic, and game data so team members can work on different parts without interfering with each other.
+
+`src/systems/DifficultySystem.js` owns the shared presets; `src/difficultyPreferences.js` stores only the next solo run's preference. `src/multiplayer/viewState.js` derives control availability and status text from authoritative multiplayer snapshots. `server/game.js` holds the co-op room rules; `server/worker.js` runs each room in a Durable Object, and `src/multiplayer/connection.js` is the browser's WebSocket client for it.
+
+Solo and co-op share `DifficultyPicker`, `healthDisplay`, and the HTML card faces in `src/components/`. `src/multiplayer/battleView.js` reconciles cards and seats in place so selection, focus, and damage feedback survive room snapshots. It handles presentation only; the server owns combat and turn rules. Motion respects the system's reduced-motion preference.
 
 ### `src/gameState.js`
 

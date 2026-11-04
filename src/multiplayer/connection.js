@@ -1,4 +1,5 @@
-const SERVER_URL = (import.meta.env.VITE_MULTIPLAYER_URL || 'http://localhost:8787').replace(/\/$/, '');
+export const SERVER_URL = (import.meta.env.VITE_MULTIPLAYER_URL ||
+  (['localhost', '127.0.0.1', '[::1]'].includes(location.hostname) ? 'http://localhost:8787' : '')).replace(/\/$/, '');
 const SOCKET_URL = SERVER_URL.replace(/^http/, 'ws');
 const REQUEST_TIMEOUT_MS = 5000;
 const MAX_RETRY_MS = 10000;
@@ -11,8 +12,9 @@ export async function checkServer() {
   return response.ok;
 }
 
-export async function createRoomCode() {
-  const response = await fetch(`${SERVER_URL}/rooms`, { method: 'POST' });
+export async function createRoomCode(difficulty) {
+  const query = new URLSearchParams({ difficulty });
+  const response = await fetch(`${SERVER_URL}/rooms?${query}`, { method: 'POST' });
   if (!response.ok) throw new Error('Could not create a room');
   return (await response.json()).roomId;
 }
