@@ -1,3 +1,4 @@
+/** Routes room requests and persists private cooperative sessions in Durable Objects. */
 import { DurableObject } from 'cloudflare:workers';
 import {
   createRoom,
@@ -121,6 +122,7 @@ export class GameRoom extends DurableObject {
     return new Response(null, { status: 101, webSocket: client });
   }
 
+  /** Dispatches requests while binding each socket to at most one player identity. */
   async webSocketMessage(ws, raw) {
     let message;
     try {
@@ -140,6 +142,13 @@ export class GameRoom extends DurableObject {
     const player = this.playerFor(ws);
 
     if (message.type === 'join') {
+      if (player && player.token !== message.token) {
+        return reply({ success: false, error: 'Already in a room' });
+      }
+      if (player) {
+        ws.send(JSON.stringify({ type: 'roomUpdate', state: getPublicState(this.room, player) }));
+        return reply({ success: true, roomId: this.room.id });
+      }
       const result = joinRoom(this.room, { name: message.name, token: message.token });
       if (result.error) return reply({ success: false, error: result.error });
       for (const other of this.ctx.getWebSockets()) {
