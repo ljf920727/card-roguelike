@@ -7,6 +7,12 @@ import { RoomConnection } from '../src/multiplayer/connection.js';
 class TestSocket {
   static OPEN = 1;
   static instances = [];
+  /** @type {(() => void)|null} Browser open callback assigned by RoomConnection. */
+  onopen = null;
+  /** @type {((event: {data: string}) => void)|null} Browser message callback. */
+  onmessage = null;
+  /** @type {((event: {code: number, reason?: string}) => void)|null} Browser close callback. */
+  onclose = null;
   /** Records a new transport without opening it automatically. */
   constructor() { this.readyState = 0; this.sent = []; TestSocket.instances.push(this); }
   /** Delivers the browser's open event. */

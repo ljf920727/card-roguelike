@@ -1,4 +1,11 @@
+/** Positions tutorial guidance and its arrow around the current target. */
 .guide {
+    /* GuideView supplies measured coordinates before showing the panel. */
+    --guide-left: 0px;
+    --guide-right: 0px;
+    --guide-top: 0px;
+    --guide-bottom: 0px;
+    --guide-arrow: 0px;
     position: fixed;
     z-index: 8;
     width: min(340px, calc(100% - 24px));

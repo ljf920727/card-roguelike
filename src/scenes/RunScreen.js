@@ -3,7 +3,7 @@ import { createCardElement } from "../components/cardElement.js";
 import { deckCards, sortHand, getJinx, DECK_EDITS } from "../systems/DeckSystem.js";
 import { getJoker, jokerSlots, sellPrice } from "../systems/JokerSystem.js";
 import { getCurse } from "../systems/CurseSystem.js";
-import { chooseCurse, chooseReward, eligibleCards, needsCard, skipCurse, skipReward, SKIP_CHIPS } from "../systems/RewardSystem.js";
+import { chooseCurse, chooseReward, eligibleCards, needsCard, needsJokerSlot, skipCurse, skipReward, SKIP_CHIPS } from "../systems/RewardSystem.js";
 import { buyItem, canAfford, leaveShop, sellJoker, shopNeedsJokerSlot, POTION_HEAL } from "../systems/ShopSystem.js";
 import { FLOORS } from "../systems/RunSystem.js";
 import { isTutorialActive } from "../systems/TutorialSystem.js";
@@ -90,6 +90,7 @@ export class RunScreen {
         return section;
     }
 
+    /** Displays a floor or boss milestone and its acknowledgement button. */
     renderMilestone(milestone) {
         this.title.textContent = milestone.title;
         this.subtitle.textContent = milestone.body;
@@ -109,7 +110,7 @@ export class RunScreen {
             confetti.setAttribute("aria-hidden", "true");
             for (let i = 0; i < 18; i++) {
                 const chip = document.createElement("i");
-                chip.style.setProperty("--i", i);
+                chip.style.setProperty("--i", String(i));
                 confetti.append(chip);
             }
             crest.append(confetti);
@@ -128,6 +129,14 @@ export class RunScreen {
         this.onChange();
     }
 
+    /**
+     * Creates a dialog action button with its click handler.
+     * @param {string} label Visible action label.
+     * @param {string} className CSS classes for the button.
+     * @param {() => void} onClick Handler invoked when activated.
+     * @param {boolean} [disabled=false] Whether activation is unavailable.
+     * @returns {HTMLButtonElement} The configured button element.
+     */
     button(label, className, onClick, disabled = false) {
         const button = document.createElement("button");
         button.type = "button";
@@ -181,7 +190,7 @@ export class RunScreen {
 
     /** Applies an offer directly, or asks for a card or a Joker slot first. */
     pickTarget(pick) {
-        const jokerFull = pick.kind === "joker" && this.state.run.jokers.length >= jokerSlots(this.state);
+        const jokerFull = needsJokerSlot(this.state, pick);
         if (!DECK_EDITS[pick.kind] && !jokerFull) {
             this.changed(pick.apply({}));
             return;
@@ -191,6 +200,7 @@ export class RunScreen {
         this.onChange();
     }
 
+    /** Displays eligible cards or owned Jokers for the selected offer. */
     renderPicker() {
         const pick = this.picking;
         const grid = document.createElement("div");
@@ -213,8 +223,9 @@ export class RunScreen {
                 const button = document.createElement("button");
                 button.type = "button";
                 button.className = "deck-card";
-                button.append(createCardElement(card));
-                button.setAttribute("aria-label", button.firstChild.getAttribute("aria-label"));
+                const face = createCardElement(card);
+                button.append(face);
+                button.setAttribute("aria-label", face.getAttribute("aria-label"));
                 const jinx = getJinx(card);
                 if (jinx) {
                     button.classList.add("jinx-choice");

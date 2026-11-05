@@ -1,3 +1,4 @@
+/** Verifies Jinx penalties, encounter injection and independent dealer decks. */
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createInitialState } from "../src/gameState.js";
@@ -127,6 +128,7 @@ test("Jinx encounters inject distinct cards once on entry and scale counts, not 
             state.tutorial = null;
             state.run.floor = floor;
             state.run.fight = 1;
+            /** @type {{name: string, maxHp: number, attack: number[], moves?: Object, jinxPool?: string[], boss?: boolean}} */
             const template = { name: "Test", maxHp: 1000, attack: [1, 1], moves: { attack: 1 },
                 jinxPool: ["debt", "weakness", "backlash", "house-edge", "bad-luck"], boss };
             state.run.encounters = [template, template, template];

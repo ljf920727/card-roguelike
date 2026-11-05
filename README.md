@@ -29,6 +29,8 @@ Open the preview URL ending in `/card-roguelike/`, check that the game and tab i
 
 Multiplayer co-op (`multiplayer.html`) talks to a Cloudflare Worker in `server/`. Each room code maps to one Durable Object (`GameRoom` in `server/worker.js`) that holds the match, both players' WebSockets and a saved copy of the room, so a room survives restarts and idle rooms cost nothing while they hibernate. The rules live in `server/game.js` and are covered by `tests/multiplayer.test.js`. Rooms nobody is connected to are deleted after 10 minutes.
 
+Server JavaScript uses the official `@cloudflare/workers-types` development dependency, scoped by `server/jsconfig.json`; `server/env.d.ts` describes the bindings in `server/wrangler.jsonc`. Keep these bindings and the pinned types package aligned when updating the Worker configuration or runtime.
+
 Run it locally with `npm run server` (Worker on `http://localhost:8787`) next to `npm run dev`, or both together with `npm run dev:all`. The client uses `VITE_MULTIPLAYER_URL`, which defaults to the local Worker when the page is served from localhost.
 
 To deploy:

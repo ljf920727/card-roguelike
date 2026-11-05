@@ -42,6 +42,10 @@ test('Worker binds one identity per socket and preserves reconnects and seat cle
   const url = `ws://127.0.0.1:${worker.port}/rooms/${roomId}/ws`;
   const first = await peer(url, t);
   const token = crypto.randomUUID();
+  // Binary JSON must not claim the socket before the supported text request.
+  first.ws.send(new TextEncoder().encode(JSON.stringify({
+    id: 0, type: 'join', token: crypto.randomUUID(), name: 'Binary peer',
+  })));
   assert.equal((await first.request('join', { token, name: 'Host' })).success, true);
   const before = structuredClone(first.state);
   assert.equal((await first.request('join', { token: crypto.randomUUID(), name: 'Other' })).error, 'Already in a room');

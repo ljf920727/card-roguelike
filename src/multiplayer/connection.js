@@ -30,6 +30,7 @@ export class RoomConnection {
   constructor({ onOpen, onUpdate, onStatus, onLatency, onClosed }) {
     Object.assign(this, { onOpen, onUpdate, onStatus, onLatency, onClosed });
     this.socket = null;
+    /** Each request keeps both completion callbacks until a reply or transport failure. */
     this.pending = new Map();
     this.nextId = 0;
     this.retries = 0;
@@ -151,7 +152,7 @@ export class RoomConnection {
 
   /** Rejects all requests owned by a transport that can no longer answer them. */
   rejectPending(reason) {
-    for (const { reject } of this.pending.values()) reject(new Error(reason));
+    for (const request of this.pending.values()) request.reject(new Error(reason));
     this.pending.clear();
   }
 

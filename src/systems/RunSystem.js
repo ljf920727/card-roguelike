@@ -151,15 +151,6 @@ export function isFinalFight(state) {
     return state.run.floor >= FLOORS.length && isBossFight(state);
 }
 
-/** Overall fight number across floors, for display. */
-export function fightNumber(state) {
-    return (state.run.floor - 1) * (FIGHTS_BEFORE_BOSS + 1) + state.run.fight;
-}
-
-export function totalFights() {
-    return FLOORS.length * (FIGHTS_BEFORE_BOSS + 1);
-}
-
 /** Moves to the next fight, climbing a floor after a boss. Rewards and the shop must be settled first. */
 export function startNextFight(state) {
     if (state.result !== "victory" || isFinalFight(state)) return false;

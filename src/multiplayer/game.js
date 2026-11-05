@@ -23,12 +23,12 @@ const connection = new RoomConnection({
       requestVersion++;
       pending = false;
     }
-    $('connection').textContent = status === 'connected' ? '● Connected' : '○ Disconnected — reconnecting';
+    byId('connection').textContent = status === 'connected' ? '● Connected' : '○ Disconnected — reconnecting';
     refreshControls();
   },
   onLatency: ms => {
     lastRTT = ms;
-    $('latency').textContent = `Latency: ${lastRTT} ms`;
+    byId('latency').textContent = `Latency: ${lastRTT} ms`;
   },
   onClosed: reason => {
     forgetRoom();
@@ -37,7 +37,7 @@ const connection = new RoomConnection({
 });
 
 /** Finds a cooperative UI element by its stable ID. */
-const $ = id => document.getElementById(id);
+const byId = id => document.getElementById(id);
 
 let state = null;
 let roomId = readStorage('sessionStorage', 'juniper.room');
@@ -58,14 +58,14 @@ if (!token) {
 
 const savedName = readStorage('localStorage', 'juniper.playerName');
 
-$('name').value = savedName;
-const difficulty = new DifficultyPicker($('difficulty'), 'normal', value => {
-  $('difficulty-description').textContent = getDifficulty(value).description;
+byId('name').value = savedName;
+const difficulty = new DifficultyPicker(byId('difficulty'), 'normal', value => {
+  byId('difficulty-description').textContent = getDifficulty(value).description;
 });
-$('difficulty-description').textContent = getDifficulty(difficulty.value).description;
-$('enemy-icon').setAttribute('d', ENEMY_ICONS.Ogre);
-$('blackjack-info').addEventListener('toggle', () => {
-  if (state?.blackjack) $('blackjack-info').open = true;
+byId('difficulty-description').textContent = getDifficulty(difficulty.value).description;
+byId('enemy-icon').setAttribute('d', ENEMY_ICONS.Ogre);
+byId('blackjack-info').addEventListener('toggle', () => {
+  if (state?.blackjack) byId('blackjack-info').open = true;
 });
 applyTheme();
 
@@ -87,14 +87,14 @@ function writeStorage(area, key, value) {
 /** Applies the same semantic palette used by the solo game. */
 function applyTheme() {
   for (const [key, value] of Object.entries(BATTLE_THEMES[theme])) {
-    document.documentElement.style.setProperty(`--${key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}`, value);
+    document.documentElement.style.setProperty(`--${key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}`, String(value));
   }
-  $('theme').textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
+  byId('theme').textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
 }
 
 /** Shows non-blocking feedback in every lobby and battle state. */
 function message(text) {
-  $('message').textContent = text;
+  byId('message').textContent = text;
 }
 
 /**
@@ -153,7 +153,7 @@ function makeText(tag, content, className = '') {
 
 /** Remembers the display name independently of the tab's reconnect token. */
 function saveIdentity() {
-  const name = $('name').value.trim() || 'Player';
+  const name = byId('name').value.trim() || 'Player';
   writeStorage('localStorage', 'juniper.playerName', name);
   return name;
 }
@@ -162,15 +162,15 @@ function saveIdentity() {
 function saveRoom(id) {
   roomId = id;
   writeStorage('sessionStorage', 'juniper.room', id);
-  $('room-code').value = id;
+  byId('room-code').value = id;
 }
 
 /** Displays the lobby, waiting room or battle while preserving global status feedback. */
 function showPage(page) {
   document.body.dataset.page = page;
-  $('lobby').hidden = page !== 'lobby';
-  $('room').hidden = page !== 'room';
-  $('battle').hidden = page !== 'battle';
+  byId('lobby').hidden = page !== 'lobby';
+  byId('room').hidden = page !== 'room';
+  byId('battle').hidden = page !== 'battle';
 }
 
 /** Creates a cooperative room with a difficulty fixed for both players and replays. */
@@ -193,7 +193,7 @@ async function createRoom() {
 
 /** Joins the room selected by its six-character code. */
 function joinRoom() {
-  const id = $('room-code').value.trim().toUpperCase();
+  const id = byId('room-code').value.trim().toUpperCase();
   if (!/^[A-F0-9]{6}$/.test(id)) { message('Enter the six-character room code.'); return; }
 
   saveIdentity();
@@ -240,7 +240,7 @@ async function action(type, cardIds) {
     );
 
     lastRTT = Math.round(performance.now() - start);
-    $('latency').textContent = `Latency: ${lastRTT} ms`;
+    byId('latency').textContent = `Latency: ${lastRTT} ms`;
 
     if (!result.success) {
       message(result.error);
@@ -250,8 +250,8 @@ async function action(type, cardIds) {
       if (state) render(state);
       if (['deal', 'hit', 'stand'].includes(source.id) &&
           [document.body, source].includes(document.activeElement)) {
-        const next = !source.hidden ? source : state?.blackjack ? $('hit') :
-          !$('deal').disabled ? $('deal') : $('end-turn');
+        const next = !source.hidden ? source : state?.blackjack ? byId('hit') :
+          !byId('deal').disabled ? byId('deal') : byId('end-turn');
         if (!next.disabled) next.focus({ preventScroll: true });
       }
     }
@@ -267,11 +267,11 @@ function renderPlayers(container, players) {
 
 /** Displays the locked difficulty and the next step for the waiting room. */
 function renderLobby(data) {
-  $('room-id').textContent = data.roomId;
-  $('room-difficulty').textContent = getDifficulty(data.difficulty).label;
-  renderPlayers($('players'), data.players);
+  byId('room-id').textContent = data.roomId;
+  byId('room-difficulty').textContent = getDifficulty(data.difficulty).label;
+  renderPlayers(byId('players'), data.players);
 
-  $('room-status').textContent =
+  byId('room-status').textContent =
     data.players.length < 2
       ? 'Share the room code with your teammate.'
       : data.players.find(player => player.isYou)?.ready
@@ -280,15 +280,15 @@ function renderLobby(data) {
 
   const me = data.players.find(p => p.isYou);
 
-  $('ready').disabled = pending || !connection.connected || !synced || !me || me.ready || data.players.length < 2;
-  $('ready').textContent = me?.ready ? 'Ready ✓' : 'Ready';
+  byId('ready').disabled = pending || !connection.connected || !synced || !me || me.ready || data.players.length < 2;
+  byId('ready').textContent = me?.ready ? 'Ready ✓' : 'Ready';
 }
 
 /** Preserves card nodes across selection and room updates so only new draws animate. */
 function renderHand(data) {
   const ids = new Set(data.hand.map(card => card.id));
   selectedCards = new Set([...selectedCards].filter(id => ids.has(id)));
-  renderPokerCards($('hand'), data.hand, selectedCards, isMyTurn(data) && !data.blackjack, id => {
+  renderPokerCards(byId('hand'), data.hand, selectedCards, isMyTurn(data) && !data.blackjack, id => {
     if (selectedCards.has(id)) selectedCards.delete(id);
     else if (selectedCards.size < 5) selectedCards.add(id);
     renderBattle(state);
@@ -302,7 +302,7 @@ function isMyTurn(data) {
 
 /** Renders battle feedback, selection effects, replay readiness and enabled actions. */
 function renderBattle(data) {
-  const turn = $('turn');
+  const turn = byId('turn');
   const label = battleStatus(data, connection.connected && synced);
   if (turn.textContent !== label) {
     turn.textContent = label;
@@ -310,46 +310,46 @@ function renderBattle(data) {
     void turn.offsetWidth;
     turn.classList.add('turn-arrived');
   }
-  $('battle-difficulty').textContent = getDifficulty(data.difficulty).label;
-  $('enemy-intent').textContent = `Attack · ${data.enemy.attack}`;
+  byId('battle-difficulty').textContent = getDifficulty(data.difficulty).label;
+  byId('enemy-intent').textContent = `Attack · ${data.enemy.attack}`;
 
-  $('enemy-name').textContent = data.enemy.name;
-  $('enemy-hp').textContent =
+  byId('enemy-name').textContent = data.enemy.name;
+  byId('enemy-hp').textContent =
     `HP ${data.enemy.hp}/${data.enemy.maxHp}`;
 
-  renderHearts($('enemy-hearts'), data.enemy.hp, data.enemy.maxHp);
-  $('enemy-token').classList.toggle('defeated', data.enemy.hp <= 0);
+  renderHearts(byId('enemy-hearts'), data.enemy.hp, data.enemy.maxHp);
+  byId('enemy-token').classList.toggle('defeated', data.enemy.hp <= 0);
 
-  renderPlayers($('battle-players'), data.players);
+  renderPlayers(byId('battle-players'), data.players);
   renderHand(data);
   renderBlackjackTable(data);
 
   const myTurn = isMyTurn(data);
   const me = data.players.find(p => p.isYou);
   const evaluation = evaluatePokerHand(data.hand.filter(card => selectedCards.has(card.id)));
-  $('poker-preview').textContent = evaluation
+  byId('poker-preview').textContent = evaluation
     ? `${evaluation.label} · ${evaluation.actions.map(effect => `${effect.amount} ${effect.type === 'attack' ? 'damage' : effect.type === 'defend' ? 'shield' : 'healing'}`).join(' · ')} · Ends turn`
     : 'Select 1–5 cards';
-  $('poker-area').hidden = Boolean(data.blackjack);
-  $('hand-title').textContent = data.blackjack ? 'Blackjack' : 'Your hand';
-  $('hit').hidden = $('stand').hidden = !data.blackjack;
-  $('deal').hidden = $('play-poker').hidden = Boolean(data.blackjack);
-  $('rematch').hidden = data.status !== 'finished' || data.players.length !== 2;
-  $('rematch').disabled = pending || !connection.connected || !synced || me?.ready || !data.players.every(player => player.connected);
-  $('rematch').textContent = me?.ready ? 'Waiting for teammate' : 'Ready for another battle';
+  byId('poker-area').hidden = Boolean(data.blackjack);
+  byId('hand-title').textContent = data.blackjack ? 'Blackjack' : 'Your hand';
+  byId('hit').hidden = byId('stand').hidden = !data.blackjack;
+  byId('deal').hidden = byId('play-poker').hidden = Boolean(data.blackjack);
+  byId('rematch').hidden = data.status !== 'finished' || data.players.length !== 2;
+  byId('rematch').disabled = pending || !connection.connected || !synced || me?.ready || !data.players.every(player => player.connected);
+  byId('rematch').textContent = me?.ready ? 'Waiting for teammate' : 'Ready for another battle';
 
-  $('play-poker').disabled =
+  byId('play-poker').disabled =
     !myTurn || selectedCards.size === 0 ||
     me.energy < 3 || !!data.blackjack;
 
-  $('deal').disabled =
+  byId('deal').disabled =
     !myTurn || me.energy < 1 || !!data.blackjack;
 
-  $('hit').disabled = !myTurn || !data.blackjack;
-  $('stand').disabled = !myTurn || !data.blackjack;
-  $('end-turn').disabled = !myTurn || !!data.blackjack;
+  byId('hit').disabled = !myTurn || !data.blackjack;
+  byId('stand').disabled = !myTurn || !data.blackjack;
+  byId('end-turn').disabled = !myTurn || !!data.blackjack;
 
-  const log = $('log');
+  const log = byId('log');
   log.replaceChildren();
 
   for (const line of [...data.log].reverse()) {
@@ -374,46 +374,44 @@ function render(data) {
 
 /** Refreshes controls immediately when connection or request state changes. */
 function refreshControls() {
-  $('create').disabled = $('join').disabled = !SERVER_URL || pending || Boolean(roomId);
-  $('leave').disabled = $('battle-leave').disabled = pending;
+  byId('create').disabled = byId('join').disabled = !SERVER_URL || pending || Boolean(roomId);
+  byId('leave').disabled = byId('battle-leave').disabled = pending;
   if (state) render(state);
 }
 
-$('create').onclick = createRoom;
-$('join').onclick = joinRoom;
-$('ready').onclick = ready;
-$('leave').onclick = leave;
-$('battle-leave').onclick = leave;
-$('rematch').onclick = ready;
-$('theme').onclick = () => {
+byId('create').onclick = createRoom;
+byId('join').onclick = joinRoom;
+byId('ready').onclick = ready;
+byId('leave').onclick = leave;
+byId('battle-leave').onclick = leave;
+byId('rematch').onclick = ready;
+byId('theme').onclick = () => {
   theme = theme === 'dark' ? 'light' : 'dark';
   savePreferredTheme(theme);
   applyTheme();
 };
 
-$('play-poker').onclick = () => {
-  action('poker', [...selectedCards]);
-};
+byId('play-poker').onclick = () => action('poker', [...selectedCards]);
 
-$('deal').onclick = () => action('deal');
-$('hit').onclick = () => action('hit');
-$('stand').onclick = () => action('stand');
-$('end-turn').onclick = () => action('endTurn');
+byId('deal').onclick = () => action('deal');
+byId('hit').onclick = () => action('hit');
+byId('stand').onclick = () => action('stand');
+byId('end-turn').onclick = () => action('endTurn');
 
 refreshControls();
 if (!SERVER_URL) {
-  $('connection').textContent = 'Co-op unavailable';
+  byId('connection').textContent = 'Co-op unavailable';
   message('Co-op is not available on this host yet. You can still play a solo run.');
 } else if (roomId) {
   connection.open(roomId);
 } else {
   checkServer()
     .then(ok => {
-      $('connection').textContent = ok ? '● Server online' : '○ Server unavailable';
+      byId('connection').textContent = ok ? '● Server online' : '○ Server unavailable';
       if (!ok) message('Cannot reach the co-op server. Check your connection and try again.');
     })
     .catch(() => {
-      $('connection').textContent = '○ Server unavailable';
+      byId('connection').textContent = '○ Server unavailable';
       message('Cannot reach the co-op server. Check your connection and try again.');
     });
 }

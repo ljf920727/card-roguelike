@@ -25,6 +25,8 @@
     --accent-text: #132f29;
     --ui-font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --display-font: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    /* Card rows override overlap when their contents exceed the available width. */
+    --overlap: 0px;
     --gutter: clamp(12px, 2vw, 24px);
 }
 
@@ -42,12 +44,17 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    min-height: 100dvh;
     background: var(--background);
     color: var(--text);
-    font-family: var(--ui-font);
+    font-family: var(--ui-font), sans-serif;
     font-size: 15px;
     line-height: 1.4;
+}
+
+@supports (min-height: 100dvh) {
+    body {
+        min-height: 100dvh;
+    }
 }
 
 h1,
@@ -77,7 +84,7 @@ button {
 }
 
 .brand {
-    font-family: var(--display-font);
+    font-family: var(--display-font), serif;
     font-size: 1.75rem;
     font-weight: 700;
     line-height: 1;
@@ -198,7 +205,7 @@ button {
 }
 
 .phase {
-    font-family: var(--display-font);
+    font-family: var(--display-font), serif;
     font-size: 1.15rem;
     font-weight: 700;
 }
@@ -268,7 +275,7 @@ button {
     background: var(--enemy);
     box-shadow: 0 0 0 4px var(--felt), inset 0 0 0 4px var(--enemy-ring);
     color: #f8ede6;
-    font-family: var(--display-font);
+    font-family: var(--display-font), serif;
     font-size: clamp(2.4rem, 6vh, 3.4rem);
     font-weight: 700;
 }
@@ -321,7 +328,7 @@ button {
 }
 
 .enemy-name {
-    font-family: var(--display-font);
+    font-family: var(--display-font), serif;
     font-size: 1.9rem;
     line-height: 1.1;
 }
@@ -363,7 +370,7 @@ button {
 }
 
 .result {
-    font-family: var(--display-font);
+    font-family: var(--display-font), serif;
     font-size: 1.75rem;
     font-weight: 700;
     line-height: 1.2;
@@ -445,7 +452,7 @@ button {
 }
 
 .mode-label {
-    font-family: var(--display-font);
+    font-family: var(--display-font), serif;
     font-size: 1.125rem;
     font-weight: 700;
 }
@@ -492,7 +499,7 @@ button {
 }
 
 .button.secondary {
-    border: 1.5px solid var(--panel-line);
+    border: 2px solid var(--panel-line);
     background: var(--button);
     color: var(--text);
 }
@@ -528,7 +535,7 @@ button {
 
 .fight,
 .rules-title {
-    font-family: var(--display-font);
+    font-family: var(--display-font), serif;
     font-weight: 700;
 }
 
@@ -826,7 +833,7 @@ button {
 
 .menu-title {
     display: flex;
-    font-family: var(--display-font);
+    font-family: var(--display-font), serif;
     font-size: clamp(4rem, 14vw, 8rem);
     font-weight: 700;
     line-height: 1;
@@ -884,7 +891,7 @@ button {
     background: var(--face);
     color: var(--label);
     box-shadow: 0 6px 0 var(--lip), 0 12px 20px rgb(0 0 0 / 0.25);
-    font-family: var(--display-font);
+    font-family: var(--display-font), serif;
     font-size: 1.25rem;
     font-weight: 700;
     cursor: pointer;
@@ -1125,7 +1132,7 @@ button {
 .rules-dialog h2,
 .rules-dialog h3 {
     margin: 0 0 6px;
-    font-family: var(--display-font);
+    font-family: var(--display-font), serif;
 }
 
 .rules-dialog h2 {
@@ -1225,7 +1232,7 @@ button {
 }
 
 .bj-total {
-    font-family: var(--display-font);
+    font-family: var(--display-font), serif;
     font-size: 1.5rem;
     font-weight: 700;
     text-align: right;
@@ -1240,7 +1247,7 @@ button {
 
 .bj-card.slot {
     background: transparent;
-    border: 1.5px dashed color-mix(in srgb, var(--rim) 45%, transparent);
+    border: 2px dashed color-mix(in srgb, var(--rim) 45%, transparent);
     box-shadow: none;
 }
 
@@ -1287,7 +1294,12 @@ button {
 @media (min-width: 901px) {
     body {
         height: 100vh;
-        height: 100dvh;
+    }
+
+    @supports (height: 100dvh) {
+        body {
+            height: 100dvh;
+        }
     }
 
     .layout {
@@ -1438,7 +1450,7 @@ button {
     align-items: flex-start;
     gap: 6px;
     padding: 16px;
-    border: 1.5px solid var(--panel-line);
+    border: 2px solid var(--panel-line);
     border-radius: 14px;
     background: var(--button);
     text-align: left;
@@ -1469,7 +1481,7 @@ button {
 }
 
 .offer-title {
-    font-family: var(--display-font);
+    font-family: var(--display-font), serif;
     font-size: 1.25rem;
     font-weight: 700;
 }

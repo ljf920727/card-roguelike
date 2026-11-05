@@ -1,3 +1,4 @@
+/** Styles floor progress, milestone dialogs and celebration particles. */
 .floor-route {
     display: flex;
     gap: 6px;
@@ -98,7 +99,7 @@
     text-align: left;
 }
 
-.run-notes h3 { margin: 0 0 8px; font-family: var(--display-font); font-size: 1.3rem; }
+.run-notes h3 { margin: 0 0 8px; font-family: var(--display-font), serif; font-size: 1.3rem; }
 .run-notes p { color: var(--secondary); }
 .run-notes ol { margin: 12px 0 0; padding-left: 22px; }
 .run-notes li { padding-left: 4px; margin-top: 8px; }
@@ -109,6 +110,8 @@
 
 .milestone-confetti { position: absolute; inset: 0; pointer-events: none; }
 .milestone-confetti i {
+    /* RunScreen assigns each particle its sequence index. */
+    --i: 0;
     position: absolute;
     left: 50%;
     top: 50%;
