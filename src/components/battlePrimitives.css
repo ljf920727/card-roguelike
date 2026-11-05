@@ -6,6 +6,8 @@
 }
 
 .heart {
+    /* Health fractions are assigned per heart by healthDisplay. */
+    --fill: 0%;
     --heart-color: var(--danger);
     position: relative;
     flex: 0 1 auto;
@@ -122,6 +124,7 @@
 }
 
 .bj-card {
+    --deal-delay: 0ms;
     flex: none;
     display: flex;
     flex-direction: column;

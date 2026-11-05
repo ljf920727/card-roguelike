@@ -16,6 +16,12 @@ const EMPTY_ROOM_TTL_MS = 10 * 60 * 1000;
 const ROOM_NOT_FOUND = 4404;
 const REPLACED = 4000;
 
+/**
+ * Resolves the requesting origin against the configured allowlist.
+ * @param {Request} request Incoming Worker request.
+ * @param {Env} env Runtime bindings and allowed browser origins.
+ * @returns {string|false|null} Allowed origin, rejected origin or a non-browser request.
+ */
 function allowedOrigin(request, env) {
   const origin = request.headers.get('Origin');
   if (!origin) return null;
@@ -43,7 +49,14 @@ function newRoomCode() {
   ).join('').toUpperCase();
 }
 
+/** Cloudflare invokes this module's fetch handler as the Worker entry point. */
 export default {
+  /**
+   * Routes public HTTP requests to their room Durable Object.
+   * @param {Request} request Incoming HTTP request.
+   * @param {Env} env Runtime bindings and configuration.
+   * @returns {Promise<Response>} HTTP response or the room's WebSocket upgrade.
+   */
   async fetch(request, env) {
     const origin = allowedOrigin(request, env);
     if (origin === false) {
@@ -96,16 +109,30 @@ export default {
   },
 };
 
-// One instance per room code: holds the match, the players' sockets and a saved copy.
+/** Owns one room and its sockets; Cloudflare invokes the lifecycle hooks. */
 export class GameRoom extends DurableObject {
+  /**
+   * Registers runtime-managed heartbeats and restores the persisted room.
+   * @param {DurableObjectState} ctx Cloudflare storage and hibernating socket context.
+   * @param {Env} env Bindings and configuration for this Worker.
+   */
   constructor(ctx, env) {
     super(ctx, env);
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('ping', 'pong'));
-    ctx.blockConcurrencyWhile(async () => {
-      this.room = (await ctx.storage.get('room')) ?? null;
+    // The runtime gates event delivery and resets the object if initialization fails.
+    void ctx.blockConcurrencyWhile(async () => {
+      /** @type {ReturnType<typeof createRoom>|undefined} Persisted authoritative room state. */
+      const savedRoom = await ctx.storage.get('room');
+      this.room = savedRoom ?? null;
     });
   }
 
+  /**
+   * Creates the room or upgrades its connection using Cloudflare WebSocket APIs.
+   * @override
+   * @param {import('@cloudflare/workers-types').Request} request Internal room request.
+   * @returns {Promise<import('@cloudflare/workers-types').Response>} Room creation result or upgraded socket response.
+   */
   async fetch(request) {
     const url = new URL(request.url);
 
@@ -122,8 +149,15 @@ export class GameRoom extends DurableObject {
     return new Response(null, { status: 101, webSocket: client });
   }
 
-  /** Dispatches requests while binding each socket to at most one player identity. */
+  /**
+   * Dispatches JSON text requests while binding each socket to one player identity.
+   * @override
+   * @param {WebSocket} ws Accepted Cloudflare WebSocket.
+   * @param {string|ArrayBuffer} raw Incoming frame; binary frames are ignored.
+   * @returns {Promise<void>} Completion of the room action and persistence.
+   */
   async webSocketMessage(ws, raw) {
+    if (typeof raw !== 'string') return;
     let message;
     try {
       message = JSON.parse(raw);
@@ -190,15 +224,37 @@ export class GameRoom extends DurableObject {
     reply({ success: false, error: 'Unknown request' });
   }
 
-  async webSocketClose(ws) {
+  /**
+   * Releases membership when the runtime reports a closed socket.
+   * @override
+   * @param {WebSocket} ws Closed Cloudflare WebSocket.
+   * @param {number} _code Runtime close status.
+   * @param {string} _reason Runtime close reason.
+   * @param {boolean} _wasClean Whether the close handshake completed.
+   * @returns {Promise<void>} Completion of membership cleanup.
+   */
+  async webSocketClose(ws, _code, _reason, _wasClean) {
     await this.dropSocket(ws);
   }
 
-  async webSocketError(ws) {
+  /**
+   * Releases membership when the runtime reports a socket failure.
+   * @override
+   * @param {WebSocket} ws Failed Cloudflare WebSocket.
+   * @param {unknown} _error Runtime transport error.
+   * @returns {Promise<void>} Completion of membership cleanup.
+   */
+  async webSocketError(ws, _error) {
     await this.dropSocket(ws);
   }
 
-  async alarm() {
+  /**
+   * Removes expired empty rooms when the runtime fires their storage alarm.
+   * @override
+   * @param {AlarmInvocationInfo} [_info] Runtime alarm invocation metadata.
+   * @returns {Promise<void>} Completion of expired room cleanup.
+   */
+  async alarm(_info) {
     if (!this.room || this.room.players.some(p => p.connected)) return;
     for (const ws of this.ctx.getWebSockets()) ws.close(ROOM_NOT_FOUND, 'Room closed');
     this.room = null;
@@ -210,6 +266,7 @@ export class GameRoom extends DurableObject {
     return token && this.room ? findPlayer(this.room, token) : null;
   }
 
+  /** Disconnects a player only after all sockets for that identity are gone. */
   async dropSocket(ws) {
     const player = this.playerFor(ws);
     ws.serializeAttachment({ token: null });
@@ -225,6 +282,7 @@ export class GameRoom extends DurableObject {
     await this.ctx.storage.put('room', this.room);
   }
 
+  /** Persists room state and broadcasts private snapshots to accepted sockets. */
   async commit() {
     await this.save();
     if (!this.room.players.some(p => p.connected)) {

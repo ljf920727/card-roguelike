@@ -29,6 +29,8 @@ Open the preview URL ending in `/card-roguelike/`, check that the game and tab i
 
 Multiplayer co-op (`multiplayer.html`) talks to a Cloudflare Worker in `server/`. Each room code maps to one Durable Object (`GameRoom` in `server/worker.js`) that holds the match, both players' WebSockets and a saved copy of the room, so a room survives restarts and idle rooms cost nothing while they hibernate. The rules live in `server/game.js` and are covered by `tests/multiplayer.test.js`. Rooms nobody is connected to are deleted after 10 minutes.
 
+Server JavaScript uses the official `@cloudflare/workers-types` development dependency, scoped by `server/jsconfig.json`; `server/env.d.ts` describes the bindings in `server/wrangler.jsonc`. Keep these bindings and the pinned types package aligned when updating the Worker configuration or runtime.
+
 Run it locally with `npm run server` (Worker on `http://localhost:8787`) next to `npm run dev`, or both together with `npm run dev:all`. The client uses `VITE_MULTIPLAYER_URL`, which defaults to the local Worker when the page is served from localhost.
 
 To deploy:
@@ -61,18 +63,18 @@ You have 3 energy per turn and a hand of 5 cards from your deck. Unplayed cards 
 - **Mulligan** (1 energy): select up to 3 cards and swap them for new ones.
 - **Blackjack** (1 energy per Deal): you get 2 cards from your deck; the enemy dealer gets 2 from its own independent 52-card deck, one face down. Each side reshuffles only its own discards; each new enemy starts with a fresh dealer deck. Your jinxes and upgrades never enter the dealer's deck. Hit or stand; the dealer draws to 17. Win: damage equal to your total (a natural deals 30) plus chips (5, or 15 for a natural). Lose or bust: the enemy hits you for its average attack. A push refunds the energy. With your first two cards you can **Double down** (1 more energy, exactly one more card, double the result) or **Surrender** (take half the loss).
 
-  | Hand | Effect |
-  |---|---|
-  | Royal flush | 100 damage |
-  | Straight flush | 75 damage, heal 25 |
-  | Four of a kind | 65 damage |
-  | Full house | 45 damage, 25 shield |
-  | Flush | heal 30 |
-  | Straight | 45 damage (A-2-3-4-5 counts; no wrap-around) |
-  | Three of a kind | 35 damage |
-  | Two pair | 40 shield |
-  | Pair | 25 shield |
-  | High card | highest card value x 1.5, rounded up, capped at 15 |
+  | Hand            | Effect                                             |
+  |-----------------|----------------------------------------------------|
+  | Royal flush     | 100 damage                                         |
+  | Straight flush  | 75 damage, heal 25                                 |
+  | Four of a kind  | 65 damage                                          |
+  | Full house      | 45 damage, 25 shield                               |
+  | Flush           | heal 30                                            |
+  | Straight        | 45 damage (A-2-3-4-5 counts; no wrap-around)       |
+  | Three of a kind | 35 damage                                          |
+  | Two pair        | 40 shield                                          |
+  | Pair            | 25 shield                                          |
+  | High card       | highest card value x 1.5, rounded up, capped at 15 |
 
 **Shield** lasts one turn, then decays to half for one more turn, then vanishes. It caps at 40 and clears between enemies. Attacks spend the decaying part first.
 
@@ -82,13 +84,13 @@ You have 3 energy per turn and a hand of 5 cards from your deck. Unplayed cards 
 
 All Jinxes are unplayable in poker and worth 0 in blackjack. Their fixed blackjack effects are:
 
-| Jinx | Effect |
-|---|---|
-| Debt | Winning chips reduced by 2 per copy, before multipliers; minimum 0. |
-| Weakness | Winning damage reduced by 5 per copy, before multipliers; minimum 0. |
-| Backlash | Take 3 shield-blockable damage on each blackjack draw, including the opening deal and double down. Surrender and Insurance do not undo it. |
-| House Edge | Ties become losses. Multiple copies do not stack. |
-| Bad Luck | Player bust limit drops by 2 per copy, minimum 0. Aces adapt to this limit; reaching it stands automatically. Dealer still busts above 21. |
+| Jinx       | Effect                                                                                                                                     |
+|------------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| Debt       | Winning chips reduced by 2 per copy, before multipliers; minimum 0.                                                                        |
+| Weakness   | Winning damage reduced by 5 per copy, before multipliers; minimum 0.                                                                       |
+| Backlash   | Take 3 shield-blockable damage on each blackjack draw, including the opening deal and double down. Surrender and Insurance do not undo it. |
+| House Edge | Ties become losses. Multiple copies do not stack.                                                                                          |
+| Bad Luck   | Player bust limit drops by 2 per copy, minimum 0. Aces adapt to this limit; reaching it stands automatically. Dealer still busts above 21. |
 
 Jinxes persist between fights until removed through rewards or the shop. Mulligan only discards them temporarily. Removal pickers put Jinxes first and show each effect. Later floors increase counts, never individual effect strength. These counts are playtest values; monitor accumulation versus removal access before increasing them further.
 
@@ -165,12 +167,12 @@ Example:
 
 ```js
 const gameState = {
-    player: {
-        hp: 100,
-        maxHp: 100,
-        shield: 0,
-        energy: 3,
-    },
+  player: {
+    hp: 100,
+    maxHp: 100,
+    shield: 0,
+    energy: 3,
+  },
 };
 ```
 

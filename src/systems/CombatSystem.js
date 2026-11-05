@@ -12,9 +12,9 @@ export function shieldCap(state) {
 }
 
 /**
- * Applies an evaluated effect within HP bounds and detects a battle result.
+ * Applies evaluated effects in order within HP bounds and detects a battle result.
  * @param {Object} state Mutable battle state.
- * @param {Object|null} action Rule engine action to apply.
+ * @param {Array<Object|null>} actions Rule engine actions to apply in order.
  */
 export function applyActions(state, actions) {
     actions.forEach(action => applyAction(state, action));
@@ -72,11 +72,6 @@ export function damagePlayer(state, amount, pierce = false) {
     return { blocked, damage };
 }
 
-/** Kept for callers that hit the player for the enemy's displayed value. */
-export function applyEnemyAttack(state) {
-    return damagePlayer(state, state.enemy.intent?.value ?? 0);
-}
-
 /**
  * Resolves the enemy's telegraphed intent at the end of the player's turn.
  * @param {Object} state Mutable battle state.
@@ -114,7 +109,8 @@ export function forecastIntent(state) {
     let shield = intent.type === "shatter" ? 0 : state.player.shield;
     const pierce = intent.type === "pierce";
     const extra = hasCurse(state, "thorns") ? THORNS_EXTRA_DAMAGE : 0;
-    const hits = (intent.type === "multi" ? Array(intent.hits).fill(intent.value) :
+    /** @type {number[]} Incoming damage for each individual hit. */
+    const hits = (intent.type === "multi" ? Array.from({ length: intent.hits }, () => intent.value) :
         intent.type === "charge" ? [] : [intent.value]).map(amount => amount + extra);
     let blocked = 0;
     let damage = 0;

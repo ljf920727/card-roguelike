@@ -14,14 +14,14 @@ Principles:
 
 ## Steps
 
-| # | Step | The player does | Allowed | Teaches |
-|---|---|---|---|---|
-| 1 | `intro` | Reads the tip, clicks **Let's go** | nothing else | Enemy intent; 3 energy; costs (poker 2, mulligan 1, deal 1) |
-| 2 | `pair` | Selects both 7s and plays them | only the pair | Poker hands; only played cards are discarded |
-| 3 | `mulligan` | Swaps any 1 to 3 cards | selecting, mulligan | Mulligans; the hand carries into next turn |
-| 4 | `end-turn` | Clicks End turn | End turn | The enemy acts; shield blocks first, then halves for a turn, then vanishes |
-| 5 | `blackjack` | Switches to blackjack, deals, plays the round | blackjack actions only | Blackjack basics, chips, loss penalty; double down and surrender |
-| 6 | `free` | Finishes the Goblin | everything | Reading varied intents; turns now end on their own |
+| # | Step        | The player does                               | Allowed                | Teaches                                                                    |
+|---|-------------|-----------------------------------------------|------------------------|----------------------------------------------------------------------------|
+| 1 | `intro`     | Reads the tip, clicks **Let's go**            | nothing else           | Enemy intent; 3 energy; costs (poker 2, mulligan 1, deal 1)                |
+| 2 | `pair`      | Selects both 7s and plays them                | only the pair          | Poker hands; only played cards are discarded                               |
+| 3 | `mulligan`  | Swaps any 1 to 3 cards                        | selecting, mulligan    | Mulligans; the hand carries into next turn                                 |
+| 4 | `end-turn`  | Clicks End turn                               | End turn               | The enemy acts; shield blocks first, then halves for a turn, then vanishes |
+| 5 | `blackjack` | Switches to blackjack, deals, plays the round | blackjack actions only | Blackjack basics, chips, loss penalty; double down and surrender           |
+| 6 | `free`      | Finishes the Goblin                           | everything             | Reading varied intents; turns now end on their own                         |
 
 After step 6 the reward dialog adds one line about rewards. Reaching fight 2 marks the tutorial complete and shows a closing tip: floors, bosses, the Curse choice and the shop.
 

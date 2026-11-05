@@ -5,7 +5,7 @@
 :root {
   --ui-font: system-ui, -apple-system, "Segoe UI", sans-serif;
   --display-font: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-  font-family: var(--ui-font);
+  font-family: var(--ui-font), sans-serif;
   color: var(--text, #f3efe3);
   background: var(--background, #0f2621);
   line-height: 1.4;
@@ -64,7 +64,7 @@ h1, h2, h3, p {
   margin: 0;
 }
 h1, h2, h3 {
-  font-family: var(--display-font);
+  font-family: var(--display-font), serif;
 }
 h1 {
   font-size: clamp(2.5rem, 6vw, 3.5rem);
@@ -453,6 +453,7 @@ input:not([type="radio"]):focus {
   padding: 18px 8px 8px;
 }
 .hand-card {
+  --arc: 0px;
   position: relative;
   padding: 0;
   border: 0;

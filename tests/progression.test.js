@@ -1,3 +1,4 @@
+/** Verifies rewards, deck edits, shop purchases and floor progression. */
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createInitialState } from "../src/gameState.js";
@@ -62,11 +63,11 @@ test("Joker rewards need a slot to replace when all slots are full", () => {
 });
 
 test("rewards never offer duplicating a card", () => {
-    const state = createInitialState();
-    winFight(state);
     for (let i = 0; i < 30; i++) {
-        state.reward = null;
-        ensureRewards(state);
+        const state = createInitialState();
+        winFight(state);
+        assert.equal(ensureRewards(state), true);
+        assert.ok(state.reward);
         assert.ok(state.reward.offers.every(offer => offer.kind !== "duplicate"));
     }
 });
