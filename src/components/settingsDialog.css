@@ -1,4 +1,4 @@
-/** Shares the felt, brass trim, typography and switches across the two settings pages. */
+/** Shares felt, brass trim, typography and raised controls across settings pages. */
 .preferences-dialog {
     --sheet-padding: clamp(16px, 4vw, 28px);
     width: min(460px, calc(100% - 24px));
@@ -14,7 +14,7 @@
 }
 .preferences-dialog[open] { display: flex; flex-direction: column; }
 .preferences-dialog::backdrop { background: rgb(0 0 0 / 0.55); }
-body:has(.sound-dialog[open]) .settings-dialog::backdrop { background: transparent; }
+body:has(.sound-dialog[open], .language-dialog[open]) .settings-dialog::backdrop { background: transparent; }
 .preferences-heading {
     flex: none;
     display: flex;
@@ -34,6 +34,7 @@ body:has(.sound-dialog[open]) .settings-dialog::backdrop { background: transpare
 }
 .preferences-heading h2::before {
     content: "";
+    flex: none;
     width: 40px;
     height: 40px;
     background: url("/logo.png") center / contain no-repeat;
@@ -76,14 +77,14 @@ body:has(.sound-dialog[open]) .settings-dialog::backdrop { background: transpare
     font: .875rem/1.5 var(--ui-font), sans-serif;
 }
 .settings-row label, label.settings-row, .sound-mute { cursor: pointer; }
-.settings-sound {
+.settings-link {
     display: flex;
     align-items: center;
     justify-content: space-between;
     width: 100%;
     margin-top: 18px;
 }
-.settings-sound span { color: var(--attack); font-size: 1.3em; }
+.settings-link span { color: var(--attack); font-size: 1.3em; }
 .table-switch {
     appearance: none;
     flex: none;
@@ -113,6 +114,51 @@ body:has(.sound-dialog[open]) .settings-dialog::backdrop { background: transpare
     .preferences-dialog { max-height: calc(100dvh - 16px); }
     .preferences-heading { padding-block: 10px; }
 }
+@media (max-width: 420px) {
+    .preferences-heading h2 { gap: 8px; font-size: 1.5rem; }
+    .preferences-heading h2::before { width: 28px; height: 28px; }
+    .preferences-dialog .preferences-return { padding: 8px 10px; font-size: .9rem; }
+}
 @media (prefers-reduced-motion: reduce) {
     .preferences-dialog .menu-button { transition: none; }
 }
+
+.language-picker {
+    margin: 16px 0 0;
+    padding: 0;
+    min-width: 0;
+    border: 0;
+}
+.language-options { display: grid; gap: 12px; }
+.language-choice, .language-chinese > summary {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    overflow-wrap: anywhere;
+}
+.language-choice:has(:checked), .language-chinese.selected > summary {
+    --face: var(--play-button);
+    --lip: color-mix(in srgb, var(--face) 55%, black);
+    --label: var(--button-text);
+    border-color: var(--rim);
+}
+.language-choice input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    clip-path: inset(50%);
+    overflow: hidden;
+}
+.language-choice:has(:focus-visible) { outline: 2px solid var(--shield); outline-offset: 3px; }
+.language-check { margin-left: auto; visibility: hidden; }
+.language-choice:has(:checked) .language-check { visibility: visible; }
+.language-chinese > summary { list-style: none; }
+.language-chinese > summary::-webkit-details-marker { display: none; }
+.language-arrow { margin-left: auto; flex: none; font-size: 1.3em; }
+.language-chinese[open] .language-arrow { rotate: 90deg; }
+.language-variants { display: grid; gap: 12px; margin: 12px 0 0 16px; }
+:lang(pa) { font-family: 'Nirmala UI', 'Raavi', sans-serif; line-height: 1.6; }
+html:lang(zh) { --ui-font: 'Microsoft JhengHei', 'Microsoft YaHei', sans-serif; --display-font: 'Songti SC', 'PMingLiU', 'SimSun', serif; }

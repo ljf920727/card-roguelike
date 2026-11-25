@@ -7,6 +7,9 @@ import {
 } from './scenes/BattleScene.js';
 import { MenuScreen } from './scenes/MenuScreen.js';
 import { installSettings } from './components/SettingsDialog.js';
+import { installLocalization } from './i18n/dom.js';
+
+installLocalization();
 
 
 /**

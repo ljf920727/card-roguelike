@@ -1,4 +1,6 @@
 /** Binds the HTML battle interface to game state and draws the hand with PixiJS. */
+import { appendText, setText, setLabel, setChildren } from '../i18n/dom.js';
+
 import {renderHearts} from '../components/healthDisplay.js';
 import {Container} from 'pixi.js';
 
@@ -107,7 +109,7 @@ export class BattleScene {
     this.ui['mulligan-button'].addEventListener('click', () => {
       const validation = mulligan(this.state);
       if (!validation.allowed) {
-        this.ui['feedback-text'].textContent = validation.reason;
+        setText(this.ui['feedback-text'], validation.reason);
         return;
       }
       void audio.play('shuffle');
@@ -123,7 +125,7 @@ export class BattleScene {
     });
     this.ui['restart-button'].addEventListener('click', () => this.startRun());
     this.modeOptions.forEach(option => option.addEventListener('click', () => this.setMode(option.dataset.mode)));
-    new ResizeObserver(() => this.resize()).observe(this.ui.hand);
+    new ResizeObserver(() => this.scheduleResize()).observe(this.ui.hand);
 
     this.applyTheme();
   }
@@ -148,8 +150,8 @@ export class BattleScene {
       const jinx = getJinx(card);
       const label = jinx ? `${describeCard(card)}. ${jinx.text} Unplayable in poker.` :
           `${card.gilded ? 'Gilded ' : ''}${card.rank} of ${card.suit}`;
-      input.setAttribute('aria-label', label);
-      if (jinx) input.title = label;
+      setLabel(input, 'aria-label', label);
+      if (jinx) setLabel(input, 'title', label);
       input.addEventListener('click', () => cardView.toggleSelection());
       input.addEventListener('pointerenter', () => cardView.setHovered(true));
       input.addEventListener('pointerleave', () => cardView.setHovered(false));
@@ -233,7 +235,7 @@ export class BattleScene {
     }
     const validation = playSelectedCards(this.state);
     if (!validation.allowed) {
-      this.ui['feedback-text'].textContent = validation.reason;
+      setText(this.ui['feedback-text'], validation.reason);
       return;
     }
     void audio.play('play');
@@ -264,17 +266,17 @@ export class BattleScene {
     const view = this.state.result ? this.describeFightEnd() :
         this.state.mode === 'blackjack' ? this.describeBlackjack() : this.describePoker(selectedCards, result);
 
-    this.ui['selection-text'].textContent = view.selection ?? '';
-    this.ui['result-text'].textContent = view.result;
+    setText(this.ui['selection-text'], view.selection ?? '');
+    setText(this.ui['result-text'], view.result);
     this.ui['result-text'].style.color = view.color ?? this.theme.text;
     const autoEnding = Boolean(this.autoEndTimeout);
-    this.ui['feedback-text'].textContent = autoEnding ? `${this.autoEndReason} Ending your turn…` : view.feedback;
-    this.ui['play-button'].textContent = view.primaryLabel;
+    setText(this.ui['feedback-text'], autoEnding ? `${this.autoEndReason} Ending your turn…` : view.feedback);
+    setText(this.ui['play-button'], view.primaryLabel);
     this.ui['play-button'].disabled = !view.primaryEnabled || autoEnding;
     const roundActive = isRoundActive(this.state);
     this.ui['stand-button'].disabled = !roundActive || !tutorialAllows(this.state, 'stand');
     const mulliganCheck = validateMulligan(this.state);
-    this.ui['mulligan-button'].textContent = `Mulligan (${mulliganCheck.cost ? `${mulliganCheck.cost} energy` : 'free'})`;
+    setText(this.ui['mulligan-button'], `Mulligan (${mulliganCheck.cost ? `${mulliganCheck.cost} energy` : 'free'})`);
     this.ui['mulligan-button'].disabled = !mulliganCheck.allowed || autoEnding || Boolean(this.state.result);
     this.ui['double-button'].disabled = !canDoubleDown(this.state);
     this.ui['surrender-button'].disabled = !canSurrender(this.state);
@@ -457,7 +459,7 @@ export class BattleScene {
       }
       return element;
     };
-    this.ui['bj-dealer-label'].textContent = this.state.enemy.name;
+    setText(this.ui['bj-dealer-label'], this.state.enemy.name);
     this.ui['bj-dealer'].replaceChildren(...(round ? round.dealer.map((card, i) => {
       const element = createCardElement(card, hidden && i === 1);
       if (i >= shown.dealer) return deal(element, fresh ? 2 * i + 1 : i - shown.dealer + (revealed ? 1 : 0));
@@ -471,8 +473,8 @@ export class BattleScene {
     this.lastRound = round;
     this.lastHidden = hidden;
     this.dealtCounts = {dealer: round?.dealer.length ?? 0, player: round?.player.length ?? 0};
-    this.ui['bj-player-total'].textContent = round ? `${calculateBlackjackValue(round.player)}${bustLimit(round.player) < 21 ? ` / ${bustLimit(round.player)} limit` : ''}` : '';
-    this.ui['bj-dealer-total'].textContent = !round ? '' : hidden ? '?' : calculateBlackjackValue(round.dealer);
+    setText(this.ui['bj-player-total'], round ? `${calculateBlackjackValue(round.player)}${bustLimit(round.player) < 21 ? ` / ${bustLimit(round.player)} limit` : ''}` : '');
+    setText(this.ui['bj-dealer-total'], !round ? '' : hidden ? '?' : calculateBlackjackValue(round.dealer));
   }
 
   fitBlackjackRows() {
@@ -542,7 +544,7 @@ export class BattleScene {
     this.refreshHUD();
     this.refreshSidePanel();
     this.onCardSelectionChanged();
-    this.ui['last-action'].textContent = this.state.lastAction;
+    setText(this.ui['last-action'], this.state.lastAction);
     this.resize();
     this.runScreen.sync();
     this.guide.refresh();
@@ -553,19 +555,19 @@ export class BattleScene {
 
   /** Displays player resources and whether battle input is available. */
   refreshHUD() {
-    document.getElementById('run-difficulty').textContent = getDifficulty(this.state.run.difficulty).label;
+    setText(document.getElementById('run-difficulty'), getDifficulty(this.state.run.difficulty).label);
     const {hp, maxHp, shield, shieldOld, energy, maxEnergy} = this.state.player;
     renderHearts(this.ui['hp-hearts'], hp, maxHp);
-    this.ui['hp-text'].textContent = `${hp} / ${maxHp}`;
+    setText(this.ui['hp-text'], `${hp} / ${maxHp}`);
     const cap = shieldCap(this.state);
     const level = amount => `scaleY(${cap > 0 ? Math.min(1, amount / cap) : 0})`;
     this.ui['shield-fill'].style.transform = level(shield);
     this.ui['shield-fresh'].style.transform = level(Math.max(0, shield - (shieldOld ?? 0)));
-    this.ui['shield-text'].textContent = shield;
-    this.ui['shield-cap'].textContent = ` / ${cap}`;
-    this.ui['shield-stat'].setAttribute('aria-label', `Shield ${shield} of ${cap}`);
-    this.ui['shield-stat'].title = 'Shield lasts one turn, then decays to half for one more turn, then vanishes. It clears between enemies. The faded part vanishes at the start of your next turn.';
-    this.ui['chips-text'].textContent = this.state.run.gold.toLocaleString();
+    setText(this.ui['shield-text'], shield);
+    setText(this.ui['shield-cap'], ` / ${cap}`);
+    setLabel(this.ui['shield-stat'], 'aria-label', `Shield ${shield} of ${cap}`);
+    setLabel(this.ui['shield-stat'], 'title', 'Shield lasts one turn, then decays to half for one more turn, then vanishes. It clears between enemies. The faded part vanishes at the start of your next turn.');
+    setText(this.ui['chips-text'], this.state.run.gold.toLocaleString());
     this.ui['shield-stat'].classList.toggle('active', shield > 0);
     const chips = this.ui['energy-chips'];
     chips.replaceChildren(...Array.from({length: maxEnergy}, (_, i) => {
@@ -573,90 +575,91 @@ export class BattleScene {
       chip.className = i < energy ? 'chip' : 'chip spent';
       return chip;
     }));
-    chips.setAttribute('aria-label', `Energy ${energy} of ${maxEnergy}`);
+    setLabel(chips, 'aria-label', `Energy ${energy} of ${maxEnergy}`);
     const phase = this.ui['phase-text'];
-    phase.textContent =
-        this.state.result === 'defeat' ? 'Defeat' :
+    setText(phase, this.state.result === 'defeat' ? 'Defeat' :
             this.state.result ? 'Victory' :
-                this.state.phase === 'enemy' ? 'Enemy turn' : 'Your turn';
+                this.state.phase === 'enemy' ? 'Enemy turn' : 'Your turn');
     phase.classList.toggle('enemy-turn', this.state.phase === 'enemy');
   }
 
   /** Displays enemy HP and the attack that End Turn will resolve. */
   refreshEnemy() {
     const {name, hp, maxHp, intent, boss} = this.state.enemy;
-    this.ui['enemy-name'].textContent = name;
+    setText(this.ui['enemy-name'], name);
     this.ui['boss-label'].hidden = !boss;
-    this.ui['boss-label'].textContent = `Floor ${this.state.run.floor} boss`;
+    setText(this.ui['boss-label'], `Floor ${this.state.run.floor} boss`);
     this.ui['enemy-icon'].setAttribute('d', ENEMY_ICONS[name] ?? DEFAULT_ENEMY_ICON);
     this.ui['enemy-token'].classList.toggle('defeated', hp <= 0);
     renderHearts(this.ui['enemy-hearts'], hp, maxHp);
-    this.ui['enemy-hp'].textContent = `${hp} / ${maxHp} HP`;
+    setText(this.ui['enemy-hp'], `${hp} / ${maxHp} HP`);
     this.ui['enemy-token'].style.setProperty('--hp', String(Math.max(0, hp / maxHp)));
     this.ui['enemy-token'].classList.toggle('boss', Boolean(boss));
-    this.ui['enemy-intent'].textContent = this.state.result ? 'Out of the fight' : this.describeIntent(intent);
+    setText(this.ui['enemy-intent'], this.state.result ? 'Out of the fight' : this.describeIntent(intent));
     this.ui['enemy-intent'].dataset.intent = intent?.type ?? 'attack';
   }
 
-  /** Displays run progress, deck counts and the active combo type's rules. */
+  /** Displays run progress and binds only the active combo type's prose or structured rules. */
   refreshSidePanel() {
     const {floor, fight, turn, encounters, rules, jokers, curses} = this.state.run;
-    this.ui['fight-text'].textContent = `Floor ${floor}: ${getFloor(this.state).name}`;
+    setText(this.ui['fight-text'], `Floor ${floor}: ${getFloor(this.state).name}`);
     this.ui['floor-route'].replaceChildren(...encounters.map((enemy, index) => {
       const step = document.createElement('span');
       const cleared = index + 1 < fight || (index + 1 === fight && this.state.result === 'victory');
       step.className = cleared ? 'cleared' : index + 1 === fight ? 'current' : '';
-      step.textContent = `${cleared ? 'Cleared: ' : ''}${enemy.boss ? `Boss: ${enemy.name}` : `Fight ${index + 1}`}`;
+      setText(step, `${cleared ? 'Cleared: ' : ''}${enemy.boss ? `Boss: ${enemy.name}` : `Fight ${index + 1}`}`);
       if (index + 1 === fight) step.setAttribute('aria-current', 'step');
       return step;
     }));
-    this.ui['turn-text'].textContent = `${isBossFight(this.state) ? 'Boss fight' : `Fight ${fight} of ${encounters.length}`} · Turn ${turn}`;
-    this.ui['house-rule'].textContent = rules ? `House rule: ${rules.label}` : 'No house rule';
+    setText(this.ui['turn-text'], `${isBossFight(this.state) ? 'Boss fight' : `Fight ${fight} of ${encounters.length}`} · Turn ${turn}`);
+    setText(this.ui['house-rule'], rules ? `House rule: ${rules.label}` : 'No house rule');
     const top = this.state.drawPile.slice(-CARD_COUNTER_REVEAL).reverse();
     this.ui['next-card'].hidden = !hasJoker(this.state, 'card-counter');
-    this.ui['next-card'].textContent = top.length ? `Next cards: ${top.map(cardLabel).join(', ')}${top.length < CARD_COUNTER_REVEAL ? ', then a reshuffle' : ''}` :
-        'Next cards: reshuffle';
-    this.ui['intent-detail'].textContent = this.state.result ? '' : this.intentDetail(this.state.enemy.intent);
-    this.ui['jokers-title'].textContent = `Jokers (${jokers.length}/${jokerSlots(this.state)})`;
+    setText(this.ui['next-card'], top.length ? `Next cards: ${top.map(cardLabel).join(', ')}${top.length < CARD_COUNTER_REVEAL ? ', then a reshuffle' : ''}` :
+        'Next cards: reshuffle');
+    setText(this.ui['intent-detail'], this.state.result ? '' : this.intentDetail(this.state.enemy.intent));
+    setText(this.ui['jokers-title'], `Jokers (${jokers.length}/${jokerSlots(this.state)})`);
     this.ui['curses-section'].hidden = !curses.length;
     this.ui['curse-list'].replaceChildren(...curses.map(id => {
       const curse = getCurse(id);
       const item = document.createElement('li');
       const name = document.createElement('strong');
-      name.textContent = curse.name;
-      item.append(name, ` ${curse.boon} ${curse.cost}`);
+      setText(name, curse.name);
+      item.append(name);
+      appendText(item, ` ${curse.boon} ${curse.cost}`);
       return item;
     }));
     this.ui['joker-list'].replaceChildren(...(jokers.length ? jokers.map(id => {
       const joker = getJoker(id);
       const item = document.createElement('li');
       const name = document.createElement('strong');
-      name.textContent = joker.name;
-      item.append(name, ` ${joker.text}`);
+      setText(name, joker.name);
+      item.append(name);
+      appendText(item, ` ${joker.text}`);
       return item;
     }) : [Object.assign(document.createElement('li'), {
       className: 'muted',
-      textContent: 'Win fights to earn Jokers.'
+      textContent: ''
     })]));
-    this.ui['draw-text'].textContent = `${this.state.drawPile.length} cards in draw pile`;
-    this.ui['discard-text'].textContent = `${this.state.discardPile.length + this.state.usedCards.length} cards in discard`;
-    this.ui['intent-title'].textContent = `${this.state.enemy.name}'s next move`;
-    this.ui['side-intent'].textContent = this.state.result ? 'None' : this.describeIntent(this.state.enemy.intent);
-    this.ui['rules-title'].textContent = this.state.mode === 'poker' ? 'Poker hands' : 'Blackjack';
+    if (!jokers.length) setText(this.ui['joker-list'].firstElementChild, 'Win fights to earn Jokers.');
+    setText(this.ui['draw-text'], `${this.state.drawPile.length} cards in draw pile`);
+    setText(this.ui['discard-text'], `${this.state.discardPile.length + this.state.usedCards.length} cards in discard`);
+    setText(this.ui['intent-title'], `${this.state.enemy.name}'s next move`);
+    setText(this.ui['side-intent'], this.state.result ? 'None' : this.describeIntent(this.state.enemy.intent));
+    setText(this.ui['rules-title'], this.state.mode === 'poker' ? 'Poker hands' : 'Blackjack');
     if (this.state.mode === 'poker') {
       const list = document.createElement('dl');
       list.className = 'poker-hands';
       POKER_HANDS.forEach(hand => {
         const term = document.createElement('dt');
-        term.textContent = hand.label;
+        setText(term, hand.label);
         const effect = document.createElement('dd');
-        effect.textContent = hand.name === 'HIGH_CARD' ? '1.5x value, max 15 dmg' : this.describeActions(hand.actions, true);
+        setText(effect, hand.name === 'HIGH_CARD' ? '1.5x value, max 15 dmg' : this.describeActions(hand.actions, true));
         list.append(term, effect);
       });
-      this.ui['rules-body'].replaceChildren(list);
+      setChildren(this.ui['rules-body'], list);
     } else {
-      this.ui['rules-body'].textContent =
-          `Deal to get 2 cards; the ${this.state.enemy.name} gets 2, one face down. Hit to take a card, stand to stop. The ${this.state.enemy.name} then draws until it reaches 17${rules?.dealerHitsSoft17 ? ' (and hits soft 17)' : ''}.\n\nWin: damage equal to your total (natural blackjack: ${NATURAL_DAMAGE}) plus chips.\nLose or bust: the ${this.state.enemy.name} hits you for ${lossPenalty(this.state)}.\nDouble down: 1 more energy, one card, double the result.\nSurrender: take half the loss.\nTie: ${rules?.noPushRefund ? 'the house keeps your energy' : 'energy refunded'}.`;
+      setText(this.ui['rules-body'], `Deal to get 2 cards; the ${this.state.enemy.name} gets 2, one face down. Hit to take a card, stand to stop. The ${this.state.enemy.name} then draws until it reaches 17${rules?.dealerHitsSoft17 ? ' (and hits soft 17)' : ''}.\n\nWin: damage equal to your total (natural blackjack: ${NATURAL_DAMAGE}) plus chips.\nLose or bust: the ${this.state.enemy.name} hits you for ${lossPenalty(this.state)}.\nDouble down: 1 more energy, one card, double the result.\nSurrender: take half the loss.\nTie: ${rules?.noPushRefund ? 'the house keeps your energy' : 'energy refunded'}.`);
     }
   }
 
@@ -676,6 +679,15 @@ export class BattleScene {
     });
     root.style.colorScheme = this.themeName;
     this.refreshBattle();
+  }
+
+  /** Defers canvas geometry writes until size observations finish for the current frame. */
+  scheduleResize() {
+    if (this.resizeFrame) return;
+    this.resizeFrame = requestAnimationFrame(() => {
+      this.resizeFrame = null;
+      this.resize();
+    });
   }
 
   /** Scales the hand to the width of its container and sizes the canvas to fit. */

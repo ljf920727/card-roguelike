@@ -1,4 +1,6 @@
 /** Shows the between-fight dialog: the reward choice, the Curse choice, card and Joker pickers, and the shop. */
+import { sourceLabel, setLabel, setText } from '../i18n/dom.js';
+
 import { createCardElement } from "../components/cardElement.js";
 import { deckCards, sortHand, getJinx, DECK_EDITS } from "../systems/DeckSystem.js";
 import { getJoker, jokerSlots, sellPrice } from "../systems/JokerSystem.js";
@@ -28,6 +30,7 @@ const SHOP_TEXT = {
 };
 
 export class RunScreen {
+    /** Connects the view and its localized controls to the current game state. */
     constructor(state, onChange) {
         this.state = state;
         this.onChange = onChange;
@@ -57,7 +60,7 @@ export class RunScreen {
         const { reward, curseChoice, shop } = this.state;
         const milestone = getRunMilestone(this.state, this.seenMilestones);
         this.wallet.hidden = !shop || Boolean(milestone);
-        this.chips.textContent = this.state.run.gold.toLocaleString();
+        setText(this.chips, this.state.run.gold.toLocaleString());
         const needed = milestone || (reward && !reward.done) || (curseChoice && !curseChoice.done) || Boolean(shop);
         const menuHidden = document.getElementById("menu").hidden;
         const atTable = !needed && !this.state.result;
@@ -83,17 +86,18 @@ export class RunScreen {
         this.view = view;
     }
 
+    /** Builds localized explanatory notes for the current run decision. */
     notes(title, body, facts) {
         const section = document.createElement("section");
         section.className = "run-notes";
         const heading = document.createElement("h3");
-        heading.textContent = title;
+        setText(heading, title);
         const text = document.createElement("p");
-        text.textContent = body;
+        setText(text, body);
         const list = document.createElement("ol");
         facts.forEach(fact => {
             const item = document.createElement("li");
-            item.textContent = fact;
+            setText(item, fact);
             list.append(item);
         });
         section.append(heading, text, list);
@@ -102,16 +106,16 @@ export class RunScreen {
 
     /** Displays a floor or boss milestone and its acknowledgement button. */
     renderMilestone(milestone) {
-        this.title.textContent = milestone.title;
-        this.subtitle.textContent = milestone.body;
-        this.message.textContent = "";
+        setText(this.title, milestone.title);
+        setText(this.subtitle, milestone.body);
+        setText(this.message, "");
         const crest = document.createElement("div");
         crest.className = "milestone-crest";
         crest.setAttribute("aria-hidden", "true");
-        crest.textContent = String(this.state.run.floor).padStart(2, "0");
+        setText(crest, String(this.state.run.floor).padStart(2, "0"));
         const label = document.createElement("p");
         label.className = "milestone-label";
-        label.textContent = milestone.label;
+        setText(label, milestone.label);
         const notes = this.notes("", "", milestone.facts);
         notes.classList.add("milestone-notes");
         if (milestone.kind === "clear") {
@@ -133,8 +137,9 @@ export class RunScreen {
         this.footer.replaceChildren(button);
     }
 
+    /** Shows the result of a run action and requests the next presentation update. */
     changed(result) {
-        this.message.textContent = result && !result.ok ? result.message : "";
+        setText(this.message, result && !result.ok ? result.message : "");
         if (!result || result.ok) this.picking = null;
         this.onChange();
     }
@@ -151,12 +156,13 @@ export class RunScreen {
         const button = document.createElement("button");
         button.type = "button";
         button.className = className;
-        button.textContent = label;
+        setText(button, label);
         button.disabled = disabled;
         button.addEventListener("click", onClick);
         return button;
     }
 
+    /** Creates an accessible offer with localized title, description and action. */
     offerTile({ tag, title, text, action, disabled = false }) {
         const tile = document.createElement("button");
         tile.type = "button";
@@ -164,26 +170,27 @@ export class RunScreen {
         tile.disabled = disabled;
         const tagElement = document.createElement("span");
         tagElement.className = "offer-tag";
-        tagElement.textContent = tag;
+        setText(tagElement, tag);
         const titleElement = document.createElement("span");
         titleElement.className = "offer-title";
-        titleElement.textContent = title;
+        setText(titleElement, title);
         const textElement = document.createElement("span");
         textElement.className = "offer-text";
-        textElement.textContent = text;
+        setText(textElement, text);
         tile.append(tagElement, titleElement, textElement);
         tile.addEventListener("click", action);
         return tile;
     }
 
+    /** Presents the available run rewards and the option to exchange them for chips. */
     renderReward() {
         if (this.picking) {
             this.renderPicker();
             return;
         }
-        this.title.textContent = `${this.state.enemy.boss ? "Boss reward: " : ""}${this.state.enemy.name} defeated`;
-        this.subtitle.textContent = `Choose one reward, or skip it for ${SKIP_CHIPS} chips.` +
-            (isTutorialActive(this.state) ? " Rewards last the whole run: thin your deck, upgrade cards, or take a Joker." : "");
+        setText(this.title, `${this.state.enemy.boss ? "Boss reward: " : ""}${this.state.enemy.name} defeated`);
+        setText(this.subtitle, `Choose one reward, or skip it for ${SKIP_CHIPS} chips.` +
+            (isTutorialActive(this.state) ? " Rewards last the whole run: thin your deck, upgrade cards, or take a Joker." : ""));
         const grid = document.createElement("div");
         grid.className = "offers";
         this.state.reward.offers.forEach((offer, index) => {
@@ -206,7 +213,7 @@ export class RunScreen {
             return;
         }
         this.picking = pick;
-        this.message.textContent = "";
+        setText(this.message, "");
         this.onChange();
     }
 
@@ -215,8 +222,8 @@ export class RunScreen {
         const pick = this.picking;
         const grid = document.createElement("div");
         if (pick.kind === "joker") {
-            this.title.textContent = "Your Jokers are full";
-            this.subtitle.textContent = `Choose a Joker to replace with ${getJoker(pick.jokerId).name}.`;
+            setText(this.title, "Your Jokers are full");
+            setText(this.subtitle, `Choose a Joker to replace with ${getJoker(pick.jokerId).name}.`);
             grid.className = "offers";
             this.state.run.jokers.forEach((id, index) => {
                 const joker = getJoker(id);
@@ -224,10 +231,10 @@ export class RunScreen {
                     action: () => this.changed(pick.apply({ replaceIndex: index })) }));
             });
         } else {
-            this.title.textContent = PICK_PROMPTS[pick.kind];
+            setText(this.title, PICK_PROMPTS[pick.kind]);
             const cards = eligibleCards(this.state, pick, sortHand(deckCards(this.state)));
             if (pick.kind === "remove") cards.sort((a, b) => Number(Boolean(getJinx(b))) - Number(Boolean(getJinx(a))));
-            this.subtitle.textContent = `${cards.length} eligible ${cards.length === 1 ? "card" : "cards"} in your deck.`;
+            setText(this.subtitle, `${cards.length} eligible ${cards.length === 1 ? "card" : "cards"} in your deck.`);
             grid.className = "deck-picker";
             cards.forEach(card => {
                 const button = document.createElement("button");
@@ -235,13 +242,13 @@ export class RunScreen {
                 button.className = "deck-card";
                 const face = createCardElement(card);
                 button.append(face);
-                button.setAttribute("aria-label", face.getAttribute("aria-label"));
+                setLabel(button, 'aria-label', sourceLabel(face, 'aria-label'));
                 const jinx = getJinx(card);
                 if (jinx) {
                     button.classList.add("jinx-choice");
                     const effect = document.createElement("span");
                     effect.className = "jinx-effect";
-                    effect.textContent = jinx.text;
+                    setText(effect, jinx.text);
                     button.append(effect);
                 }
                 button.addEventListener("click", () => this.changed(pick.apply({ cardId: card.id })));
@@ -251,14 +258,15 @@ export class RunScreen {
         this.body.replaceChildren(grid);
         this.footer.replaceChildren(this.button("Back", "button secondary", () => {
             this.picking = null;
-            this.message.textContent = "";
+            setText(this.message, "");
             this.onChange();
         }));
     }
 
+    /** Presents permanent Curse benefits and costs before the next shop. */
     renderCurses() {
-        this.title.textContent = "A pact with the house";
-        this.subtitle.textContent = "Curses are permanent and unlimited: stronger than any Joker, with a real cost. Take one, or walk away.";
+        setText(this.title, "A pact with the house");
+        setText(this.subtitle, "Curses are permanent and unlimited: stronger than any Joker, with a real cost. Take one, or walk away.");
         const grid = document.createElement("div");
         grid.className = "offers";
         this.state.curseChoice.offers.forEach((id, index) => {
@@ -268,7 +276,7 @@ export class RunScreen {
             tile.classList.add("curse-offer");
             const cost = document.createElement("span");
             cost.className = "offer-cost";
-            cost.textContent = curse.cost;
+            setText(cost, curse.cost);
             tile.append(cost);
             grid.append(tile);
         });
@@ -276,6 +284,7 @@ export class RunScreen {
         this.footer.replaceChildren(this.button("Walk away", "button secondary", () => this.changed({ ok: skipCurse(this.state) })));
     }
 
+    /** Displays purchasable perks and owned Jokers for the current floor. */
     renderShop() {
         if (this.picking) {
             this.renderPicker();
@@ -283,8 +292,8 @@ export class RunScreen {
         }
         const state = this.state;
         const nextFloor = FLOORS[state.run.floor];
-        this.title.textContent = `Floor ${state.run.floor} / Shop`;
-        this.subtitle.textContent = "Trade chips for perks. Win blackjack hands to earn more.";
+        setText(this.title, `Floor ${state.run.floor} / Shop`);
+        setText(this.subtitle, "Trade chips for perks. Win blackjack hands to earn more.");
         const grid = document.createElement("div");
         grid.className = "offers";
         state.shop.items.forEach((item, index) => {
@@ -306,19 +315,19 @@ export class RunScreen {
         const owned = document.createElement("div");
         owned.className = "owned-jokers";
         const heading = document.createElement("h3");
-        heading.textContent = `Your Jokers (${state.run.jokers.length}/${jokerSlots(state)})`;
+        setText(heading, `Your Jokers (${state.run.jokers.length}/${jokerSlots(state)})`);
         owned.append(heading);
         if (!state.run.jokers.length) {
             const none = document.createElement("p");
             none.className = "muted";
-            none.textContent = "None yet.";
+            setText(none, "None yet.");
             owned.append(none);
         }
         state.run.jokers.forEach((id, index) => {
             const row = document.createElement("div");
             row.className = "owned-joker";
             const name = document.createElement("span");
-            name.textContent = getJoker(id).name;
+            setText(name, getJoker(id).name);
             row.append(name, this.button(`Sell for ${sellPrice(id)}`, "button secondary small",
                 () => this.changed({ ok: sellJoker(state, index) })));
             owned.append(row);

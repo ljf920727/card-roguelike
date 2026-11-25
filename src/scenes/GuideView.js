@@ -1,3 +1,5 @@
+/** Presents localized game information and accessible controls. */
+import { setLabel, setText } from '../i18n/dom.js';
 import { advanceTutorial, isTutorialActive, skipTutorial, TUTORIAL_STEPS } from "../systems/TutorialSystem.js";
 import { getHintsEnabled, saveHintsEnabled } from "../tutorialPreferences.js";
 import { getTutorialLesson } from "./tutorialLessons.js";
@@ -6,6 +8,7 @@ import { forecastIntent } from "../systems/CombatSystem.js";
 import "./guide.css";
 
 export class GuideView {
+    /** Connects the view and its localized controls to the current game state. */
     constructor(state, onAdvance, onSkip) {
         this.state = state;
         this.enabled = getHintsEnabled();
@@ -48,13 +51,14 @@ export class GuideView {
         observer.observe(document.getElementById("hand"));
     }
 
+    /** Updates localized tutorial content and anchors without restarting a lesson. */
     refresh() {
         const state = this.state;
         const active = isTutorialActive(state);
         this.toggle.setAttribute("aria-pressed", String(this.enabled));
-        this.toggle.textContent = `Hints: ${this.enabled ? "on" : "off"}`;
+        setText(this.toggle, `Hints: ${this.enabled ? "on" : "off"}`);
         this.toggle.disabled = active;
-        this.toggle.title = active ? "Tutorial guidance stays on until you reach the next fight." : "Show optional combat tips";
+        setLabel(this.toggle, 'title', active ? "Tutorial guidance stays on until you reach the next fight." : "Show optional combat tips");
         let lesson = getTutorialLesson(state);
         if (!lesson && this.enabled) {
             lesson = { key: `hint:${state.mode}:${state.result}`, title: "Choose your approach", target: ".mode-toggle",
@@ -70,16 +74,16 @@ export class GuideView {
         this.panel.hidden = !visible;
         this.highlight.hidden = !visible;
         if (visible) {
-            this.label.textContent = active ? `Learn by playing / ${lesson.number} of ${TUTORIAL_STEPS.length}` : "Field notes";
+            setText(this.label, active ? `Learn by playing / ${lesson.number} of ${TUTORIAL_STEPS.length}` : "Field notes");
             this.skip.hidden = !active;
-            this.title.textContent = lesson.title;
-            this.body.textContent = lesson.body;
+            setText(this.title, lesson.title);
+            setText(this.body, lesson.body);
             const canContinue = ["intro", "free"].includes(state.tutorial?.step);
             this.dismiss.hidden = active && (!canContinue || Boolean(state.result));
-            this.dismiss.textContent = !state.result && state.tutorial?.step === "intro" ? "Let's go" : "Keep playing";
+            setText(this.dismiss, !state.result && state.tutorial?.step === "intro" ? "Let's go" : "Keep playing");
             this.facts.replaceChildren(...(lesson.facts ?? []).map(text => {
                 const item = document.createElement("li");
-                item.textContent = text;
+                setText(item, text);
                 return item;
             }));
             this.facts.hidden = !lesson.facts?.length;
@@ -100,9 +104,9 @@ export class GuideView {
         this.lastKey = visible ? lesson.key : null;
         this.revealRequested = false;
         const forecast = forecastIntent(state);
-        this.forecast.textContent = state.result ? "" :
+        setText(this.forecast, state.result ? "" :
             state.enemy.intent?.type === "charge" ? `Click End turn: ${state.enemy.name} charges up and hits for ${state.enemy.intent.next} next turn. Then: hand tops up to 5, ${state.player.maxEnergy} energy.` :
-            `Click End turn: ${state.enemy.name} deals ${forecast.incoming}; shield blocks ${forecast.blocked}; you lose ${forecast.damage} HP. Then: hand tops up to 5, ${state.player.maxEnergy} energy, shield decays.`;
+            `Click End turn: ${state.enemy.name} deals ${forecast.incoming}; shield blocks ${forecast.blocked}; you lose ${forecast.damage} HP. Then: hand tops up to 5, ${state.player.maxEnergy} energy, shield decays.`);
     }
 
     schedulePosition() {

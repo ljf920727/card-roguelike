@@ -1,4 +1,6 @@
 /** Presents shared difficulty presets as accessible chips marked by one to three spades. */
+import { setText } from '../i18n/dom.js';
+
 import { DIFFICULTIES, getDifficulty } from "../systems/DifficultySystem.js";
 
 export class DifficultyPicker {
@@ -7,7 +9,7 @@ export class DifficultyPicker {
         this.container = container;
         container.classList.add("difficulty-picker");
         const legend = document.createElement("legend");
-        legend.textContent = "Difficulty";
+        setText(legend, "Difficulty");
         container.replaceChildren(legend);
         for (const [index, preset] of DIFFICULTIES.entries()) {
             const label = document.createElement("label");
@@ -21,9 +23,9 @@ export class DifficultyPicker {
             const pips = document.createElement("span");
             pips.className = "difficulty-pips";
             pips.setAttribute("aria-hidden", "true");
-            pips.textContent = "♠".repeat(index + 1);
+            setText(pips, "♠".repeat(index + 1));
             const title = document.createElement("span");
-            title.textContent = preset.label;
+            setText(title, preset.label);
             face.append(pips, title);
             label.append(input, face);
             container.append(label);

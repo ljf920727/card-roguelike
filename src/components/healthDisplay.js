@@ -1,4 +1,6 @@
 /** Renders persistent health indicators shared by both battle screens. */
+import { setLabel, setText } from '../i18n/dom.js';
+
 /** Ten hearts represent the full health pool at any difficulty. */
 const HEARTS = 10;
 
@@ -20,7 +22,7 @@ export function renderHearts(container, hp, maxHp) {
     [...container.children].forEach((heart, i) => {
         heart.style.setProperty("--fill", `${Math.max(0, Math.min(1, (hp - i * perHeart) / perHeart)) * 100}%`);
     });
-    container.setAttribute("aria-label", `Health ${Math.max(0, hp)} of ${maxHp}`);
+    setLabel(container, 'aria-label', `Health ${Math.max(0, hp)} of ${maxHp}`);
     const previous = Number(container.dataset.hp);
     const sameScale = Number(container.dataset.maxHp) === maxHp;
     container.dataset.hp = String(hp);
@@ -36,7 +38,7 @@ function showHeartHit(container, amount, hp, perHeart) {
     const heart = container.children[Math.min(HEARTS - 1, Math.floor(hp / perHeart))];
     const pop = document.createElement("span");
     pop.className = "damage-pop";
-    pop.textContent = `-${amount}`;
+    setText(pop, `-${amount}`);
     pop.style.left = `${container.offsetLeft + heart.offsetLeft + heart.offsetWidth / 2}px`;
     container.parentElement.append(pop);
     setTimeout(() => pop.remove(), 1000);

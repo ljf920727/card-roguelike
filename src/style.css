@@ -200,6 +200,8 @@ button {
 
 .topbar-end {
     display: flex;
+    flex-wrap: wrap;
+    min-width: 0;
     align-items: center;
     gap: 18px;
     margin-left: auto;
@@ -719,7 +721,8 @@ button {
         min-width: 0;
         flex: 1 1 120px;
         padding-inline: 16px;
-        white-space: nowrap;
+        white-space: normal;
+        overflow-wrap: anywhere;
     }
 }
 
