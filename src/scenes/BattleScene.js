@@ -54,6 +54,8 @@ import {RunScreen} from './RunScreen.js';
 import {shieldCap} from '../systems/CombatSystem.js';
 import {describeCard, getJinx} from '../systems/DeckSystem.js';
 import {DEFAULT_ENEMY_ICON, ENEMY_ICONS} from '../enemyIcons.js';
+import {audio} from '../audio/AudioManager.js';
+import {soloSoundSnapshot, soloSoundCues, playSoundCues} from '../audio/battleSounds.js';
 
 /** @typedef {CardView & {input: HTMLButtonElement}} HandCardView A canvas card paired with its keyboard control. */
 
@@ -111,6 +113,7 @@ export class BattleScene {
         this.ui['feedback-text'].textContent = validation.reason;
         return;
       }
+      void audio.play('shuffle');
       this.afterAction();
     });
     this.ui['double-button'].addEventListener('click', () => {
@@ -137,7 +140,10 @@ export class BattleScene {
       const input = document.createElement('button');
       const cardView = Object.assign(new CardView(
           card,
-          () => this.onCardSelectionChanged(),
+          () => {
+            void audio.play('select');
+            this.onCardSelectionChanged();
+          },
           () => this.state.phase === 'player' && !this.autoEndTimeout && this.state.mode === 'poker' &&
               this.state.hand.includes(card) && tutorialAllows(this.state, 'select', [card])
       ), {input});
@@ -158,6 +164,9 @@ export class BattleScene {
       if (this.handCards && !this.handCards.has(card)) arriving.push(cardView);
     });
     this.handCards = new WeakSet(this.state.hand);
+    if (this.runStarted && this.state.mode === 'poker' && document.getElementById('menu').hidden) {
+      arriving.forEach((view, index) => { void audio.play('deal', {delay: index * DEAL_STAGGER_MS / 1000}); });
+    }
     if (arriving.length && !matchMedia('(prefers-reduced-motion: reduce)').matches) this.dealCards(arriving);
   }
 
@@ -180,10 +189,12 @@ export class BattleScene {
     this.app.ticker.add(tick);
   }
 
+  /** Switches an available game mode with one confirmation cue. */
   setMode(mode) {
     if (this.state.phase !== 'player' || this.state.mode === mode || isRoundActive(this.state) ||
         this.autoEndTimeout || !tutorialAllows(this.state, mode)) return;
     this.state.mode = mode;
+    void audio.play('ui');
     this.refreshBattle();
   }
 
@@ -196,6 +207,7 @@ export class BattleScene {
     });
   }
 
+  /** Resolves the active primary action and sounds only a successfully played poker hand. */
   onPrimaryAction() {
     if (this.state.result === 'victory' && !isFinalFight(this.state)) {
       if (!startNextFight(this.state)) {
@@ -227,6 +239,7 @@ export class BattleScene {
       this.ui['feedback-text'].textContent = validation.reason;
       return;
     }
+    void audio.play('play');
     this.afterAction();
   }
 
@@ -430,7 +443,9 @@ export class BattleScene {
                 `heal ${action.amount}`).join(compact ? ', ' : ' and ');
   }
 
+  /** Updates blackjack faces and schedules newly dealt cards with their visual cadence. */
   refreshBlackjack() {
+    this.soundDealDelay = 0;
     const round = this.state.blackjack;
     const hidden = round?.status === 'playing';
     const fresh = Boolean(round) && round !== this.lastRound;
@@ -439,6 +454,10 @@ export class BattleScene {
     const deal = (element, order) => {
       element.classList.add('dealt');
       element.style.setProperty('--deal-delay', `${order * DEAL_STAGGER_MS}ms`);
+      if (this.runStarted) {
+        void audio.play('deal', {delay: order * DEAL_STAGGER_MS / 1000});
+        this.soundDealDelay = Math.max(this.soundDealDelay, (order + 1) * DEAL_STAGGER_MS / 1000);
+      }
       return element;
     };
     this.ui['bj-dealer-label'].textContent = this.state.enemy.name;
@@ -505,6 +524,8 @@ export class BattleScene {
 
   /** Cancels pending turn work and starts a fresh random run at any time. */
   restart(options) {
+    audio.stop();
+    this.soundSnapshot = null;
     if (this.turnTimeout != null) clearTimeout(this.turnTimeout);
     if (this.autoEndTimeout != null) clearTimeout(this.autoEndTimeout);
     this.turnTimeout = null;
@@ -514,7 +535,7 @@ export class BattleScene {
     this.refreshBattle();
   }
 
-  /** Refreshes battle data, live card views and their current layout. */
+  /** Refreshes battle views and sounds only changes since the previous presentation snapshot. */
   refreshBattle() {
     ensureRewards(this.state);
     this.ui.table.dataset.mode = this.state.mode;
@@ -528,6 +549,9 @@ export class BattleScene {
     this.resize();
     this.runScreen.sync();
     this.guide.refresh();
+    const snapshot = soloSoundSnapshot(this.state);
+    playSoundCues(audio, soloSoundCues(this.soundSnapshot, snapshot), this.soundDealDelay);
+    this.soundSnapshot = snapshot;
   }
 
   /** Displays player resources and whether battle input is available. */

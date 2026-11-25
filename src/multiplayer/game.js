@@ -8,10 +8,16 @@ import { DifficultyPicker } from '../components/DifficultyPicker.js';
 import { renderHearts } from '../components/healthDisplay.js';
 import { ENEMY_ICONS } from '../enemyIcons.js';
 import { renderPlayerSeats, renderPokerCards, renderBlackjackTable } from './battleView.js';
+import { audio } from '../audio/AudioManager.js';
+import { installAudioSettings } from '../audio/AudioSettings.js';
+import { multiplayerSoundCues, playSoundCues } from '../audio/battleSounds.js';
+
+installAudioSettings();
 
 const connection = new RoomConnection({
   onOpen: joinCurrentRoom,
   onUpdate: data => {
+    playSoundCues(audio, multiplayerSoundCues(synced ? state : null, data));
     if (!synced) message('');
     synced = true;
     saveRoom(data.roomId);
@@ -19,6 +25,7 @@ const connection = new RoomConnection({
   },
   onStatus: status => {
     if (status === 'reconnecting') {
+      audio.stop();
       synced = false;
       requestVersion++;
       pending = false;
@@ -118,6 +125,7 @@ async function request(type, data = {}) {
 
 /** Clears this tab's room so it returns to the lobby. */
 function forgetRoom() {
+  audio.stop();
   writeStorage('sessionStorage', 'juniper.room', '');
   roomId = '';
   state = null;
@@ -245,6 +253,7 @@ async function action(type, cardIds) {
     if (!result.success) {
       message(result.error);
     } else {
+      if (type === 'poker') void audio.play('play');
       selectedCards.clear();
       message('');
       if (state) render(state);
@@ -291,6 +300,8 @@ function renderHand(data) {
   renderPokerCards(byId('hand'), data.hand, selectedCards, isMyTurn(data) && !data.blackjack, id => {
     if (selectedCards.has(id)) selectedCards.delete(id);
     else if (selectedCards.size < 5) selectedCards.add(id);
+    else return;
+    void audio.play('select');
     renderBattle(state);
   }, !data.blackjack);
 }

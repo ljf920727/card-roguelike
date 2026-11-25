@@ -10,6 +10,12 @@ Use Node.js 24 with npm, matching the deployment workflow. Vite also supports No
 
 Use **Light mode / Dark mode** at the top right to switch appearance. The choice is saved locally and survives battle restarts and page reloads.
 
+Use **Sound** in the main menu or top bar to set effects volume, mute, or audition each
+cue under **Try the sounds**. Sound starts after a click or key press. Settings are
+saved locally and shared by solo and co-op on the same origin. Background tabs stop
+pending sounds; restored multiplayer snapshots do not replay past events. There is
+no background music. See the [sound guide](docs/sound-guide.md) for in-game triggers.
+
 ## Deploy to GitHub Pages
 
 A repository administrator must select **GitHub Actions** as the source in **Settings → Pages → Build and deployment**. Once `.github/workflows/deploy-pages.yml` is on `main`, pushes to `main` build and deploy the game. You can also open **Actions → Deploy to GitHub Pages → Run workflow** and select `main`; other branches are skipped.
@@ -633,6 +639,13 @@ Keep state and card schema changes coordinated with their consumers, and add new
 ---
 
 ## Credits
+
+Paper-card and chip samples in `public/audio/` are from Kenney's
+[Casino Audio](https://kenney.nl/assets/casino-audio); combat impacts are from
+[Impact Sounds](https://kenney.nl/assets/impact-sounds). Both packs are CC0; their
+license files are included alongside the samples. Frequent notifications use short
+Web Audio tones. Blackjack wins, boss entrances and battle endings use original
+rendered sound effects. Audio makes no external runtime requests.
 
 Enemy icons in `src/enemyIcons.js` come from [game-icons.net](https://game-icons.net), licensed under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/):
 

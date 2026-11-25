@@ -10,6 +10,7 @@ import { isTutorialActive } from "../systems/TutorialSystem.js";
 import { getRunMilestone } from "./runMilestones.js";
 import { getShopLesson } from "./tutorialLessons.js";
 import "./runProgress.css";
+import { audio } from "../audio/AudioManager.js";
 
 const PICK_PROMPTS = {
     remove: "Choose a card to remove",
@@ -50,6 +51,7 @@ export class RunScreen {
         if (this.run !== this.state.run) {
             this.run = this.state.run;
             this.seenMilestones = new Set();
+            this.soundedMilestones = new Set();
         }
         const { reward, curseChoice, shop } = this.state;
         const milestone = getRunMilestone(this.state, this.seenMilestones);
@@ -62,6 +64,10 @@ export class RunScreen {
             return;
         }
         this.dialog.dataset.milestone = milestone?.kind ?? "";
+        if (milestone?.kind === 'boss' && !this.soundedMilestones.has(milestone.key)) {
+            this.soundedMilestones.add(milestone.key);
+            void audio.play('boss');
+        }
         const view = milestone?.key ?? (this.picking ? "picker" : !reward?.done ? "reward" :
             curseChoice && !curseChoice.done ? "curse" : "shop");
         if (milestone) this.renderMilestone(milestone);
