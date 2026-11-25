@@ -1,0 +1,81 @@
+/** Arranges the sound mixer, attribution and individual audio switches. */
+.preferences-dialog.sound-dialog { width: min(640px, calc(100% - 24px)); }
+.sound-mix {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 205px), 1fr));
+    gap: 12px;
+    margin-top: 14px;
+}
+.sound-channel {
+    padding: 14px;
+    border: 1px solid var(--panel-line);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--felt) 35%, var(--panel));
+}
+.sound-volume, .sound-mute {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.sound-volume { font: 700 1.16rem var(--display-font), serif; }
+.sound-volume output { color: var(--attack); font: 700 .9rem var(--ui-font); font-variant-numeric: tabular-nums; }
+.sound-mute { color: var(--secondary); font-size: .875rem; }
+.sound-dialog input[type="range"] {
+    display: block;
+    width: 100%;
+    height: 24px;
+    margin: 8px 0 12px;
+    accent-color: var(--attack);
+    cursor: pointer;
+}
+#sound-status, .music-credits p { color: var(--secondary); font-size: .875rem; line-height: 1.45; }
+#sound-status { margin: 12px 0 6px; }
+#sound-status:empty { margin: 0; }
+.music-credits { margin-top: 12px; }
+.music-credits summary { width: fit-content; cursor: pointer; color: var(--attack); font-weight: 600; }
+.music-credits p { margin: 6px 0; }
+.music-credits a { color: var(--attack); }
+.sound-advanced {
+    margin-top: 18px;
+    border-top: 1px solid var(--rim);
+}
+.sound-advanced summary {
+    padding: 14px 0 4px;
+    cursor: pointer;
+    font: 700 1.2rem var(--display-font), serif;
+}
+.sound-advanced summary::marker { color: var(--attack); }
+.sound-advanced fieldset {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 205px), 1fr));
+    column-gap: 24px;
+    min-width: 0;
+    margin: 16px 0 0;
+    padding: 0;
+    border: 0;
+}
+.sound-advanced legend {
+    padding: 0;
+    color: var(--attack);
+    font: 700 1.1rem var(--display-font), serif;
+}
+.sound-advanced label {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-content: start;
+    align-items: center;
+    gap: 4px 10px;
+    padding: 10px 0;
+    min-height: 44px;
+    border-bottom: 1px solid var(--panel-line);
+    cursor: pointer;
+    font-size: .92rem;
+}
+.sound-advanced label > span { font-weight: 600; }
+.sound-advanced label > small {
+    grid-column: 1 / -1;
+    color: var(--secondary);
+    font-size: .85rem;
+    line-height: 1.45;
+}

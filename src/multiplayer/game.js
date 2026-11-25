@@ -8,10 +8,17 @@ import { DifficultyPicker } from '../components/DifficultyPicker.js';
 import { renderHearts } from '../components/healthDisplay.js';
 import { ENEMY_ICONS } from '../enemyIcons.js';
 import { renderPlayerSeats, renderPokerCards, renderBlackjackTable } from './battleView.js';
+import { audio } from '../audio/AudioManager.js';
+import { installSettings } from '../components/SettingsDialog.js';
+import { gameMusic } from '../audio/GameMusic.js';
+import { multiplayerSoundCues, playSoundCues } from '../audio/battleSounds.js';
+
+gameMusic.setScene('menu');
 
 const connection = new RoomConnection({
   onOpen: joinCurrentRoom,
   onUpdate: data => {
+    playSoundCues(audio, multiplayerSoundCues(synced ? state : null, data));
     if (!synced) message('');
     synced = true;
     saveRoom(data.roomId);
@@ -19,6 +26,7 @@ const connection = new RoomConnection({
   },
   onStatus: status => {
     if (status === 'reconnecting') {
+      audio.stop();
       synced = false;
       requestVersion++;
       pending = false;
@@ -89,7 +97,7 @@ function applyTheme() {
   for (const [key, value] of Object.entries(BATTLE_THEMES[theme])) {
     document.documentElement.style.setProperty(`--${key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}`, String(value));
   }
-  byId('theme').textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
+  document.documentElement.style.colorScheme = theme;
 }
 
 /** Shows non-blocking feedback in every lobby and battle state. */
@@ -118,6 +126,7 @@ async function request(type, data = {}) {
 
 /** Clears this tab's room so it returns to the lobby. */
 function forgetRoom() {
+  audio.stop();
   writeStorage('sessionStorage', 'juniper.room', '');
   roomId = '';
   state = null;
@@ -167,6 +176,8 @@ function saveRoom(id) {
 
 /** Displays the lobby, waiting room or battle while preserving global status feedback. */
 function showPage(page) {
+  const playing = synced && state?.status === 'playing' && state.players.every(player => player.connected);
+  gameMusic.setScene(page === 'battle' ? (playing ? 'battle' : null) : 'menu');
   document.body.dataset.page = page;
   byId('lobby').hidden = page !== 'lobby';
   byId('room').hidden = page !== 'room';
@@ -245,6 +256,7 @@ async function action(type, cardIds) {
     if (!result.success) {
       message(result.error);
     } else {
+      if (type === 'poker') void audio.play('play');
       selectedCards.clear();
       message('');
       if (state) render(state);
@@ -291,6 +303,8 @@ function renderHand(data) {
   renderPokerCards(byId('hand'), data.hand, selectedCards, isMyTurn(data) && !data.blackjack, id => {
     if (selectedCards.has(id)) selectedCards.delete(id);
     else if (selectedCards.size < 5) selectedCards.add(id);
+    else return;
+    void audio.play('select');
     renderBattle(state);
   }, !data.blackjack);
 }
@@ -385,11 +399,11 @@ byId('ready').onclick = ready;
 byId('leave').onclick = leave;
 byId('battle-leave').onclick = leave;
 byId('rematch').onclick = ready;
-byId('theme').onclick = () => {
-  theme = theme === 'dark' ? 'light' : 'dark';
+installSettings(name => {
+  theme = name;
   savePreferredTheme(theme);
   applyTheme();
-};
+});
 
 byId('play-poker').onclick = () => action('poker', [...selectedCards]);
 

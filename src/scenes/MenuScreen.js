@@ -1,6 +1,6 @@
 /** Shows the main menu over the battle and routes its buttons to the battle scene. */
-import { TUTORIAL_AVAILABLE } from "../systems/TutorialSystem.js";
 import { DIFFICULTIES, getDifficulty } from "../systems/DifficultySystem.js";
+import { getTutorialEnabled } from "../tutorialPreferences.js";
 import { DifficultyPicker } from "../components/DifficultyPicker.js";
 import { getPreferredDifficulty, savePreferredDifficulty } from "../difficultyPreferences.js";
 
@@ -16,7 +16,6 @@ export class MenuScreen {
         this.difficultyToggle = document.getElementById("difficulty-toggle");
         this.difficultyOptions = document.getElementById("difficulty-options");
         this.newRunButton = document.getElementById("menu-new-run");
-        this.themeButton = document.getElementById("menu-theme");
         this.rulesDialog = document.getElementById("rules-dialog");
         this.gameRegions = [document.querySelector(".topbar"), document.querySelector(".layout")];
         this.difficulty = new DifficultyPicker(document.getElementById("menu-difficulty"), getPreferredDifficulty(), value => {
@@ -45,23 +44,14 @@ export class MenuScreen {
         });
 
         this.playButton.addEventListener("click", () => {
-            if (!this.battle.isRunInProgress()) this.battle.startRun({ tutorial: false, difficulty: this.difficulty.value });
+            if (!this.battle.isRunInProgress()) this.battle.startRun({ difficulty: this.difficulty.value });
             this.hide();
         });
         this.newRunButton.addEventListener("click", () => {
-            this.battle.startRun({ tutorial: false, difficulty: this.difficulty.value });
-            this.hide();
-        });
-        document.getElementById("menu-tutorial").hidden = !TUTORIAL_AVAILABLE;
-        document.getElementById("menu-tutorial").addEventListener("click", () => {
-            this.battle.startRun({ tutorial: true });
+            this.battle.startRun({ difficulty: this.difficulty.value });
             this.hide();
         });
         document.getElementById("menu-rules").addEventListener("click", () => this.rulesDialog.showModal());
-        this.themeButton.addEventListener("click", () => {
-            this.battle.toggleTheme();
-            this.refresh();
-        });
         document.getElementById("menu-button").addEventListener("click", () => this.show());
         document.addEventListener("keydown", event => {
             if (event.key !== "Escape" || this.rulesDialog.open || this.battle.runScreen.isOpen()) return;
@@ -95,6 +85,7 @@ export class MenuScreen {
 
     /** Reveals the native difficulty radios without changing the selected or active run. */
     setDifficultyOptions(open) {
+        if (open) this.refresh();
         this.difficultyOptions.hidden = !open;
         this.difficultyToggle.setAttribute("aria-expanded", String(open));
     }
@@ -103,17 +94,15 @@ export class MenuScreen {
     refresh() {
         const inProgress = this.battle.isRunInProgress();
         this.playButton.textContent = inProgress ? "Continue run" : "Play";
-        document.getElementById("menu-tutorial").textContent = this.battle.tutorialComplete ? "Replay tutorial" : "Play tutorial";
         const preset = getDifficulty(this.difficulty.value);
-        document.getElementById("difficulty-description").textContent = preset.description;
+        const tutorialNote = getTutorialEnabled() && preset.id !== "normal" ? " Guided runs use Normal." : "";
+        document.getElementById("difficulty-description").textContent = preset.description + tutorialNote;
         document.getElementById("difficulty-current").textContent = "♠".repeat(DIFFICULTIES.findIndex(option => option.id === preset.id) + 1);
         this.difficultyToggle.setAttribute("aria-label", `Difficulty: ${preset.label}`);
         const difficultyNote = document.getElementById("difficulty-note");
         difficultyNote.hidden = !inProgress || this.difficulty.value === this.battle.state.run.difficulty;
         difficultyNote.textContent = `Next run only · Current: ${getDifficulty(this.battle.state.run.difficulty).label}`;
         this.newRunButton.hidden = !inProgress;
-        this.themeButton.dataset.targetTheme = this.battle.themeName === "dark" ? "light" : "dark";
-        document.getElementById("menu-theme-label").textContent = this.battle.themeName === "dark" ? "Light mode" : "Dark mode";
     }
 
     /** Opens the main menu with the split button collapsed and focus on the primary action. */

@@ -13,7 +13,7 @@
     <a class="brand" href="./index.html"><img src="/logo.png" alt=""><span>Juniper</span></a>
     <span class="topbar-label">Co-op</span>
     <span id="connection" role="status">Connecting...</span>
-    <button id="theme" class="secondary small" type="button">Light mode</button>
+    <button class="secondary small" type="button" data-game-settings aria-haspopup="dialog">Settings</button>
   </header>
 
   <main>
@@ -95,9 +95,9 @@
           </div>
 
           <div class="buttons battle-actions">
-            <button id="play-poker">Play poker <span class="cost">3 energy</span></button>
-            <button id="deal">Deal blackjack <span class="cost">1 energy</span></button>
-            <button id="hit" hidden>Hit</button>
+            <button id="play-poker" data-action-sound>Play poker <span class="cost">3 energy</span></button>
+            <button id="deal" data-action-sound>Deal blackjack <span class="cost">1 energy</span></button>
+            <button id="hit" data-action-sound hidden>Hit</button>
             <button id="stand" hidden>Stand</button>
             <button id="end-turn" class="secondary">End turn</button>
           </div>

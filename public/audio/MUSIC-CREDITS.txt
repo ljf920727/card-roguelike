@@ -1,0 +1,18 @@
+Menu music
+(Basically not) Fusion Jazz
+Produced by Julie Damsgaard / Spring Spring / Spring Enterprises.
+Artist: https://spring-enterprises.neocities.org/
+Source: https://opengameart.org/content/fusion-jazz
+License: CC0 1.0 Universal
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Battle music
+"Bass Walker" by Kevin MacLeod (incompetech.com)
+ISRC: USUAN1200071
+Source: https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1200071
+Original recording: https://incompetech.com/music/royalty-free/mp3-royaltyfree/Bass%20Walker.mp3
+Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0)
+https://creativecommons.org/licenses/by/4.0/
+
+Both recordings are bundled as supplied. Game playback loops them, adjusts
+their relative levels and applies fades when the scene changes.
