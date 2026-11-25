@@ -77,11 +77,15 @@ test('accepting a curse sounds the exchange once and reserves the entrance for t
 
 test('a winning hand that ends combat gives the payout and blackjack accent time to land', () => {
     const scheduled = [];
-    const audio = { play: (cue, { delay }) => scheduled.push({ cue, delay }) };
+    const audio = { choices: { isEnabled: () => true }, play: (cue, { delay }) => scheduled.push({ cue, delay }) };
     playSoundCues(audio, ['bigPayout', 'win', 'victory']);
     assert.deepEqual(scheduled.map(entry => entry.cue), ['bigPayout', 'win', 'victory']);
     assert.ok(scheduled[1].delay >= 0.9);
     assert.ok(scheduled[2].delay - scheduled[1].delay >= 0.55);
+    scheduled.length = 0;
+    audio.choices.isEnabled = cue => cue !== 'bigPayout';
+    playSoundCues(audio, ['bigPayout', 'win', 'victory']);
+    assert.equal(scheduled[1].delay, 0);
 });
 
 test('bust, battle end and reward transitions do not replay on redraw', () => {
@@ -120,6 +124,23 @@ test('mute cancels a sample still loading and preferences reject invalid volume'
     audio.setPreferences({ volume: NaN });
     assert.equal(audio.volume, 0.4);
     assert.equal(await audio.play('victory'), false);
+});
+
+test('disabling an effect cancels only its voices and pending loads, even after re-enabling', async () => {
+    const audio = new AudioManager();
+    audio.context = { state: 'running', currentTime: 0 };
+    let resolve;
+    audio.buffers.set('chip-lay-1.ogg', new Promise(done => { resolve = done; }));
+    const pending = audio.play('ui');
+    const stopped = [];
+    for (const id of ['ui', 'shield']) audio.voices.set({ stop: () => stopped.push(id) }, id);
+    audio.choices.setEnabled('ui', false);
+    assert.deepEqual(stopped, ['ui']);
+    assert.equal(await audio.play('ui'), false);
+    audio.choices.setEnabled('ui', true);
+    resolve({ duration: 0.2 });
+    assert.equal(await pending, false);
+    assert.deepEqual([...audio.voices.values()], ['shield']);
 });
 
 test('co-op opening turn notification belongs only to the active player', () => {

@@ -1,8 +1,8 @@
 # Sound guide
 
-Open **Settings → Sound** from the main menu or the solo/co-op top bar. Under **Try the sounds**,
-each **Play** button auditions the same cue and relative level used in gameplay.
-Mute and effects volume also apply to previews. Closing the dialog stops the preview.
+Open **Settings → Sound** from the main menu or the solo/co-op top bar. Expand **Advanced settings**
+to enable or disable individual effects, menu music and battle music. All are enabled by default.
+The master mute and volume controls preserve these choices.
 Effects default to 55% and music to 16%, with independent volume and mute controls.
 The main menu and co-op lobby play Spring Spring's “(Basically not) Fusion Jazz”.
 Solo battles on every floor and co-op battles play “Bass Walker” by Kevin MacLeod
@@ -10,7 +10,7 @@ Solo battles on every floor and co-op battles play “Bass Walker” by Kevin Ma
 from its own position. Battle introductions, rewards and endings leave room for
 their cues. See Settings → Sound → Music credits for sources, licenses and playback changes.
 
-| Preview label | In-game trigger |
+| Sound effect | In-game trigger |
 | --- | --- |
 | Button | Menus, difficulty choices, tutorial prompts, dialog navigation, co-op lobby controls and actions without their own feedback |
 | Select card | Select or deselect a poker card, with mouse or keyboard |
@@ -36,12 +36,11 @@ For a repeatable first listening pass, enable **Settings → Tutorial**, start a
 enter the Lobby, and follow the guidance. Select the two 7s and play the pair to hear
 selection, play and shield cues. Mulligan a card, then end the turn to hear a swap,
 draw, block and turn notification. Follow the blackjack lesson and double down to
-hear the deal, hit, damage, chips and winning sequence. Rare outcomes can be auditioned
-directly without finishing a run.
+hear the deal, hit, damage, chips and winning sequence.
 
 ## Implementation
 
-- `src/audio/sounds.js` owns preview labels, filenames, gains, sample durations and note sequences.
+- `src/audio/sounds.js` owns effect labels, filenames, gains, sample durations and note sequences.
 - `AudioManager.js` owns lazy Web Audio activation, cached decoding, preferences, envelopes,
   voice limits and cancellation. Missing audio never blocks combat.
 - `battleSounds.js` compares presentation snapshots. Solo redraws and theme changes are
@@ -61,5 +60,5 @@ directly without finishing a run.
   notes with short envelopes. No audio library or external asset host is required.
 
 Audio support and perceived loudness vary by browser and output device. For tuning,
-identify the preview label, the gameplay action, and whether the issue is tone, level,
+identify the effect label, the gameplay action, and whether the issue is tone, level,
 length or timing. Keep gameplay rules independent of sound playback.

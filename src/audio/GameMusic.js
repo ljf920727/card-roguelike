@@ -1,12 +1,13 @@
 /** Streams the menu and battle scores on independent, fading Web Audio channels. */
 import { audio } from './AudioManager.js';
 import { AUDIO_BASE } from './sounds.js';
+import { SoundChoices } from './SoundChoices.js';
 
 const STORAGE_KEY = 'juniper.music';
 /** Relative gains leave room for card, chip and result cues at the saved music volume. */
-const TRACKS = {
-    menu: { file: 'fusion-jazz.ogg', gain: 0.72 },
-    battle: { file: 'bass-walker.mp3', gain: 0.38 },
+export const TRACKS = {
+    menu: { label: 'Menu music', hint: 'Jazz on the main menu and in the co-op lobby.', file: 'fusion-jazz.ogg', gain: 0.72 },
+    battle: { label: 'Battle music', hint: 'A walking bass line during solo and co-op fights.', file: 'bass-walker.mp3', gain: 0.38 },
 };
 
 /** Keeps each recording at its own playback position across scene changes. */
@@ -16,7 +17,8 @@ class GameMusic {
         this.volume = 0.16;
         this.muted = false;
         this.scene = null;
-        this.previewing = false;
+        this.choices = new SoundChoices('juniper.music.track.', TRACKS);
+        this.choices.addEventListener('change', () => this.sync());
         this.channels = new Map();
         this.resumeAfter = 0;
         audio.addEventListener('music-hold', event => {
@@ -78,7 +80,7 @@ class GameMusic {
     sync() {
         clearTimeout(this.holdTimer);
         const ctx = audio.context;
-        if (!this.scene || this.muted || !this.volume || this.previewing || document.hidden || ctx?.state !== 'running') {
+        if (!this.scene || !this.choices.isEnabled(this.scene) || this.muted || !this.volume || document.hidden || ctx?.state !== 'running') {
             this.pause();
             return;
         }

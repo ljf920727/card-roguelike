@@ -1,10 +1,44 @@
-/** Adds shared sound settings and a playable catalog to solo and cooperative pages. */
+/** Provides shared volume, mute and individual sound settings on both game pages. */
 import { audio } from './AudioManager.js';
 import { SOUNDS } from './sounds.js';
+import { TRACKS } from './GameMusic.js';
 import './audio.css';
 
+/** Shows each switch with its gameplay description and keeps choices current across tabs. */
+function appendChoices(container, title, catalog, choices) {
+    const group = document.createElement('fieldset');
+    const legend = document.createElement('legend');
+    legend.textContent = title;
+    group.append(legend);
+    const inputs = new Map();
+    for (const [id, entry] of Object.entries(catalog)) {
+        const label = document.createElement('label');
+        const name = document.createElement('span');
+        const description = document.createElement('small');
+        name.id = `sound-choice-${id}-name`;
+        name.textContent = entry.label;
+        description.id = `sound-choice-${id}-description`;
+        description.textContent = entry.hint;
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.className = 'table-switch';
+        input.setAttribute('role', 'switch');
+        input.setAttribute('aria-labelledby', name.id);
+        input.setAttribute('aria-describedby', description.id);
+        input.checked = choices.isEnabled(id);
+        input.addEventListener('change', () => choices.setEnabled(id, input.checked));
+        label.append(name, input, description);
+        group.append(label);
+        inputs.set(id, input);
+    }
+    choices.addEventListener('change', ({ detail: id }) => {
+        inputs.get(id).checked = choices.isEnabled(id);
+    });
+    container.append(group);
+}
+
 /**
- * Installs gesture activation, background cancellation and the audition controls.
+ * Installs gesture activation, background cancellation and the player’s mixer controls.
  * @param {typeof import('./GameMusic.js').gameMusic} [music] Menu and battle music controller.
  */
 export function installAudioSettings(music) {
@@ -24,10 +58,10 @@ export function installAudioSettings(music) {
                 </div>
             </div>
             <p id="sound-status" role="status"></p>
-            <h3>Try the sounds</h3>
-            <div class="sound-list"></div>
+            <details class="sound-advanced"><summary>Advanced settings</summary></details>
         </div>`;
     document.body.append(dialog);
+    const advanced = dialog.querySelector('.sound-advanced');
     if (music) {
         const controls = document.createElement('div');
         controls.className = 'sound-channel';
@@ -58,44 +92,18 @@ export function installAudioSettings(music) {
         document.addEventListener('visibilitychange', () => { void music.sync(); });
         window.addEventListener('pagehide', () => music.pause());
         window.addEventListener('pageshow', () => { void music.sync(); });
-        dialog.addEventListener('close', () => {
-            music.previewing = false;
-            void music.sync();
-        });
+        appendChoices(advanced, 'Music', TRACKS, music.choices);
     }
+    appendChoices(advanced, 'Sound effects', SOUNDS, audio.choices);
     const mute = dialog.querySelector('#sound-muted');
     const volume = dialog.querySelector('#sound-volume');
     const status = dialog.querySelector('#sound-status');
-    const list = dialog.querySelector('.sound-list');
-    for (const [id, sound] of Object.entries(SOUNDS)) {
-        const row = document.createElement('div');
-        row.className = 'sound-row';
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'menu-button';
-        button.dataset.previewSound = id;
-        button.textContent = sound.label;
-        button.setAttribute('aria-label', `Play · ${sound.label}`);
-        const hint = document.createElement('span');
-        hint.textContent = sound.hint;
-        button.addEventListener('click', async () => {
-            if (music) {
-                music.previewing = true;
-                music.pause();
-            }
-            audio.stop();
-            await audio.unlock();
-            await audio.play(id);
-        });
-        row.append(button, hint);
-        list.append(row);
-    }
     /** Keeps the visible preference controls consistent with the mixer's effective state. */
     const refresh = () => {
         mute.checked = audio.muted;
         volume.value = String(Math.round(audio.volume * 100));
         dialog.querySelector('#sound-volume-value').textContent = `${volume.value}%`;
-        status.textContent = audio.muted ? 'Muted. Uncheck mute to listen.' : audio.volume === 0 ? 'Volume is zero. Raise it to listen.' : audio.status;
+        status.textContent = !audio.muted && audio.volume === 0 ? 'Volume is zero. Raise it to listen.' : audio.status;
     };
     audio.addEventListener('change', refresh);
     mute.addEventListener('change', () => {
@@ -104,16 +112,13 @@ export function installAudioSettings(music) {
     });
     volume.addEventListener('input', () => audio.setPreferences({ volume: Number(volume.value) / 100 }));
     volume.addEventListener('change', () => { void audio.play('ui'); });
-    dialog.querySelector('[data-close-sound]').addEventListener('click', () => {
-        audio.stop();
-        dialog.close();
-    });
-    dialog.addEventListener('cancel', () => audio.stop());
+    dialog.querySelector('[data-close-sound]').addEventListener('click', () => dialog.close());
     dialog.addEventListener('keydown', event => {
         if (event.key === 'Escape') event.stopPropagation();
     });
     document.querySelectorAll('[data-sound-settings]').forEach(button => button.addEventListener('click', () => {
         refresh();
+        advanced.open = false;
         dialog.showModal();
         dialog.querySelector('.preferences-body').scrollTop = 0;
     }));
@@ -129,7 +134,7 @@ export function installAudioSettings(music) {
     const clicks = new WeakMap();
     document.addEventListener('click', event => {
         const control = event.target.closest?.('button, summary, a[href]');
-        if (!control || control.matches(':disabled, [aria-disabled="true"], [data-preview-sound], [data-action-sound]')) return;
+        if (!control || control.matches(':disabled, [aria-disabled="true"], [data-action-sound]')) return;
         clicks.set(event, audio.cueRequests);
     }, true);
     document.addEventListener('click', async event => {
