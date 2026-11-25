@@ -1,6 +1,7 @@
 /** Lays out the cooperative casino table using the solo game's tactile cards and motion. */
 @import "../components/battlePrimitives.css";
 @import "../components/difficultyPicker.css";
+@import "../components/menuButton.css";
 
 :root {
   --ui-font: system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -173,7 +174,7 @@ label {
   color: var(--secondary);
   font-size: 12px;
 }
-input:not([type="radio"]) {
+.lobby-screen input:not([type="radio"]) {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid var(--panel-line);
@@ -184,7 +185,7 @@ input:not([type="radio"]) {
   box-shadow: inset 0 2px 4px #0001;
   transition: border-color 160ms;
 }
-input:not([type="radio"]):focus {
+.lobby-screen input:not([type="radio"]):focus {
   border-color: var(--rim);
 }
 #name {

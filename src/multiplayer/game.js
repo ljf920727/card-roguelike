@@ -9,11 +9,10 @@ import { renderHearts } from '../components/healthDisplay.js';
 import { ENEMY_ICONS } from '../enemyIcons.js';
 import { renderPlayerSeats, renderPokerCards, renderBlackjackTable } from './battleView.js';
 import { audio } from '../audio/AudioManager.js';
-import { installAudioSettings } from '../audio/AudioSettings.js';
+import { installSettings } from '../components/SettingsDialog.js';
 import { gameMusic } from '../audio/GameMusic.js';
 import { multiplayerSoundCues, playSoundCues } from '../audio/battleSounds.js';
 
-installAudioSettings(gameMusic);
 gameMusic.setScene('menu');
 
 const connection = new RoomConnection({
@@ -98,7 +97,7 @@ function applyTheme() {
   for (const [key, value] of Object.entries(BATTLE_THEMES[theme])) {
     document.documentElement.style.setProperty(`--${key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}`, String(value));
   }
-  byId('theme').textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
+  document.documentElement.style.colorScheme = theme;
 }
 
 /** Shows non-blocking feedback in every lobby and battle state. */
@@ -400,11 +399,11 @@ byId('ready').onclick = ready;
 byId('leave').onclick = leave;
 byId('battle-leave').onclick = leave;
 byId('rematch').onclick = ready;
-byId('theme').onclick = () => {
-  theme = theme === 'dark' ? 'light' : 'dark';
+installSettings(name => {
+  theme = name;
   savePreferredTheme(theme);
   applyTheme();
-};
+});
 
 byId('play-poker').onclick = () => action('poker', [...selectedCards]);
 

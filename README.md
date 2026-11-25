@@ -8,15 +8,15 @@ A playing-card roguelike prototype built with JavaScript, Vite and PixiJS.
 
 Use Node.js 24 with npm, matching the deployment workflow. Vite also supports Node.js 20.x from 20.19, or Node.js 22.12 and newer. Install dependencies with `npm ci`, then run `npm run dev` and open the local URL printed by Vite. `npm run build` creates a production build in `dist`; `npm run preview` serves it locally for verification.
 
-Use **Light mode / Dark mode** at the top right to switch appearance. The choice is saved locally and survives battle restarts and page reloads.
+Open **Settings** at the top right and toggle **Light mode** to switch appearance. The choice is saved locally and survives battle restarts and page reloads.
 
-Use **Sound** in the main menu or top bar to set effects volume, mute, or audition each
+Use **Settings → Sound** in the main menu or top bar to set effects volume, mute, or audition each
 cue under **Try the sounds**. Sound starts after a click or key press. Settings are
 saved locally and shared by solo and co-op on the same origin. Background tabs stop
 pending sounds; restored multiplayer snapshots do not replay past events. Menus
 play Spring Spring's “(Basically not) Fusion Jazz”. Solo and co-op battles play
 Kevin MacLeod's “Bass Walker” (CC BY 4.0). Music has separate volume and mute
-controls. Attribution and source links are in Sound → Music credits and the
+controls. Attribution and source links are in Settings → Sound → Music credits and the
 [bundled credits](public/audio/MUSIC-CREDITS.txt).
 See the [sound guide](docs/sound-guide.md) for in-game triggers.
 
@@ -55,13 +55,13 @@ The Worker only accepts browsers from the origins in `ALLOWED_ORIGINS` in `serve
 
 ### First-time tutorial
 
-**Play tutorial** teaches the loop in six short steps against a Goblin, by doing rather than reading: read the enemy's move, play a pair, mulligan, end the turn (shield blocks, then decays), and play a blackjack round where you can double down. Blackjack guidance explains that winning hands earn chips for shop perks. Then the guidance steps back and you finish the fight your own way. Only the opening hand, the first blackjack cards and the Goblin's first two moves are scripted; every effect uses the normal rules. Combat tutorial completion is saved locally when you reach the second fight. Floor and boss announcements explain the climb, and the first shop adds contextual tutorial guidance even after combat lessons finish. **Replay tutorial** in Menu starts it again; **Hints** toggles optional combat tips. See the [tutorial spec](docs/tutorial-spec.md).
+The first solo run starts with the tutorial enabled. It teaches the loop in six short steps against a Goblin, by doing rather than reading: read the enemy's move, play a pair, mulligan, end the turn (shield blocks, then decays), and play a blackjack round where you can double down. Blackjack guidance explains that winning hands earn chips for shop perks. Then the guidance steps back and you finish the fight your own way. Only the opening hand, the first blackjack cards and the Goblin's first two moves are scripted; every effect uses the normal rules. Reaching the second fight or choosing **Skip tutorial** turns the tutorial off for future runs. Floor and boss announcements explain the climb, and the first shop adds contextual tutorial guidance even after combat lessons finish. Enable **Settings → Tutorial** to replay it on your next new solo run. **Hints** toggles optional combat tips. See the [tutorial spec](docs/tutorial-spec.md).
 
 ### Normal runs
 
-The game opens on a main menu. **Play** starts a run; its right-hand heart opens settings, then **Difficulty** reveals Easy (♠), Normal (♠♠), and Hard (♠♠♠). **How to play** shows the rules, and the theme button switches between light and dark. During a run, **Menu** in the top bar or the Esc key brings the menu back with **Continue run** and **New run**. Esc closes each settings level before returning to the battle.
+The game opens on a main menu. **Play** starts a run; its right-hand heart opens play options, then **Difficulty** reveals Easy (♠), Normal (♠♠), and Hard (♠♠♠). **How to play** shows the rules. During a run, **Menu** in the top bar or the Esc key brings the menu back with **Continue run** and **New run**. Esc closes each settings level before returning to the battle.
 
-Choose **Easy**, **Normal** or **Hard** before starting a solo run. Easy multiplies enemy HP and attack ranges by 0.8; Normal preserves the standard balance; Hard multiplies them by 1.25. Values round to whole points. Blackjack loss penalties and enemy intents use the scaled attack range. Card effects, rewards, healing and energy costs stay the same. The difficulty badge shows the active run's setting; changing the menu selection affects only the next run. The preference is saved locally when storage is available. **Play tutorial** is a separate option and always uses Normal. Difficulty scaling applies to all five floors and stacks with Loaded Deck's HP multiplier. These presets are playtest values, not finalized balance.
+Choose **Easy**, **Normal** or **Hard** before starting a solo run. Easy multiplies enemy HP and attack ranges by 0.8; Normal preserves the standard balance; Hard multiplies them by 1.25. Values round to whole points. Blackjack loss penalties and enemy intents use the scaled attack range. Card effects, rewards, healing and energy costs stay the same. The difficulty badge shows the active run's setting; changing the menu selection affects only the next run. The preference is saved locally when storage is available. Guided solo runs always use Normal and preserve the selected difficulty for regular runs. Difficulty scaling applies to all five floors and stacks with Loaded Deck's HP multiplier. These presets are playtest values, not finalized balance.
 
 A run climbs the five floors of a casino. Each floor is two fights against enemies from that floor's pool, then its boss. From floor 2, each floor adds a house rule (the dealer hits soft 17, pushes don't refund, shield caps at 25). You start at 100 HP, recover up to 10 HP after a fight and 30 after a boss. Beating the floor 5 boss clears the casino.
 
@@ -138,7 +138,7 @@ Tutorial lesson setup, restrictions, and action-driven progression live in
 lesson content; `src/scenes/guidePosition.js` places tooltips without covering their
 targets. `src/scenes/GuideView.js` displays lessons, tips, and the turn forecast;
 `src/scenes/guide.css` styles guidance and keyboard card
-controls. `src/tutorialPreferences.js` handles completion and hint storage so
+controls. `src/tutorialPreferences.js` stores guided-run and hint preferences so
 future account integration can replace local persistence independently of combat.
 
 Run `npm test` for the Node built-in test suite, and `npm run build` for production
@@ -425,7 +425,7 @@ Keep play permission and resource consumption here; keep combination detection i
 
 ### `src/scenes/MenuScreen.js`
 
-**Purpose:** Shows the main menu over the battle and routes Play / Continue run, New run, How to play and the theme toggle to `BattleScene`. While the menu is open the battle is made inert, so it can't be clicked or tabbed into.
+**Purpose:** Shows the main menu over the battle, starts or resumes solo runs through `BattleScene`, and opens How to play. While the menu is open the battle is made inert, so it can't be clicked or tabbed into.
 
 ---
 

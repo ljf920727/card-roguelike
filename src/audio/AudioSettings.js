@@ -1,6 +1,6 @@
 /** Adds shared sound settings and a playable catalog to solo and cooperative pages. */
 import { audio } from './AudioManager.js';
-import { AUDIO_BASE, SOUNDS } from './sounds.js';
+import { SOUNDS } from './sounds.js';
 import './audio.css';
 
 /**
@@ -11,29 +11,39 @@ export function installAudioSettings(music) {
     if (document.getElementById('sound-dialog')) return;
     const dialog = document.createElement('dialog');
     dialog.id = 'sound-dialog';
-    dialog.className = 'sound-dialog';
+    dialog.className = 'preferences-dialog sound-dialog';
     dialog.setAttribute('aria-labelledby', 'sound-title');
-    dialog.innerHTML = `<div class="sound-heading"><h2 id="sound-title">Sound</h2><button type="button" data-close-sound>Close</button></div>
-        <label class="sound-mute"><input type="checkbox" id="sound-muted"> Mute sound effects</label>
-        <label class="sound-volume" for="sound-volume">Effects volume <output id="sound-volume-value"></output></label>
-        <input id="sound-volume" type="range" min="0" max="100" step="1">
-        <p id="sound-status" role="status"></p>
-        <h3>Try the sounds</h3><p>Play a sound on its own, then compare it in the game.</p>
-        <div class="sound-list"></div>`;
+    dialog.innerHTML = `<header class="preferences-heading"><h2 id="sound-title">Sound</h2>
+        <button type="button" class="menu-button preferences-return" data-close-sound autofocus>Back</button></header>
+        <div class="preferences-body">
+            <div class="sound-mix">
+                <div class="sound-channel">
+                    <label class="sound-volume" for="sound-volume">Effects volume <output id="sound-volume-value" for="sound-volume"></output></label>
+                    <input id="sound-volume" type="range" min="0" max="100" step="1">
+                    <label class="sound-mute">Mute sound effects <input class="table-switch" type="checkbox" id="sound-muted"></label>
+                </div>
+            </div>
+            <p id="sound-status" role="status"></p>
+            <h3>Try the sounds</h3>
+            <div class="sound-list"></div>
+        </div>`;
     document.body.append(dialog);
     if (music) {
         const controls = document.createElement('div');
-        controls.innerHTML = `<label class="sound-mute"><input type="checkbox" id="music-muted"> Mute music</label>
-            <label class="sound-volume" for="music-volume">Music volume <output></output></label>
+        controls.className = 'sound-channel';
+        controls.innerHTML = `<label class="sound-volume" for="music-volume">Music volume <output for="music-volume"></output></label>
             <input id="music-volume" type="range" min="0" max="100" step="1">
-            <details><summary>Music credits</summary>
-                <p>Menu · “(Basically not) Fusion Jazz” by Spring Spring (CC0).</p>
-                <p>Battle · “Bass Walker” by Kevin MacLeod (incompetech.com).
+            <label class="sound-mute">Mute music <input class="table-switch" type="checkbox" id="music-muted"></label>`;
+        dialog.querySelector('.sound-mix').append(controls);
+        dialog.querySelector('#sound-status').insertAdjacentHTML('afterend', `<details class="music-credits"><summary>Music credits</summary>
+                <p>Menu · <a href="https://opengameart.org/content/fusion-jazz" target="_blank" rel="noopener">(Basically not) Fusion Jazz</a>
+                by Julie Damsgaard / Spring Spring / Spring Enterprises.
+                <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0 1.0</a>.</p>
+                <p>Battle · <a href="https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1200071" target="_blank" rel="noopener">Bass Walker</a>
+                by Kevin MacLeod (incompetech.com).
                 <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.</p>
-                <p>Playback uses looping, gain adjustments and fades.
-                <a href="${AUDIO_BASE}MUSIC-CREDITS.txt" target="_blank" rel="noopener">Sources and licenses</a></p>
-            </details>`;
-        dialog.querySelector('#sound-status').before(controls);
+                <p>Playback uses looping, gain adjustments and fades.</p>
+            </details>`);
         const muted = controls.querySelector('#music-muted');
         const slider = controls.querySelector('#music-volume');
         const output = controls.querySelector('output');
@@ -62,8 +72,10 @@ export function installAudioSettings(music) {
         row.className = 'sound-row';
         const button = document.createElement('button');
         button.type = 'button';
+        button.className = 'menu-button';
         button.dataset.previewSound = id;
-        button.textContent = `Play · ${sound.label}`;
+        button.textContent = sound.label;
+        button.setAttribute('aria-label', `Play · ${sound.label}`);
         const hint = document.createElement('span');
         hint.textContent = sound.hint;
         button.addEventListener('click', async () => {
@@ -103,6 +115,7 @@ export function installAudioSettings(music) {
     document.querySelectorAll('[data-sound-settings]').forEach(button => button.addEventListener('click', () => {
         refresh();
         dialog.showModal();
+        dialog.querySelector('.preferences-body').scrollTop = 0;
     }));
     document.addEventListener('pointerdown', () => { void audio.preload(); }, { once: true, capture: true });
     document.addEventListener('keydown', () => { void audio.preload(); }, { once: true, capture: true });

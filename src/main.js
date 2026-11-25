@@ -6,8 +6,7 @@ import {
   BattleScene,
 } from './scenes/BattleScene.js';
 import { MenuScreen } from './scenes/MenuScreen.js';
-import { installAudioSettings } from './audio/AudioSettings.js';
-import { gameMusic } from './audio/GameMusic.js';
+import { installSettings } from './components/SettingsDialog.js';
 
 
 /**
@@ -16,7 +15,6 @@ import { gameMusic } from './audio/GameMusic.js';
  * @returns {Promise<void>} Resolves when the scene is ready.
  */
 async function main() {
-  installAudioSettings(gameMusic);
   const app = new Application();
   /**
    * Includes the background and view options supplied by PixiJS renderer systems.
@@ -35,6 +33,7 @@ async function main() {
   document.getElementById('hand').appendChild(app.canvas);
   app.canvas.setAttribute('aria-hidden', 'true');
   const battle = new BattleScene(app, gameState);
+  installSettings(theme => battle.setTheme(theme));
   new MenuScreen(battle).show();
 }
 

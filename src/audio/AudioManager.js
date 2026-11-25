@@ -22,7 +22,7 @@ export class AudioManager extends EventTarget {
         this.failed = new Set();
         this.context = null;
         this.master = null;
-        this.status = 'Click a sound to listen.';
+        this.status = '';
         try {
             const saved = JSON.parse(globalThis.window?.localStorage?.getItem(STORAGE_KEY) ?? 'null');
             if (typeof saved?.volume === 'number' && Number.isFinite(saved.volume)) this.volume = Math.max(0, Math.min(1, saved.volume));
@@ -45,7 +45,7 @@ export class AudioManager extends EventTarget {
             }
             if (this.context.state === 'suspended') await this.context.resume();
             if (this.context.state !== 'running') return false;
-            this.status = this.failed.size ? 'Some sounds could not load. Reload to retry.' : 'Ready to listen.';
+            this.status = this.failed.size ? 'Some sounds could not load. Reload to retry.' : '';
             this.dispatchEvent(new Event('change'));
             return true;
         } catch {

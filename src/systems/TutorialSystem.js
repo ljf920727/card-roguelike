@@ -5,7 +5,6 @@
  */
 import { shuffle } from "./DeckSystem.js";
 
-export const TUTORIAL_AVAILABLE = true;
 export const TUTORIAL_STEPS = ["intro", "pair", "mulligan", "end-turn", "blackjack", "free"];
 
 /** The opening hand: a pair to play, a King to keep, and two low cards worth swapping. */

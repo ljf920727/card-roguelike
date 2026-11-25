@@ -48,7 +48,7 @@ import {getPreferredDifficulty} from '../difficultyPreferences.js';
 import {getDifficulty} from '../systems/DifficultySystem.js';
 import {BATTLE_THEMES, getPreferredTheme, savePreferredTheme} from '../themes.js';
 import {isTutorialActive, tutorialAllows, tutorialHoldsTurn} from '../systems/TutorialSystem.js';
-import {hasCompletedTutorial, markTutorialComplete} from '../tutorialPreferences.js';
+import {getTutorialEnabled, saveTutorialEnabled} from '../tutorialPreferences.js';
 import {GuideView} from './GuideView.js';
 import {RunScreen} from './RunScreen.js';
 import {shieldCap} from '../systems/CombatSystem.js';
@@ -76,10 +76,8 @@ export class BattleScene {
   constructor(app, state) {
     this.app = app;
     this.state = state;
-    this.tutorialComplete = hasCompletedTutorial();
     this.guide = new GuideView(state, () => this.refreshBattle(), () => {
-      this.tutorialComplete = true;
-      markTutorialComplete();
+      saveTutorialEnabled(false);
       this.refreshBattle();
     });
     this.themeName = getPreferredTheme();
@@ -88,7 +86,7 @@ export class BattleScene {
     this.handContainer = new Container();
     this.app.stage.addChild(this.handContainer);
     this.ui = Object.fromEntries([
-      'hp-hearts', 'hp-text', 'shield-stat', 'shield-text', 'shield-cap', 'shield-fill', 'shield-fresh', 'energy-chips', 'phase-text', 'theme-button',
+      'hp-hearts', 'hp-text', 'shield-stat', 'shield-text', 'shield-cap', 'shield-fill', 'shield-fresh', 'energy-chips', 'phase-text',
       'last-action', 'enemy-token', 'enemy-icon', 'enemy-hearts', 'enemy-name', 'enemy-hp', 'enemy-intent',
       'selection-text', 'result-text', 'feedback-text', 'hand', 'play-button', 'end-turn-button',
       'fight-text', 'turn-text', 'draw-text', 'discard-text', 'intent-title', 'side-intent',
@@ -100,7 +98,6 @@ export class BattleScene {
     this.runScreen = new RunScreen(state, () => this.refreshBattle());
     this.modeOptions = [...document.querySelectorAll('.mode-option')];
 
-    this.ui['theme-button'].addEventListener('click', () => this.toggleTheme());
     this.ui['play-button'].addEventListener('click', () => this.onPrimaryAction());
     this.ui['end-turn-button'].addEventListener('click', () => this.endTurn());
     this.ui['stand-button'].addEventListener('click', () => {
@@ -210,13 +207,13 @@ export class BattleScene {
   /** Resolves the active primary action and sounds only a successfully played poker hand. */
   onPrimaryAction() {
     if (this.state.result === 'victory' && !isFinalFight(this.state)) {
+      const wasGuided = isTutorialActive(this.state);
       if (!startNextFight(this.state)) {
         this.runScreen.sync();
         return;
       }
-      if (this.state.tutorial?.step === 'complete') {
-        this.tutorialComplete = true;
-        markTutorialComplete();
+      if (wasGuided && this.state.tutorial?.step === 'complete') {
+        saveTutorialEnabled(false);
       }
       this.refreshBattle();
       return;
@@ -511,10 +508,10 @@ export class BattleScene {
     }, ENEMY_PHASE_MS);
   }
 
-  /** Starts a run with a fixed difficulty; the tutorial always uses Normal. */
-  startRun({tutorial = false, difficulty = getPreferredDifficulty()} = {}) {
+  /** Starts a solo run using the guided opening preference and the selected difficulty. */
+  startRun({difficulty = getPreferredDifficulty()} = {}) {
     this.runStarted = true;
-    this.restart({tutorial, difficulty});
+    this.restart({tutorial: getTutorialEnabled(), difficulty});
   }
 
   isRunInProgress() {
@@ -664,8 +661,8 @@ export class BattleScene {
   }
 
   /** Switches appearance and remembers it without changing battle state. */
-  toggleTheme() {
-    this.themeName = this.themeName === 'dark' ? 'light' : 'dark';
+  setTheme(name) {
+    this.themeName = name;
     this.theme = BATTLE_THEMES[this.themeName];
     savePreferredTheme(this.themeName);
     this.applyTheme();
@@ -678,7 +675,6 @@ export class BattleScene {
       root.style.setProperty(`--${key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}`, String(value));
     });
     root.style.colorScheme = this.themeName;
-    this.ui['theme-button'].textContent = this.themeName === 'dark' ? 'Light mode' : 'Dark mode';
     this.refreshBattle();
   }
 

@@ -39,7 +39,7 @@ Every run begins with a floor announcement: two fights, then a boss; blackjack w
 - Lessons advance only after the action succeeds (`advanceTutorial`), never on dismissal, except step 1.
 - The tooltip points at the control to use next (cards, then Play cards; cards, then Mulligan; the Blackjack toggle, then Deal, then Double down).
 - Turns don't end automatically until step 6.
-- Completion is stored locally via `tutorialPreferences.js` when the player reaches fight 2. Losing or abandoning earlier doesn't count; replaying doesn't erase completion.
+- The guided opening is on by default. Reaching fight 2 or choosing **Skip tutorial** turns it off for future solo runs. Losing or leaving early keeps the preference. **Settings → Tutorial** lets players change it for their next new solo run. Browsers with an existing completion record start with guidance off.
 - **Hints** (optional tips during normal play) never restrict actions.
 - Floor/boss announcements use the run dialog, once per milestone per run. Combat tooltips stay hidden while that dialog is open; acknowledgement moves focus into the next screen. Victory particles are disabled for reduced motion.
 

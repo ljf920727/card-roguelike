@@ -1,31 +1,45 @@
+/** Checks guided opening defaults, persistence and optional combat tips. */
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-    hasCompletedTutorial, markTutorialComplete, getHintsEnabled, saveHintsEnabled,
+    getTutorialEnabled, saveTutorialEnabled, getHintsEnabled, saveHintsEnabled,
 } from "../src/tutorialPreferences.js";
 
-test("completion and optional hints persist independently", () => {
-    const values = new Map();
-    const storage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
-    assert.equal(hasCompletedTutorial(storage), false);
+/** Provides isolated preference storage with optional existing records. */
+function stored(entries = []) {
+    const values = new Map(entries);
+    return { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
+}
+
+test("first runs are guided and later choices persist independently of hints", () => {
+    const storage = stored();
+    assert.equal(getTutorialEnabled(storage), true);
     assert.equal(getHintsEnabled(storage), false);
     saveHintsEnabled(true, storage);
+    saveTutorialEnabled(false, storage);
     assert.equal(getHintsEnabled(storage), true);
-    assert.equal(hasCompletedTutorial(storage), false);
-    markTutorialComplete(storage);
-    assert.equal(hasCompletedTutorial(storage), true);
-    saveHintsEnabled(false, storage);
-    assert.equal(getHintsEnabled(storage), false);
-    assert.equal(hasCompletedTutorial(storage), true);
+    assert.equal(getTutorialEnabled(storage), false);
+    saveTutorialEnabled(true, storage);
+    assert.equal(getTutorialEnabled(storage), true);
 });
 
-test("unavailable storage never interrupts play or claims completion", () => {
+test("a previous completion opts out until the player explicitly enables a replay", () => {
+    const storage = stored([["juniper.tutorialComplete", "true"]]);
+    assert.equal(getTutorialEnabled(storage), false);
+    saveTutorialEnabled(true, storage);
+    assert.equal(getTutorialEnabled(storage), true);
+});
+
+test("unavailable storage keeps tutorial choices for the current session", () => {
     const storage = {
         getItem() { throw new Error("Storage blocked"); },
         setItem() { throw new Error("Storage blocked"); },
     };
-    assert.equal(hasCompletedTutorial(storage), false);
+    assert.equal(getTutorialEnabled(storage), true);
     assert.equal(getHintsEnabled(storage), false);
-    assert.doesNotThrow(() => markTutorialComplete(storage));
+    saveTutorialEnabled(false, storage);
+    assert.equal(getTutorialEnabled(storage), false);
+    saveTutorialEnabled(true, storage);
+    assert.equal(getTutorialEnabled(storage), true);
     assert.doesNotThrow(() => saveHintsEnabled(true, storage));
 });
