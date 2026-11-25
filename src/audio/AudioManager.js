@@ -1,5 +1,6 @@
 /** Plays local samples and gentle synthesized cues without coupling audio to game rules. */
 import { AUDIO_BASE, SOUNDS } from './sounds.js';
+import { SoundChoices } from './SoundChoices.js';
 
 const STORAGE_KEY = 'juniper.audio';
 /** Bound simultaneous voices and discard stale events instead of replaying them after loading. */
@@ -14,7 +15,12 @@ export class AudioManager extends EventTarget {
         this.volume = 0.55;
         this.muted = false;
         this.buffers = new Map();
-        this.voices = new Set();
+        this.voices = new Map();
+        this.cueGenerations = new Map();
+        this.choices = new SoundChoices('juniper.audio.effect.', SOUNDS);
+        this.choices.addEventListener('change', ({ detail: id }) => {
+            if (!this.choices.isEnabled(id)) this.stop(id);
+        });
         this.variants = new Map();
         this.generation = 0;
         // A control can use the cue requested by its action as its click feedback.
@@ -94,17 +100,19 @@ export class AudioManager extends EventTarget {
         this.dispatchEvent(new Event('change'));
     }
 
-    /** Stops voices, including scheduled ones, and invalidates pending sample loads. */
-    stop() {
-        this.generation++;
-        for (const voice of this.voices) {
+    /** Cancels playing, scheduled and loading voices for one effect or the entire mixer. */
+    stop(id) {
+        if (id === undefined) this.generation++;
+        else this.cueGenerations.set(id, (this.cueGenerations.get(id) ?? 0) + 1);
+        for (const [voice, cue] of this.voices) {
+            if (id !== undefined && cue !== id) continue;
             try { voice.stop(); } catch { /* Already-ended sources need no further work. */ }
+            this.voices.delete(voice);
         }
-        this.voices.clear();
     }
 
     /** Connects one voice with a short envelope to prevent clicks and release audio nodes. */
-    voice(source, start, duration, gain) {
+    voice(id, source, start, duration, gain) {
         if (this.voices.size >= MAX_VOICES) return;
         const envelope = this.context.createGain();
         envelope.gain.setValueAtTime(0, start);
@@ -113,7 +121,7 @@ export class AudioManager extends EventTarget {
         envelope.gain.linearRampToValueAtTime(0, start + duration);
         source.connect(envelope);
         envelope.connect(this.master);
-        this.voices.add(source);
+        this.voices.set(source, id);
         source.onended = () => {
             this.voices.delete(source);
             source.disconnect();
@@ -133,21 +141,23 @@ export class AudioManager extends EventTarget {
         const sound = SOUNDS[id];
         if (!sound || this.muted || this.volume === 0 || globalThis.document?.hidden || this.context?.state !== 'running') return false;
         this.cueRequests++;
+        if (!this.choices.isEnabled(id)) return false;
         const generation = this.generation;
+        const cueGeneration = this.cueGenerations.get(id);
         const requested = performance.now();
         const start = this.context.currentTime + delay;
         if (sound.files) {
             const variant = this.variants.get(id) ?? 0;
             this.variants.set(id, variant + 1);
             const buffer = await this.load(sound.files[variant % sound.files.length]);
-            if (!buffer || generation !== this.generation || this.muted || globalThis.document?.hidden ||
+            if (!buffer || generation !== this.generation || cueGeneration !== this.cueGenerations.get(id) || this.muted || globalThis.document?.hidden ||
                 this.context.state !== 'running' || performance.now() - requested > delay * 1000 + MAX_LATENESS_MS) return false;
             const source = this.context.createBufferSource();
             source.buffer = buffer;
             source.playbackRate.value = sound.rate ?? 1;
             const onset = Math.max(start, this.context.currentTime);
             const duration = Math.min(sound.duration ?? Infinity, buffer.duration / source.playbackRate.value);
-            this.voice(source, onset, duration, sound.gain);
+            this.voice(id, source, onset, duration, sound.gain);
             if (id === 'victory' || id === 'defeat' || id === 'boss') {
                 this.dispatchEvent(new CustomEvent('music-hold', { detail: onset + duration }));
             }
@@ -156,7 +166,7 @@ export class AudioManager extends EventTarget {
                 const source = this.context.createOscillator();
                 source.type = 'sine';
                 source.frequency.value = frequency;
-                this.voice(source, start + index * (sound.step ?? 0.1), (sound.step ?? 0.1) + 0.12, sound.gain);
+                this.voice(id, source, start + index * (sound.step ?? 0.1), (sound.step ?? 0.1) + 0.12, sound.gain);
             });
         }
         return true;

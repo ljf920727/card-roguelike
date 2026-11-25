@@ -68,6 +68,7 @@ export function multiplayerSoundCues(before, after) {
 export function playSoundCues(audio, cues, delay = 0) {
     for (const cue of cues) {
         void audio.play(cue, { delay });
+        if (!audio.choices.isEnabled(cue)) continue;
         // Leave space for a payout or round result before the battle ending.
         if (cue === 'chips') delay += 0.54;
         else if (cue === 'bigPayout') delay += 0.95;

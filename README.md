@@ -10,8 +10,9 @@ Use Node.js 24 with npm, matching the deployment workflow. Vite also supports No
 
 Open **Settings** at the top right and toggle **Light mode** to switch appearance. The choice is saved locally and survives battle restarts and page reloads.
 
-Use **Settings → Sound** in the main menu or top bar to set effects volume, mute, or audition each
-cue under **Try the sounds**. Sound starts after a click or key press. Settings are
+Use **Settings → Sound** in the main menu or top bar to adjust volume and mute.
+Expand **Advanced settings** to enable or disable individual effects, menu music and battle music.
+Sound starts after a click or key press. Settings are
 saved locally and shared by solo and co-op on the same origin. Background tabs stop
 pending sounds; restored multiplayer snapshots do not replay past events. Menus
 play Spring Spring's “(Basically not) Fusion Jazz”. Solo and co-op battles play
