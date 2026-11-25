@@ -29,7 +29,7 @@
 .sound-mute, .sound-volume { display: flex; align-items: center; gap: 10px; margin-top: 20px; }
 .sound-mute input { width: auto; }
 .sound-volume { justify-content: space-between; }
-#sound-volume { width: 100%; margin: 12px 0; accent-color: var(--accent, #e5bd63); }
+.sound-dialog input[type="range"] { width: 100%; margin: 12px 0; accent-color: var(--accent, #e5bd63); }
 #sound-status, .sound-row span { font-size: 0.85rem; color: var(--secondary, #bdc9bf); }
 .sound-row { display: grid; grid-template-columns: minmax(150px, 1fr) 1.2fr; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--panel-line); }
 .sound-row button { text-align: left; }

@@ -13,8 +13,12 @@ Use **Light mode / Dark mode** at the top right to switch appearance. The choice
 Use **Sound** in the main menu or top bar to set effects volume, mute, or audition each
 cue under **Try the sounds**. Sound starts after a click or key press. Settings are
 saved locally and shared by solo and co-op on the same origin. Background tabs stop
-pending sounds; restored multiplayer snapshots do not replay past events. There is
-no background music. See the [sound guide](docs/sound-guide.md) for in-game triggers.
+pending sounds; restored multiplayer snapshots do not replay past events. Menus
+play Spring Spring's “(Basically not) Fusion Jazz”. Solo and co-op battles play
+Kevin MacLeod's “Bass Walker” (CC BY 4.0). Music has separate volume and mute
+controls. Attribution and source links are in Sound → Music credits and the
+[bundled credits](public/audio/MUSIC-CREDITS.txt).
+See the [sound guide](docs/sound-guide.md) for in-game triggers.
 
 ## Deploy to GitHub Pages
 

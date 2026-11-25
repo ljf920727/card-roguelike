@@ -11,6 +11,7 @@ import { getRunMilestone } from "./runMilestones.js";
 import { getShopLesson } from "./tutorialLessons.js";
 import "./runProgress.css";
 import { audio } from "../audio/AudioManager.js";
+import { gameMusic } from "../audio/GameMusic.js";
 
 const PICK_PROMPTS = {
     remove: "Choose a card to remove",
@@ -58,7 +59,10 @@ export class RunScreen {
         this.wallet.hidden = !shop || Boolean(milestone);
         this.chips.textContent = this.state.run.gold.toLocaleString();
         const needed = milestone || (reward && !reward.done) || (curseChoice && !curseChoice.done) || Boolean(shop);
-        if (!needed || !document.getElementById("menu").hidden) {
+        const menuHidden = document.getElementById("menu").hidden;
+        const atTable = !needed && !this.state.result;
+        gameMusic.setScene(menuHidden ? (atTable ? 'battle' : null) : 'menu');
+        if (!needed || !menuHidden) {
             this.picking = null;
             if (this.dialog.open) this.dialog.close();
             return;

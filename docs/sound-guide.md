@@ -3,8 +3,12 @@
 Open **Sound** from the main menu or the solo/co-op top bar. Under **Try the sounds**,
 each **Play** button auditions the same cue and relative level used in gameplay.
 Mute and effects volume also apply to previews. Closing the dialog stops the preview.
-The default effects volume is 55%; preferences survive reloads. Background music is
-not included.
+Effects default to 55% and music to 16%, with independent volume and mute controls.
+The main menu and co-op lobby play Spring Spring's “(Basically not) Fusion Jazz”.
+Solo battles on every floor and co-op battles play “Bass Walker” by Kevin MacLeod
+(CC BY 4.0), mixed lower to leave room for cards and chips. Each track resumes
+from its own position. Battle introductions, rewards and endings leave room for
+their cues. See Sound → Music credits for sources, licenses and playback changes.
 
 | Preview label | In-game trigger |
 | --- | --- |

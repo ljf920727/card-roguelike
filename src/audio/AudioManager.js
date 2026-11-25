@@ -145,8 +145,12 @@ export class AudioManager extends EventTarget {
             const source = this.context.createBufferSource();
             source.buffer = buffer;
             source.playbackRate.value = sound.rate ?? 1;
-            this.voice(source, Math.max(start, this.context.currentTime),
-                Math.min(sound.duration ?? Infinity, buffer.duration / source.playbackRate.value), sound.gain);
+            const onset = Math.max(start, this.context.currentTime);
+            const duration = Math.min(sound.duration ?? Infinity, buffer.duration / source.playbackRate.value);
+            this.voice(source, onset, duration, sound.gain);
+            if (id === 'victory' || id === 'defeat' || id === 'boss') {
+                this.dispatchEvent(new CustomEvent('music-hold', { detail: onset + duration }));
+            }
         } else {
             sound.notes.forEach((frequency, index) => {
                 const source = this.context.createOscillator();

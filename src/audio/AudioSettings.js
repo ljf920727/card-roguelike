@@ -1,10 +1,13 @@
 /** Adds shared sound settings and a playable catalog to solo and cooperative pages. */
 import { audio } from './AudioManager.js';
-import { SOUNDS } from './sounds.js';
+import { AUDIO_BASE, SOUNDS } from './sounds.js';
 import './audio.css';
 
-/** Installs gesture activation, background cancellation and accessible audition controls once. */
-export function installAudioSettings() {
+/**
+ * Installs gesture activation, background cancellation and the audition controls.
+ * @param {typeof import('./GameMusic.js').gameMusic} [music] Menu and battle music controller.
+ */
+export function installAudioSettings(music) {
     if (document.getElementById('sound-dialog')) return;
     const dialog = document.createElement('dialog');
     dialog.id = 'sound-dialog';
@@ -18,6 +21,38 @@ export function installAudioSettings() {
         <h3>Try the sounds</h3><p>Play a sound on its own, then compare it in the game.</p>
         <div class="sound-list"></div>`;
     document.body.append(dialog);
+    if (music) {
+        const controls = document.createElement('div');
+        controls.innerHTML = `<label class="sound-mute"><input type="checkbox" id="music-muted"> Mute music</label>
+            <label class="sound-volume" for="music-volume">Music volume <output></output></label>
+            <input id="music-volume" type="range" min="0" max="100" step="1">
+            <details><summary>Music credits</summary>
+                <p>Menu · “(Basically not) Fusion Jazz” by Spring Spring (CC0).</p>
+                <p>Battle · “Bass Walker” by Kevin MacLeod (incompetech.com).
+                <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.</p>
+                <p>Playback uses looping, gain adjustments and fades.
+                <a href="${AUDIO_BASE}MUSIC-CREDITS.txt" target="_blank" rel="noopener">Sources and licenses</a></p>
+            </details>`;
+        dialog.querySelector('#sound-status').before(controls);
+        const muted = controls.querySelector('#music-muted');
+        const slider = controls.querySelector('#music-volume');
+        const output = controls.querySelector('output');
+        muted.checked = music.muted;
+        slider.value = String(Math.round(music.volume * 100));
+        output.textContent = slider.value + '%';
+        controls.addEventListener('input', () => {
+            output.textContent = slider.value + '%';
+            music.setPreferences(Number(slider.value) / 100, muted.checked);
+        });
+        audio.addEventListener('change', () => { void music.sync(); });
+        document.addEventListener('visibilitychange', () => { void music.sync(); });
+        window.addEventListener('pagehide', () => music.pause());
+        window.addEventListener('pageshow', () => { void music.sync(); });
+        dialog.addEventListener('close', () => {
+            music.previewing = false;
+            void music.sync();
+        });
+    }
     const mute = dialog.querySelector('#sound-muted');
     const volume = dialog.querySelector('#sound-volume');
     const status = dialog.querySelector('#sound-status');
@@ -32,6 +67,10 @@ export function installAudioSettings() {
         const hint = document.createElement('span');
         hint.textContent = sound.hint;
         button.addEventListener('click', async () => {
+            if (music) {
+                music.previewing = true;
+                music.pause();
+            }
             audio.stop();
             await audio.unlock();
             await audio.play(id);
@@ -43,7 +82,7 @@ export function installAudioSettings() {
     const refresh = () => {
         mute.checked = audio.muted;
         volume.value = String(Math.round(audio.volume * 100));
-        dialog.querySelector('output').textContent = `${volume.value}%`;
+        dialog.querySelector('#sound-volume-value').textContent = `${volume.value}%`;
         status.textContent = audio.muted ? 'Muted. Uncheck mute to listen.' : audio.volume === 0 ? 'Volume is zero. Raise it to listen.' : audio.status;
     };
     audio.addEventListener('change', refresh);

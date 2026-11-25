@@ -7,6 +7,7 @@ import {
 } from './scenes/BattleScene.js';
 import { MenuScreen } from './scenes/MenuScreen.js';
 import { installAudioSettings } from './audio/AudioSettings.js';
+import { gameMusic } from './audio/GameMusic.js';
 
 
 /**
@@ -15,7 +16,7 @@ import { installAudioSettings } from './audio/AudioSettings.js';
  * @returns {Promise<void>} Resolves when the scene is ready.
  */
 async function main() {
-  installAudioSettings();
+  installAudioSettings(gameMusic);
   const app = new Application();
   /**
    * Includes the background and view options supplied by PixiJS renderer systems.

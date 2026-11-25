@@ -10,9 +10,11 @@ import { ENEMY_ICONS } from '../enemyIcons.js';
 import { renderPlayerSeats, renderPokerCards, renderBlackjackTable } from './battleView.js';
 import { audio } from '../audio/AudioManager.js';
 import { installAudioSettings } from '../audio/AudioSettings.js';
+import { gameMusic } from '../audio/GameMusic.js';
 import { multiplayerSoundCues, playSoundCues } from '../audio/battleSounds.js';
 
-installAudioSettings();
+installAudioSettings(gameMusic);
+gameMusic.setScene('menu');
 
 const connection = new RoomConnection({
   onOpen: joinCurrentRoom,
@@ -175,6 +177,8 @@ function saveRoom(id) {
 
 /** Displays the lobby, waiting room or battle while preserving global status feedback. */
 function showPage(page) {
+  const playing = synced && state?.status === 'playing' && state.players.every(player => player.connected);
+  gameMusic.setScene(page === 'battle' ? (playing ? 'battle' : null) : 'menu');
   document.body.dataset.page = page;
   byId('lobby').hidden = page !== 'lobby';
   byId('room').hidden = page !== 'room';
