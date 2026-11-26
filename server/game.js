@@ -1,5 +1,5 @@
 /** Authoritative two-player cooperative rules, shared by the Durable Object and the tests. */
-import { evaluatePokerHand } from '../src/systems/rules/PokerRule.js';
+import { describePokerActions, evaluatePokerHand } from '../src/systems/rules/PokerRule.js';
 import { getDifficulty, scaleEnemyStat } from '../src/systems/DifficultySystem.js';
 
 const SUITS = ['♠', '♥', '♣', '♦'];
@@ -585,12 +585,9 @@ export function handleAction(room, player, data) {
       evaluation.actions
     );
 
-    addLog(
-      room,
-      `${player.name} plays ${evaluation.label}.${evaluation.fixedAmounts ? ' ' + evaluation.actions.map(action =>
-        action.type === 'attack' ? `${action.amount} damage` :
-          action.type === 'heal' ? `heal ${action.amount}` : `${action.amount} shield`).join(', ') + '.' : ''}`
-    );
+    const played = `${player.name} plays ${evaluation.label}.`;
+    const effects = evaluation.fixedAmounts ? ` ${describePokerActions(evaluation.actions, { separator: ', ' })}.` : '';
+    addLog(room, played + effects);
 
     player.discard.push(...player.hand);
     player.hand = [];

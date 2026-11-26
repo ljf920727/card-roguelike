@@ -1,5 +1,6 @@
 /** Validates player card selections independently of the battle UI. */
 import { evaluateCards } from "./RuleEngine.js";
+import { describePokerActions } from "./rules/PokerRule.js";
 import { applyActions } from "./CombatSystem.js";
 import { advanceTutorial, tutorialAllows } from "./TutorialSystem.js";
 import { discardCards, drawCards, isJinx, GILDED_DAMAGE } from "./DeckSystem.js";
@@ -100,8 +101,7 @@ export function playSelectedCards(state) {
     const before = { enemyHp: state.enemy.hp, hp: state.player.hp, shield: state.player.shield };
     applyActions(state, validation.evaluation.actions, { ignoreModifiers: validation.evaluation.fixedAmounts });
     const description = validation.evaluation.fixedAmounts
-        ? validation.evaluation.actions.map(action => action.type === "attack" ? `${action.amount} damage` :
-            action.type === "defend" ? `${action.amount} shield` : `heal ${action.amount}`).join(" and ")
+        ? describePokerActions(validation.evaluation.actions)
         : describeChanges(state, before);
     state.lastAction = `${validation.evaluation.label}: ${description}; spent ${validation.cost} energy.`;
     state.player.energy -= validation.cost;

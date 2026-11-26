@@ -89,7 +89,7 @@ test("flush five keeps jackpot amounts through gilding, Jokers and Curses", () =
     assert.equal(state.enemy.hp, 223);
     assert.equal(state.player.hp, 75);
     assert.equal(state.player.shield, 40);
-    assert.equal(state.lastAction, "Flush five: 777 damage and heal 77 and 77 shield; spent 2 energy.");
+    assert.equal(state.lastAction, "Flush five: 777 damage and 77 healing and 77 shield; spent 2 energy.");
 });
 
 test("poker cannot be played with only 1 energy left", () => {

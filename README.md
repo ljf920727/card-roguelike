@@ -74,20 +74,20 @@ You have 3 energy per turn and a hand of 5 cards from your deck. Unplayed cards 
 - **Mulligan** (1 energy): select up to 3 cards and swap them for new ones.
 - **Blackjack** (1 energy per Deal): you get 2 cards from your deck; the enemy dealer gets 2 from its own independent 52-card deck, one face down. Each side reshuffles only its own discards; each new enemy starts with a fresh dealer deck. Your jinxes and upgrades never enter the dealer's deck. Hit or stand; the dealer draws to 17. Win: damage equal to your total (a natural deals 30) plus chips (5, or 15 for a natural). Lose or bust: the enemy hits you for its average attack. A push refunds the energy. With your first two cards you can **Double down** (1 more energy, exactly one more card, double the result) or **Surrender** (take half the loss).
 
-  | Hand            | Effect                                             |
-  |-----------------|----------------------------------------------------|
-  | Flush five      | 777 damage, heal 77, 77 shield (five cards of one rank and suit) |
-  | Five of a kind  | 110 damage (five cards of one rank across suits)   |
-  | Royal flush     | 100 damage                                         |
-  | Straight flush  | 75 damage, heal 25                                 |
-  | Four of a kind  | 65 damage                                          |
-  | Full house      | 45 damage, 25 shield                               |
-  | Flush           | heal 30                                            |
-  | Straight        | 45 damage (A-2-3-4-5 counts; no wrap-around)       |
-  | Three of a kind | 35 damage                                          |
-  | Two pair        | 40 shield                                          |
-  | Pair            | 25 shield                                          |
-  | High card       | highest card value x 1.5, rounded up, capped at 15 |
+  | Hand            | Effect                                                              |
+  |-----------------|---------------------------------------------------------------------|
+  | Flush five      | 777 damage, 77 healing, 77 shield (five cards of one rank and suit) |
+  | Five of a kind  | 110 damage                                                          |
+  | Royal flush     | 100 damage                                                          |
+  | Straight flush  | 75 damage, 25 healing                                               |
+  | Four of a kind  | 65 damage                                                           |
+  | Full house      | 45 damage, 25 shield                                                |
+  | Flush           | 30 healing                                                          |
+  | Straight        | 45 damage (A-2-3-4-5 counts; no wrap-around)                        |
+  | Three of a kind | 35 damage                                                           |
+  | Two pair        | 40 shield                                                           |
+  | Pair            | 25 shield                                                           |
+  | High card       | highest card value x 1.5, rounded up, capped at 15                  |
 
   Rank upgrades let you build five cards of one rank, making five of a kind and flush five possible beyond the traditional poker rankings.
   The high damage rewards building a deck with five cards of one rank and drawing them together, an even rarer feat for flush five because all five must also share a suit.

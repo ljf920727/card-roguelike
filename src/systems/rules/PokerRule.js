@@ -19,6 +19,22 @@ export const POKER_HANDS = [
     { name: "HIGH_CARD", label: "High card", needs: "any cards", actions: [] },
 ];
 
+/**
+ * Formats a poker effect list as English source text for localization.
+ * @param {{type: string, amount: number}[]} actions Evaluated poker effects in display order.
+ * @param {Object} [options] Formatting options.
+ * @param {boolean} [options.compact] Use abbreviated damage and commas for the rules table.
+ * @param {string} [options.separator] Separator for a specific display, such as the co-op activity log.
+ * @returns {string} A list of effect amounts and labels.
+ */
+export function describePokerActions(actions, { compact = false, separator = compact ? ', ' : ' and ' } = {}) {
+    return actions.map(({ type, amount }) => {
+        if (type === 'attack') return `${amount} ${compact ? 'dmg' : 'damage'}`;
+        if (type === 'defend') return `${amount} shield`;
+        return `${amount} healing`;
+    }).join(separator);
+}
+
 /** Returns the numeric rank used to recognize straights. */
 function rankOrder(rank) {
     return RANK_ORDER[rank] ?? Number(rank);

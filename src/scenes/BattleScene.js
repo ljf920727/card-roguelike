@@ -7,6 +7,7 @@ import {Container} from 'pixi.js';
 import {CARD_SELECTED_LIFT, CardView} from '../components/CardView.js';
 import {cardLabel, createCardElement} from '../components/cardElement.js';
 import {POKER_HANDS} from '../systems/RuleEngine.js';
+import {describePokerActions} from '../systems/rules/PokerRule.js';
 import {
   bustLimit,
   calculateBlackjackValue,
@@ -345,7 +346,7 @@ export class BattleScene {
     }
     return {
       selection: `${count} ${count === 1 ? 'card' : 'cards'} selected`,
-      result: `${result.label}: ${this.describeActions(result.actions)}`,
+      result: `${result.label}: ${describePokerActions(result.actions)}`,
       color: this.theme[ACTION_COLORS[result.actions[0]?.type]],
       feedback: validation.reason || `Costs ${validation.cost} energy. Only the played cards are discarded.`,
       primaryLabel: 'Play cards',
@@ -434,13 +435,6 @@ export class BattleScene {
       default:
         return 'Shield absorbs it first.';
     }
-  }
-
-  describeActions(actions, compact = false) {
-    return actions.map(action =>
-        action.type === 'attack' ? `${action.amount} ${compact ? 'dmg' : 'damage'}` :
-            action.type === 'defend' ? `${action.amount} shield` :
-                `heal ${action.amount}`).join(compact ? ', ' : ' and ');
   }
 
   /** Updates blackjack faces and schedules newly dealt cards with their visual cadence. */
@@ -656,7 +650,7 @@ export class BattleScene {
         const term = document.createElement('dt');
         setText(term, hand.label);
         const effect = document.createElement('dd');
-        setText(effect, hand.name === 'HIGH_CARD' ? '1.5x value, max 15 dmg' : this.describeActions(hand.actions, true));
+        setText(effect, hand.name === 'HIGH_CARD' ? '1.5x value, max 15 dmg' : describePokerActions(hand.actions, { compact: true }));
         entry.append(term, effect);
         list.append(entry);
       });

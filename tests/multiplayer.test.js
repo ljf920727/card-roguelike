@@ -62,7 +62,7 @@ test('co-op flush five displays fixed jackpot values and caps the resolved resou
     assert.equal(room.enemy.hp, 0);
     assert.equal(host.hp, 100);
     assert.equal(host.shield, 40);
-    assert.ok(room.log.some(entry => entry.includes('777 damage, heal 77, 77 shield')));
+    assert.ok(room.log.some(entry => entry.includes('777 damage, 77 healing, 77 shield')));
 });
 
 test('leaving mid-battle abandons it for the teammate, who cannot ready alone', t => {
