@@ -25,7 +25,9 @@
     --enemy-heart: #9a5fd0;
     --accent-text: #132f29;
     --ui-font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --display-font: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    /* Brand lettering and decorative card ranks retain their Latin typeface in every locale. */
+    --brand-font: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --display-font: var(--brand-font);
     /* Card rows override overlap when their contents exceed the available width. */
     --overlap: 0px;
     --gutter: clamp(12px, 2vw, 24px);
@@ -806,7 +808,7 @@ button {
     background: #fbf8f0;
     border: 1px solid #d9d2c0;
     box-shadow: 0 8px 18px rgb(0 0 0 / 0.3);
-    font: 700 1.4rem/1 var(--display-font);
+    font: 700 1.4rem/1 var(--brand-font);
     transform-origin: 50% 150%;
     rotate: var(--angle);
     transition: translate 200ms ease;
@@ -836,7 +838,7 @@ button {
 
 .menu-title {
     display: flex;
-    font-family: var(--display-font), serif;
+    font-family: var(--brand-font);
     font-size: clamp(4rem, 14vw, 8rem);
     font-weight: 700;
     line-height: 1;
@@ -957,7 +959,10 @@ button {
 .play-split #menu-play {
     flex: 1;
     min-width: 0;
-    border-radius: 14px 3px 3px 14px;
+    border-start-start-radius: 14px;
+    border-end-start-radius: 14px;
+    border-start-end-radius: 3px;
+    border-end-end-radius: 3px;
 }
 
 .play-split .play-options-toggle {
@@ -965,7 +970,10 @@ button {
     place-items: center;
     flex: 0 0 44px;
     padding-inline: 0;
-    border-radius: 3px 14px 14px 3px;
+    border-start-start-radius: 3px;
+    border-end-start-radius: 3px;
+    border-start-end-radius: 14px;
+    border-end-end-radius: 14px;
 }
 
 .menu-chevron {
@@ -1017,7 +1025,7 @@ button {
     border-radius: 8px;
     background: transparent;
     color: var(--text);
-    text-align: left;
+    text-align: start;
     font: 700 1.15rem var(--display-font);
     cursor: pointer;
     transition: background 160ms ease;
@@ -1029,7 +1037,7 @@ button {
 }
 
 #difficulty-current {
-    margin-left: auto;
+    margin-inline-start: auto;
 }
 
 .difficulty-toggle .menu-chevron {

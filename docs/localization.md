@@ -40,7 +40,10 @@ walks mounted nodes only; discarded cards are not retained. The document languag
 and a shared language-change event keep all views consistent across module loads.
 All translations are written as plain text. Arabic sets the document direction to
 RTL; card geometry and numeric resources retain their normal order, while names
-inside Arabic prose are isolated from surrounding text.
+inside Arabic prose are isolated from surrounding text. Numeric fractions in the
+Arabic catalogue use a left-to-right isolate around the entire fraction, so
+current/maximum values retain their order. Card faces and dealt card rows also
+retain left-to-right order independently of their surrounding controls.
 
 ## Preferences and adding a language
 
