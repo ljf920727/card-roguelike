@@ -128,9 +128,10 @@
     direction: ltr;
     --deal-delay: 0ms;
     flex: none;
+    position: relative;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    container-type: inline-size;
     width: 62px;
     height: 86px;
     padding: 5px 7px;
@@ -169,9 +170,33 @@
     }
 }
 
-.bj-card .corner {
-    font-size: 0.85rem;
+.card-index {
+    position: absolute;
+    left: 6%;
+    top: 5%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 33cqw;
+    line-height: 1;
+}
+
+.card-index > span {
+    font-size: 0.68em;
+}
+
+.card-center-suit {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    translate: -50% -50%;
+    font-size: 62cqw;
+}
+
+.card-gild-mark {
+    margin-top: auto;
     align-self: flex-end;
+    font-size: 0.75em;
 }
 
 .bj-card.black {

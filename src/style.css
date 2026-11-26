@@ -846,11 +846,7 @@ button {
     font-size: 1.1rem;
 }
 
-.menu-card-suit {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    translate: -50% -50%;
+.menu-card .card-center-suit {
     font-size: 2.5rem;
 }
 
@@ -1416,6 +1412,8 @@ button {
 }
 
 .jinx-name {
+    margin-top: auto;
+    align-self: stretch;
     margin-inline: -5px;
     text-align: center;
     font-size: 0.7rem;
