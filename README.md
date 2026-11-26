@@ -76,7 +76,7 @@ You have 3 energy per turn and a hand of 5 cards from your deck. Unplayed cards 
 
   | Hand            | Effect                                             |
   |-----------------|----------------------------------------------------|
-  | Flush five      | 250 damage, heal 30 (five cards of one rank and suit) |
+  | Flush five      | 777 damage, heal 77, 77 shield (five cards of one rank and suit) |
   | Five of a kind  | 110 damage (five cards of one rank across suits)   |
   | Royal flush     | 100 damage                                         |
   | Straight flush  | 75 damage, heal 25                                 |
@@ -91,6 +91,7 @@ You have 3 energy per turn and a hand of 5 cards from your deck. Unplayed cards 
 
   Rank upgrades let you build five cards of one rank, making five of a kind and flush five possible beyond the traditional poker rankings.
   The high damage rewards building a deck with five cards of one rank and drawing them together, an even rarer feat for flush five because all five must also share a suit.
+  Flush five's lucky **777 damage, 77 healing and 77 shield** are fixed: card, Joker and Curse modifiers cannot change them (including Fortress's healing block), while HP and shield caps still apply. Its preview and play summary display these nominal amounts.
 
   > **Deck-building trivia**
   >

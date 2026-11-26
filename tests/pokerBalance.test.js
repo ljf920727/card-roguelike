@@ -20,7 +20,7 @@ test("five identical twos qualify as flush five ahead of five of a kind and flus
 
 test("poker hands have stronger full-turn effects", () => {
     const expected = {
-        FLUSH_FIVE: [["attack", 250], ["heal", 30]],
+        FLUSH_FIVE: [["attack", 777], ["heal", 77], ["defend", 77]],
         FIVE_OF_A_KIND: [["attack", 110]],
         ROYAL_FLUSH: [["attack", 100]],
         STRAIGHT_FLUSH: [["attack", 75], ["heal", 25]],

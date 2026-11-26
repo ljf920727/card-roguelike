@@ -587,7 +587,9 @@ export function handleAction(room, player, data) {
 
     addLog(
       room,
-      `${player.name} plays ${evaluation.label}.`
+      `${player.name} plays ${evaluation.label}.${evaluation.fixedAmounts ? ' ' + evaluation.actions.map(action =>
+        action.type === 'attack' ? `${action.amount} damage` :
+          action.type === 'heal' ? `heal ${action.amount}` : `${action.amount} shield`).join(', ') + '.' : ''}`
     );
 
     player.discard.push(...player.hand);

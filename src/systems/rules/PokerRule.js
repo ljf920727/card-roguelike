@@ -4,7 +4,8 @@ import { getCardValue } from "../BlackjackSystem.js";
 const RANK_ORDER = { J: 11, Q: 12, K: 13, A: 14 };
 
 export const POKER_HANDS = [
-    { name: "FLUSH_FIVE", label: "Flush five", needs: "5 of one rank and suit", actions: [{ type: "attack", amount: 250 }, { type: "heal", amount: 30 }] },
+    // Jackpot amounts stay recognizable regardless of card, Joker or Curse modifiers.
+    { name: "FLUSH_FIVE", label: "Flush five", needs: "5 of one rank and suit", fixedAmounts: true, actions: [{ type: "attack", amount: 777 }, { type: "heal", amount: 77 }, { type: "defend", amount: 77 }] },
     { name: "FIVE_OF_A_KIND", label: "Five of a kind", needs: "5 of one rank", actions: [{ type: "attack", amount: 110 }] },
     { name: "ROYAL_FLUSH", label: "Royal flush", needs: "10, J, Q, K, A of one suit", actions: [{ type: "attack", amount: 100 }] },
     { name: "STRAIGHT_FLUSH", label: "Straight flush", needs: "5 in a row, one suit", actions: [{ type: "attack", amount: 75 }, { type: "heal", amount: 25 }] },
@@ -71,7 +72,7 @@ function classifyPokerHand(cards) {
     const actions = name === "HIGH_CARD"
         ? [{ type: "attack", amount: Math.min(15, Math.ceil(Math.max(...cards.map(card => getCardValue(card.rank))) * 1.5)) }]
         : hand.actions.map(action => ({ ...action }));
-    return { name, label: hand.label, actions };
+    return { name, label: hand.label, actions, fixedAmounts: Boolean(hand.fixedAmounts) };
 }
 
 /**

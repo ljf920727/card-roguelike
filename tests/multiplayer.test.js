@@ -52,6 +52,19 @@ test('difficulty and private hands are authoritative, and only the active player
     assert.notEqual(handleAction(room, host, { type: 'poker', cardIds: [before.hand[0].id] }), null);
 });
 
+test('co-op flush five displays fixed jackpot values and caps the resolved resources', t => {
+    const { room, host, guest } = setup(t);
+    start(room, host, guest);
+    host.hp = 50;
+    host.hand.forEach(card => Object.assign(card, { rank: 'A', suit: '♥' }));
+    assert.equal(handleAction(room, host, { type: 'poker', cardIds: host.hand.map(card => card.id) }), null);
+    assert.equal(room.result, 'victory');
+    assert.equal(room.enemy.hp, 0);
+    assert.equal(host.hp, 100);
+    assert.equal(host.shield, 40);
+    assert.ok(room.log.some(entry => entry.includes('777 damage, heal 77, 77 shield')));
+});
+
 test('leaving mid-battle abandons it for the teammate, who cannot ready alone', t => {
     const { room, host, guest, view } = setup(t);
     start(room, host, guest);

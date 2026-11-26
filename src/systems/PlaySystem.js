@@ -27,14 +27,14 @@ function mergeActions(actions) {
 }
 
 /**
- * The actions a poker play will apply, including gilded cards and Jokers.
+ * Evaluates poker effects with card, Joker and Curse modifiers, except fixed jackpots.
  * @param {Object} state Current battle state.
  * @param {Object[]} cards Cards to play.
  * @returns {Object} The rule engine evaluation with final actions.
  */
 export function evaluatePlay(state, cards) {
     const evaluation = evaluateCards(cards);
-    if (!evaluation.actions.length) return evaluation;
+    if (!evaluation.actions.length || evaluation.fixedAmounts) return evaluation;
     const playable = cards.filter(card => !isJinx(card));
     let actions = evaluation.actions.map(action => ({ ...action }));
     if (evaluation.name === "HIGH_CARD" && hasJoker(state, "lucky-seven")) {
@@ -89,6 +89,7 @@ export function validatePlay(state) {
 
 /**
  * Resolves a valid selection once, paying energy and discarding only the played cards.
+ * Fixed jackpots bypass effect modifiers and display nominal amounts; resource caps still apply.
  * @param {Object} state Mutable battle state.
  * @returns {Object} Validation outcome and the applied combination, if any.
  */
@@ -97,8 +98,12 @@ export function playSelectedCards(state) {
     if (!validation.allowed) return validation;
 
     const before = { enemyHp: state.enemy.hp, hp: state.player.hp, shield: state.player.shield };
-    applyActions(state, validation.evaluation.actions);
-    state.lastAction = `${validation.evaluation.label}: ${describeChanges(state, before)}; spent ${validation.cost} energy.`;
+    applyActions(state, validation.evaluation.actions, { ignoreModifiers: validation.evaluation.fixedAmounts });
+    const description = validation.evaluation.fixedAmounts
+        ? validation.evaluation.actions.map(action => action.type === "attack" ? `${action.amount} damage` :
+            action.type === "defend" ? `${action.amount} shield` : `heal ${action.amount}`).join(" and ")
+        : describeChanges(state, before);
+    state.lastAction = `${validation.evaluation.label}: ${description}; spent ${validation.cost} energy.`;
     state.player.energy -= validation.cost;
     discardCards(state, validation.cards);
     state.selection = { cards: [], value: 0, results: [], primaryAction: null };

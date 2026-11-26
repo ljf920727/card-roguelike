@@ -15,12 +15,14 @@ export function shieldCap(state) {
  * Applies evaluated effects in order within HP bounds and detects a battle result.
  * @param {Object} state Mutable battle state.
  * @param {Array<Object|null>} actions Rule engine actions to apply in order.
+ * @param {{ignoreModifiers?: boolean}} [options] Whether fixed effects bypass modifiers, retaining resource caps.
  */
-export function applyActions(state, actions) {
-    actions.forEach(action => applyAction(state, action));
+export function applyActions(state, actions, options = {}) {
+    actions.forEach(action => applyAction(state, action, options));
 }
 
-export function applyAction(state,action) {
+/** Applies one bounded combat effect, optionally bypassing modifiers for fixed jackpots. */
+export function applyAction(state, action, options = {}) {
     if (!action) {
         return;
     }
@@ -36,7 +38,7 @@ export function applyAction(state,action) {
 
 			break;
 
-		case "heal": healPlayer(state, action.amount);
+		case "heal": healPlayer(state, action.amount, options);
 
 			break;
 
@@ -45,9 +47,9 @@ export function applyAction(state,action) {
     updateBattleResult(state);
 }
 
-/** Heals within max HP (not at all under Fortress) and returns the HP restored. */
-export function healPlayer(state, amount) {
-    if (hasCurse(state, "fortress")) return 0;
+/** Heals within max HP and returns HP restored; fixed effects bypass Fortress's healing block. */
+export function healPlayer(state, amount, { ignoreModifiers = false } = {}) {
+    if (!ignoreModifiers && hasCurse(state, "fortress")) return 0;
     const healed = Math.max(0, Math.min(amount, state.player.maxHp - state.player.hp));
     state.player.hp += healed;
     return healed;
