@@ -90,6 +90,13 @@ export class BattleMusic {
         this.sources = [];
     }
 
+    /** Stops a pending or active playback and resets both stems or the streaming fallback to the intro. */
+    rewind() {
+        this.pause();
+        this.offset = 0;
+        if (this.fallback) this.fallback.currentTime = 0;
+    }
+
     /** Continues the current gain ramps when the player reverses a selection. */
     setAnticipation(active) {
         if (active === this.active) return;

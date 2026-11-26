@@ -11,13 +11,14 @@ export const TRACKS = {
     battle: { label: 'Battle music', hint: 'A walking bass line during solo and co-op fights.', file: 'bass-walker.mp3', drums: 'bass-walker-drums.flac', gain: 0.38 },
 };
 
-/** Keeps each recording at its own playback position across scene changes. */
+/** Mixes the menu and battle tracks and preserves the score within an encounter sequence. */
 class GameMusic {
     /** Restores the player's mix without loading media before the first gesture. */
     constructor() {
         this.volume = 0.16;
         this.muted = false;
         this.scene = null;
+        this.restartBattleOnEntry = false;
         this.anticipation = false;
         this.choices = new SoundChoices('juniper.music.track.', TRACKS);
         this.choices.addEventListener('change', () => this.sync());
@@ -48,8 +49,9 @@ class GameMusic {
         this.sync();
     }
 
-    /** Selects the menu or battle score, or silence for announcements and results. */
+    /** A visit to the menu starts the next battle score afresh, including after an opening announcement. */
     setScene(scene) {
+        if (scene === 'menu') this.restartBattleOnEntry = true;
         this.scene = scene;
         this.sync();
     }
@@ -109,7 +111,13 @@ class GameMusic {
         }
         this.pause(this.scene);
         const channel = this.channel(this.scene);
-        if (this.scene === 'battle') channel.media.setAnticipation(this.anticipation);
+        if (this.scene === 'battle') {
+            if (this.restartBattleOnEntry) {
+                channel.media.rewind();
+                this.restartBattleOnEntry = false;
+            }
+            channel.media.setAnticipation(this.anticipation);
+        }
         const level = this.volume * TRACKS[this.scene].gain;
         if (level === channel.level) return;
         clearTimeout(channel.pauseTimer);
