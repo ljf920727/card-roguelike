@@ -8,6 +8,7 @@ import '../i18n/layout.css';
 import { installLanguagePicker } from './LanguagePicker.js';
 import { localizeTree } from '../i18n/dom.js';
 import { SETTINGS_ICON } from './settingsIcons.js';
+import { openDialogAtStart } from './dialogNavigation.js';
 
 /**
  * Marks settings entry points with a shared gear and opens preferences above their originating view.
@@ -50,7 +51,7 @@ export function installSettings(setTheme) {
         button.addEventListener("click", () => {
             light.checked = document.documentElement.style.colorScheme === "light";
             tutorial.checked = getTutorialEnabled();
-            dialog.showModal();
+            openDialogAtStart(dialog);
         });
     });
 }

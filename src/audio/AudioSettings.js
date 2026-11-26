@@ -6,6 +6,7 @@ import { SOUNDS } from './sounds.js';
 import { TRACKS } from './GameMusic.js';
 import './audio.css';
 import { localizeTree } from '../i18n/dom.js';
+import { openDialogAtStart } from '../components/dialogNavigation.js';
 
 /** Shows each switch with its gameplay description and keeps choices current across tabs. */
 function appendChoices(container, title, catalog, choices) {
@@ -122,8 +123,7 @@ export function installAudioSettings(music) {
     document.querySelectorAll('[data-sound-settings]').forEach(button => button.addEventListener('click', () => {
         refresh();
         advanced.open = false;
-        dialog.showModal();
-        dialog.querySelector('.preferences-body').scrollTop = 0;
+        openDialogAtStart(dialog);
     }));
     document.addEventListener('pointerdown', () => { void audio.preload(); }, { once: true, capture: true });
     document.addEventListener('keydown', () => { void audio.preload(); }, { once: true, capture: true });

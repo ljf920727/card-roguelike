@@ -3,6 +3,7 @@ import { getLocale, LOCALES, onLocaleChange, setLocale } from '../i18n/index.js'
 import { localizeTree } from '../i18n/dom.js';
 import { audio } from '../audio/AudioManager.js';
 import { LANGUAGE_ICON } from './settingsIcons.js';
+import { openDialogAtStart } from './dialogNavigation.js';
 
 /** Adds a globe-labelled settings button and language sheet without changing a running game. */
 export function installLanguagePicker(container) {
@@ -74,8 +75,7 @@ export function installLanguagePicker(container) {
     });
     button.addEventListener('click', () => {
         chinese.open = false;
-        dialog.showModal();
-        dialog.querySelector('.preferences-body').scrollTop = 0;
+        openDialogAtStart(dialog);
     });
     dialog.querySelector('[data-close-language]').addEventListener('click', () => dialog.close());
     dialog.addEventListener('keydown', event => {

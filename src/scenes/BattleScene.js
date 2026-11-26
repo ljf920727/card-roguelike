@@ -599,7 +599,7 @@ export class BattleScene {
     this.ui['enemy-intent'].dataset.intent = intent?.type ?? 'attack';
   }
 
-  /** Displays run progress and binds only the active combo type's prose or structured rules. */
+  /** Renders run information and structured rules that reflow between a sidebar and a bottom panel. */
   refreshSidePanel() {
     const {floor, fight, turn, encounters, rules, jokers, curses} = this.state.run;
     setText(this.ui['fight-text'], `Floor ${floor}: ${getFloor(this.state).name}`);
@@ -651,15 +651,35 @@ export class BattleScene {
       const list = document.createElement('dl');
       list.className = 'poker-hands';
       POKER_HANDS.forEach(hand => {
+        const entry = document.createElement('div');
         const term = document.createElement('dt');
         setText(term, hand.label);
         const effect = document.createElement('dd');
         setText(effect, hand.name === 'HIGH_CARD' ? '1.5x value, max 15 dmg' : this.describeActions(hand.actions, true));
-        list.append(term, effect);
+        entry.append(term, effect);
+        list.append(entry);
       });
       setChildren(this.ui['rules-body'], list);
     } else {
-      setText(this.ui['rules-body'], `Deal to get 2 cards; the ${this.state.enemy.name} gets 2, one face down. Hit to take a card, stand to stop. The ${this.state.enemy.name} then draws until it reaches 17${rules?.dealerHitsSoft17 ? ' (and hits soft 17)' : ''}.\n\nWin: damage equal to your total (natural blackjack: ${NATURAL_DAMAGE}) plus chips.\nLose or bust: the ${this.state.enemy.name} hits you for ${lossPenalty(this.state)}.\nDouble down: 1 more energy, one card, double the result.\nSurrender: take half the loss.\nTie: ${rules?.noPushRefund ? 'the house keeps your energy' : 'energy refunded'}.`);
+      const rulesGrid = document.createElement('div');
+      rulesGrid.className = 'blackjack-rules';
+      const introduction = document.createElement('p');
+      setText(introduction, `Deal to get 2 cards; the ${this.state.enemy.name} gets 2, one face down. Hit to take a card, stand to stop. The ${this.state.enemy.name} then draws until it reaches 17${rules?.dealerHitsSoft17 ? ' (and hits soft 17)' : ''}.`);
+      const outcomes = document.createElement('div');
+      outcomes.className = 'blackjack-outcomes';
+      [
+        `Win: damage equal to your total (natural blackjack: ${NATURAL_DAMAGE}) plus chips.`,
+        `Lose or bust: the ${this.state.enemy.name} hits you for ${lossPenalty(this.state)}.`,
+        'Double down: 1 more energy, one card, double the result.',
+        'Surrender: take half the loss.',
+        `Tie: ${rules?.noPushRefund ? 'the house keeps your energy' : 'energy refunded'}.`,
+      ].forEach(source => {
+        const paragraph = document.createElement('p');
+        setText(paragraph, source);
+        outcomes.append(paragraph);
+      });
+      rulesGrid.append(introduction, outcomes);
+      setChildren(this.ui['rules-body'], rulesGrid);
     }
   }
 

@@ -51,7 +51,7 @@ export class GuideView {
         observer.observe(document.getElementById("hand"));
     }
 
-    /** Updates localized tutorial content and anchors without restarting a lesson. */
+    /** Updates localized guidance and anchors, resetting reading position only for a newly shown lesson. */
     refresh() {
         const state = this.state;
         const active = isTutorialActive(state);
@@ -74,6 +74,7 @@ export class GuideView {
         this.panel.hidden = !visible;
         this.highlight.hidden = !visible;
         if (visible) {
+            if (this.lastKey !== lesson.key) this.panel.scrollTop = 0;
             setText(this.label, active ? `Learn by playing / ${lesson.number} of ${TUTORIAL_STEPS.length}` : "Field notes");
             this.skip.hidden = !active;
             setText(this.title, lesson.title);

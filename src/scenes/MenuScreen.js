@@ -4,6 +4,7 @@ import { setText, setLabel } from '../i18n/dom.js';
 import { DIFFICULTIES, getDifficulty } from "../systems/DifficultySystem.js";
 import { getTutorialEnabled } from "../tutorialPreferences.js";
 import { DifficultyPicker } from "../components/DifficultyPicker.js";
+import { openDialogAtStart } from '../components/dialogNavigation.js';
 import { getPreferredDifficulty, savePreferredDifficulty } from "../difficultyPreferences.js";
 
 export class MenuScreen {
@@ -53,7 +54,7 @@ export class MenuScreen {
             this.battle.startRun({ difficulty: this.difficulty.value });
             this.hide();
         });
-        document.getElementById("menu-rules").addEventListener("click", () => this.rulesDialog.showModal());
+        document.getElementById("menu-rules").addEventListener("click", () => openDialogAtStart(this.rulesDialog));
         document.getElementById("menu-button").addEventListener("click", () => this.show());
         document.addEventListener("keydown", event => {
             if (event.key !== "Escape" || this.rulesDialog.open || this.battle.runScreen.isOpen()) return;

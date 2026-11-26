@@ -537,6 +537,16 @@ button {
     border-top: 1px solid var(--panel-line);
 }
 
+.panel > *, .panel section > * { min-width: 0; }
+.panel-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: auto;
+}
+.blackjack-rules { display: grid; gap: 16px; }
+.blackjack-outcomes { display: grid; gap: 6px; }
+
 .fight,
 .rules-title {
     font-family: var(--display-font), serif;
@@ -593,7 +603,7 @@ button {
 
     .panel {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
         align-items: start;
     }
 
@@ -602,8 +612,26 @@ button {
         border-top: 0;
     }
 
-    .restart {
-        justify-self: start;
+    .panel .rules {
+        grid-column: 1 / -1;
+        padding-top: 16px;
+        border-top: 1px solid var(--panel-line);
+    }
+
+    .panel .blackjack-rules {
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+    }
+
+    .panel .poker-hands {
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+        gap: 12px 24px;
+    }
+
+    .panel-actions {
+        grid-column: 1 / -1;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: flex-end;
     }
 }
 
@@ -1231,10 +1259,17 @@ button {
 
 .poker-hands {
     display: grid;
-    grid-template-columns: auto auto;
+    grid-template-columns: minmax(0, 1fr);
     gap: 3px 12px;
     margin: 0;
     font-size: 0.875rem;
+}
+
+.poker-hands > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+    break-inside: avoid;
 }
 
 .poker-hands dt {
@@ -1245,7 +1280,7 @@ button {
 .poker-hands dd {
     margin: 0;
     color: var(--secondary);
-    text-align: right;
+    text-align: end;
 }
 
 @media (max-width: 640px) {
