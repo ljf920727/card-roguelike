@@ -57,6 +57,20 @@ test("poker cannot be played with only 1 energy left", () => {
     assert.equal(JSON.stringify(state), before);
 });
 
+test("six or seven selected cards cannot spend energy or resolve a poker play", () => {
+    for (const count of [6, 7]) {
+        const state = pokerState();
+        state.player.handSize = 7;
+        state.hand.push(...state.drawPile.splice(0, 2));
+        state.hand.slice(0, count).forEach(card => { card.selected = true; });
+        const before = structuredClone(state);
+        const result = playSelectedCards(state);
+        assert.equal(result.allowed, false);
+        assert.equal(result.reason, "Select 1 to 5 cards to make a poker hand.");
+        assert.deepEqual(state, before);
+    }
+});
+
 test("invalid plays do not spend energy, discard, or redraw", () => {
     const state = pokerState();
     const before = JSON.stringify(state);

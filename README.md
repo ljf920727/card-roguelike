@@ -89,14 +89,14 @@ You have 3 energy per turn and a hand of 5 cards from your deck. Unplayed cards 
   | Pair            | 25 shield                                          |
   | High card       | highest card value x 1.5, rounded up, capped at 15 |
 
-  Rank upgrades can give your deck five, six, or even seven cards of the same rank, letting you play five of them to form five of a kind or flush five, two hands beyond the traditional poker rankings.
+  Rank upgrades let you build five cards of one rank, making five of a kind and flush five possible beyond the traditional poker rankings.
   The high damage rewards building a deck with five cards of one rank and drawing them together, an even rarer feat for flush five because all five must also share a suit.
 
   > **Deck-building trivia**
   >
   > Using rank upgrades alone, making five A♥ takes **10 upgrades**. Keep the starting A♥ and raise K♥, Q♥, J♥, and 10♥ by 1, 2, 3, and 4 ranks, respectively.
   >
-  > In theory, turning all 52 starting cards into aces would take **312 rank upgrades** (78 per suit). Any five cards from that deck would form five of a kind or, if they all share a suit, flush five. Drawing five cards at random from that deck gives about a **0.198%** chance of a flush five of aces in any suit (roughly 1 in 505).
+  > In theory, turning all 52 starting cards into aces would take **312 rank upgrades** (78 per suit). Any five cards from that deck would form five of a kind or, if they all share a suit, flush five. Drawing five cards at random from that deck gives about a **0.198%** chance of a flush five of aces in any suit (roughly 1 in 505). With Loaded Deck expanding your hand to seven cards, drawing seven at random from the same deck raises the chance of finding at least five aces of one suit to about **3.06%** (roughly 1 in 33).
 
 **Shield** lasts one turn, then decays to half for one more turn, then vanishes. It caps at 40 and clears between enemies. Attacks spend the decaying part first.
 

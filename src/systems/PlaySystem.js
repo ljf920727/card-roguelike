@@ -77,7 +77,7 @@ export function validatePlay(state) {
     } else if (state.selection.cards.some(card => !state.hand.includes(card)) ||
         new Set(cards.map(card => card.id)).size !== cards.length) {
         reason = "Selected cards are no longer available. Select your hand again.";
-    } else if (!cards.length) {
+    } else if (!cards.length || cards.length > 5) {
         reason = "Select 1 to 5 cards to make a poker hand.";
     } else if (cards.some(isJinx)) {
         reason = "Jinx cards can't be played. Mulligan them away.";

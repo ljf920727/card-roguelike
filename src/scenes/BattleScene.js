@@ -144,7 +144,8 @@ export class BattleScene {
             this.onCardSelectionChanged();
           },
           () => this.state.phase === 'player' && !this.autoEndTimeout && this.state.mode === 'poker' &&
-              this.state.hand.includes(card) && tutorialAllows(this.state, 'select', [card])
+              this.state.hand.includes(card) && tutorialAllows(this.state, 'select', [card]) &&
+              (card.selected || this.state.hand.filter(held => held.selected).length < 5)
       ), {input});
       input.type = 'button';
       const jinx = getJinx(card);

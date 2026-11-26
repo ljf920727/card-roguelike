@@ -18,10 +18,12 @@ export const POKER_HANDS = [
     { name: "HIGH_CARD", label: "High card", needs: "any cards", actions: [] },
 ];
 
+/** Returns the numeric rank used to recognize straights. */
 function rankOrder(rank) {
     return RANK_ORDER[rank] ?? Number(rank);
 }
 
+/** Recognizes five consecutive distinct ranks, including the ace-low wheel. */
 function isStraight(cards) {
     if (cards.length !== 5) return false;
     const ranks = [...new Set(cards.map(card => rankOrder(card.rank)))].sort((a, b) => a - b);
@@ -30,11 +32,11 @@ function isStraight(cards) {
 }
 
 /**
- * Finds the highest qualifying hand, including duplicate cards from deck upgrades.
+ * Classifies a selection of at most five cards, including duplicate upgraded cards.
  * @param {Object[]} cards Up to five playable cards.
  * @returns {Object|null} The hand and its base actions, or null for an empty selection.
  */
-export function evaluatePokerHand(cards) {
+function classifyPokerHand(cards) {
     if (!cards.length) return null;
     const counts = Object.values(cards.reduce((tally, card) => {
         tally[card.rank] = (tally[card.rank] ?? 0) + 1;
@@ -70,4 +72,42 @@ export function evaluatePokerHand(cards) {
         ? [{ type: "attack", amount: Math.min(15, Math.ceil(Math.max(...cards.map(card => getCardValue(card.rank))) * 1.5)) }]
         : hand.actions.map(action => ({ ...action }));
     return { name, label: hand.label, actions };
+}
+
+/**
+ * Finds the strongest poker category contained in a selection.
+ * Larger selections examine every five-card subset using the hand table's priority.
+ * All subsets of the same category have identical base effects except high card,
+ * for which the highest damage wins. The input cards are never reordered or edited.
+ * @param {Object[]} cards Playable cards selected from the player's hand.
+ * @returns {Object|null} The best hand and its base actions, or null when empty.
+ */
+export function evaluatePokerHand(cards) {
+    if (cards.length <= 5) return classifyPokerHand(cards);
+    let best = null;
+    let bestPriority = POKER_HANDS.length;
+    const subset = [];
+
+    /** Visits five-card combinations without copying or changing the source selection. */
+    function visit(start) {
+        if (subset.length === 5) {
+            const candidate = classifyPokerHand(subset);
+            const priority = POKER_HANDS.findIndex(hand => hand.name === candidate.name);
+            if (priority < bestPriority || (priority === bestPriority &&
+                candidate.name === "HIGH_CARD" && candidate.actions[0].amount > best.actions[0].amount)) {
+                best = candidate;
+                bestPriority = priority;
+            }
+            return;
+        }
+        for (let index = start; index <= cards.length - (5 - subset.length); index++) {
+            subset.push(cards[index]);
+            visit(index + 1);
+            subset.pop();
+            if (bestPriority === 0) return;
+        }
+    }
+
+    visit(0);
+    return best;
 }
