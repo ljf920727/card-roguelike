@@ -9,7 +9,7 @@ async function peer(url, t) {
   const pending = new Map();
   let nextId = 0;
   const client = {
-    ws, state: null,
+    ws, state: null, plays: [],
     /** Sends a request and rejects promptly if the Worker does not answer. */
     request(type, data = {}) {
       return new Promise((resolve, reject) => {
@@ -23,6 +23,7 @@ async function peer(url, t) {
   ws.onmessage = event => {
     const message = JSON.parse(event.data);
     if (message.type === 'roomUpdate') client.state = message.state;
+    else if (message.type === 'pokerPlay') client.plays.push({ lethal: message.lethal, hp: client.state.enemy.hp });
     else pending.get(message.id)?.(message);
   };
   t.after(() => ws.close());
@@ -87,4 +88,17 @@ test('Worker binds one identity per socket and preserves reconnects and seat cle
   assert.equal(newcomer.state.status, 'playing');
   assert.equal(newcomer.state.enemy.maxHp, 325);
   assert.ok(newcomer.state.players.every(player => !('token' in player) && !('hand' in player)));
+  const active = newcomer.state.players[newcomer.state.activeIndex].isYou ? newcomer : guest;
+  const play = { action: { type: 'poker', cardIds: [active.state.hand[0].id] } };
+  const received = [guest, newcomer].map(seat => new Promise(resolve => {
+    const listener = event => {
+      if (JSON.parse(event.data).type !== 'pokerPlay') return;
+      seat.ws.removeEventListener('message', listener);
+      resolve();
+    };
+    seat.ws.addEventListener('message', listener);
+  }));
+  assert.equal((await active.request('action', play)).success, true);
+  await Promise.all(received);
+  for (const seat of [guest, newcomer]) assert.deepEqual(seat.plays, [{ lethal: false, hp: 325 }]);
 });

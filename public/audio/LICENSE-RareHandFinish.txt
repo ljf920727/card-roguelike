@@ -1,0 +1,15 @@
+Rare hand finish - Juniper arrangement
+
+Piano samples: Salamander Grand Piano by Alexander Holm.
+Source: https://github.com/Tonejs/audio/tree/master/salamander
+License: Creative Commons Attribution 3.0 Unported (CC BY 3.0).
+https://creativecommons.org/licenses/by/3.0/
+The samples were trimmed, repitched, arranged into a three-chord ending, and mixed.
+
+Drum samples: Virtuosity Drums by Versilian Studios and Karoryfer Samples,
+performed by Austin McMahon.
+Source: https://github.com/sfzinstruments/virtuosity_drums
+Revision: 9f04cf9a734527edfbb0a4eee1f674e45bbf71bc
+License: CC0 1.0 Universal.
+https://creativecommons.org/publicdomain/zero/1.0/
+Kick, snare, low tom and crash samples were trimmed, level adjusted and mixed.

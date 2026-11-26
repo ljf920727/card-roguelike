@@ -32,9 +32,10 @@ export function beginEndTurn(state) {
 /**
  * Starts a surviving player's next turn after the input lock has elapsed.
  * @param {Object} state Mutable battle state.
+ * @param {boolean} [autoDraw] Refill campaign hands; practice draws are chosen by the player.
  * @returns {boolean} Whether a new player turn was started.
  */
-export function completeEndTurn(state) {
+export function completeEndTurn(state, autoDraw = true) {
     if (state.phase !== "enemy" || state.player.hp <= 0 || state.enemy.hp <= 0) return false;
     state.run.turn += 1;
     state.player.energy = state.player.maxEnergy;
@@ -42,12 +43,12 @@ export function completeEndTurn(state) {
     state.flags.freeMulliganUsed = false;
     const shieldBefore = state.player.shield;
     decayShield(state);
-    refillHand(state);
+    if (autoDraw) refillHand(state);
     rollIntent(state.enemy);
     state.phase = "player";
     advanceTutorial(state, "new-turn");
     const shieldNote = shieldBefore && shieldBefore !== state.player.shield ? ` Shield decayed from ${shieldBefore} to ${state.player.shield}.` : "";
-    state.lastAction += ` Hand topped up; energy restored.${shieldNote}`;
+    if (autoDraw) state.lastAction += ` Hand topped up; energy restored.${shieldNote}`;
     if (hasCurse(state, "devils-bargain")) {
         const lost = Math.min(DEVILS_BARGAIN_HP, state.player.hp - 1);
         state.player.hp -= lost;

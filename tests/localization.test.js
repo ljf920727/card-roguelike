@@ -64,6 +64,17 @@ test('co-op message captures preserve arbitrary player names and translate only 
     }
 });
 
+test('poker lists show healing as an amount in the preview and co-op result', () => {
+    const preview = 'Flush five: 777 damage and 77 healing and 77 shield';
+    assert.equal(translate(preview, 'zh-Hans'), '同花五条: 777 伤害、77 治疗、77 护盾');
+    assert.equal(translate(preview, 'zh-Hant'), '同花五條: 777 傷害、77 治療、77 護盾');
+    for (const { id } of LOCALES.filter(locale => locale.id !== 'en-CA')) {
+        const result = 'Tester plays Flush five. 777 damage, 77 healing, 77 shield.';
+        assert.equal(translate(result, id), translate(result.replace('77 healing', 'heal 77'), id));
+        assert.ok(!translate(result, id).includes('77 healing'), id);
+    }
+});
+
 test('run milestones and Jinx labels retain complete multi-sentence catalogue messages', () => {
     for (const { id: locale } of LOCALES.filter(item => item.id !== 'en-CA')) {
         for (const floor of FLOORS) {

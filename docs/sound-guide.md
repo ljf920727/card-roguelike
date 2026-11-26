@@ -8,7 +8,9 @@ The main menu and co-op lobby play Spring Spring's “(Basically not) Fusion Jaz
 Solo battles on every floor and co-op battles play “Bass Walker” by Kevin MacLeod
 (CC BY 4.0), mixed lower to leave room for cards and chips. Each track resumes
 from its own position. Battle introductions, rewards and endings leave room for
-their cues. See Settings → Sound → Music credits for sources, licenses and playback changes.
+their cues. Selecting a playable straight flush, royal flush, five of a kind or flush five
+brings in the same bass-aligned jazz drums and raises the music level. Breaking the selection
+fades both changes away. See Settings → Sound → Music credits for sources, licenses and playback changes.
 
 | Sound effect | In-game trigger |
 | --- | --- |
@@ -27,7 +29,7 @@ their cues. See Settings → Sound → Music credits for sources, licenses and p
 | Purchase / reward | Spend chips, claim a reward without a payout, or accept a curse |
 | Blackjack win | A winning or natural blackjack round settles |
 | Bust | A blackjack round ends over the limit |
-| Battle victory | An enemy is defeated |
+| Battle victory | A lethal straight flush, royal flush, five of a kind or flush five starts a three-chord piano and drum ending as the cards are played. Other victories use the regular flourish. |
 | Battle defeat | A battle is lost |
 | Boss entrance | A solo boss introduction opens for the first time |
 | Your turn | Solo enemy phase completes, or co-op passes control to you |
@@ -49,12 +51,17 @@ hear the deal, hit, damage, chips and winning sequence.
 - `AudioSettings.js` installs the shared modal and gesture/background handling.
 - Solo card sounds follow the existing 110 ms deal stagger. Co-op uses one short draw
   cue per arriving group; it does not sound hidden teammate cards.
+- The battle bass and percussion share a Web Audio transport, including the loop and pauses.
+  The percussion follows detected bass onsets and dynamics, with no added attacks during rests.
 - The two payout WAVs combine distinct Kenney Casino Audio recordings. The short
   mix uses chips-handle-6 and chips-stack-3, 5 and 2. The large mix uses chips-handle-5
   and chips-stack-2, 5, 3, 6, 4 and 1. Both follow the actual wallet increase.
 - Four original WAV cues distinguish a blackjack hand win (a short jazz chord),
   boss arrival (bowed metal and a heavy impact), battle victory (a bright piano
   chord over bass), and defeat (a sparse piano phrase over a descending bass).
+- The rare-hand ending layers a sampled grand piano with a jazz kit. The solo game and the
+  co-op server check the evaluated attack against current enemy HP before applying damage.
+  Sample sources, licenses and modifications are listed in [the effect credits](../public/audio/LICENSE-RareHandFinish.txt).
 - Samples are served from the deployment base path. The 11 bundled Ogg files retain
   their source filenames and accompanying CC0 licenses. Synthesized cues use sine
   notes with short envelopes. No audio library or external asset host is required.

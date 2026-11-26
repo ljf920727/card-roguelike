@@ -1,8 +1,9 @@
+/** Checks solo poker previews, played-card effects and turn resource costs. */
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createInitialState, resetGameState } from "../src/gameState.js";
 import { createDeck } from "../src/systems/DeckSystem.js";
-import { playSelectedCards, PLAY_COST } from "../src/systems/PlaySystem.js";
+import { evaluatePlay, playSelectedCards, PLAY_COST } from "../src/systems/PlaySystem.js";
 import { beginEndTurn, completeEndTurn } from "../src/systems/TurnSystem.js";
 
 function pokerState() {
@@ -34,6 +35,63 @@ for (const count of [1, 2, 5]) {
     });
 }
 
+test("selecting the fifth ace upgrades four of a kind to five of a kind", () => {
+    const state = pokerState();
+    const suits = ["spades", "hearts", "hearts", "diamonds", "clubs"];
+    state.hand.forEach((card, index) => Object.assign(card, { rank: "A", suit: suits[index], selected: true }));
+    for (const [count, name, damage] of [[4, "FOUR_OF_A_KIND", 65], [5, "FIVE_OF_A_KIND", 110]]) {
+        const preview = evaluatePlay(state, state.hand.slice(0, count));
+        assert.equal(preview.name, name);
+        assert.deepEqual(preview.actions, [{ type: "attack", amount: damage }]);
+    }
+    assert.equal(playSelectedCards(state).allowed, true);
+    assert.equal(state.enemy.hp, state.enemy.maxHp - 110);
+});
+
+test("flush five previews jackpot effects and applies capped healing and shield", () => {
+    const state = pokerState();
+    state.player.hp = 50;
+    state.hand.forEach(card => Object.assign(card, { rank: "A", suit: "hearts", selected: true }));
+    assert.deepEqual(evaluatePlay(state, state.hand).actions, [
+        { type: "attack", amount: 777 }, { type: "heal", amount: 77 }, { type: "defend", amount: 77 },
+    ]);
+    assert.equal(playSelectedCards(state).allowed, true);
+    assert.equal(state.enemy.hp, 223);
+    assert.equal(state.player.hp, 100);
+    assert.equal(state.player.shield, 40);
+});
+
+test("flush five heals 77 after a lethal hit and respects the floor shield cap", () => {
+    const state = pokerState();
+    state.player.hp = 1;
+    state.player.shield = 5;
+    state.enemy.hp = 90;
+    state.run.rules = { shieldCap: 25 };
+    state.hand.forEach(card => Object.assign(card, { rank: "A", suit: "hearts", selected: true }));
+    assert.equal(playSelectedCards(state).allowed, true);
+    assert.equal(state.result, "victory");
+    assert.equal(state.enemy.hp, 0);
+    assert.equal(state.player.hp, 78);
+    assert.equal(state.player.shield, 25);
+});
+
+test("flush five keeps jackpot amounts through gilding, Jokers and Curses", () => {
+    const state = pokerState();
+    state.player.hp = 1;
+    state.player.maxHp = 75;
+    state.run.jokers = ["bleeding-heart"];
+    state.run.curses = ["glass-cannon", "fortress"];
+    state.hand.forEach(card => Object.assign(card, { rank: "A", suit: "hearts", selected: true, gilded: true }));
+    assert.deepEqual(evaluatePlay(state, state.hand).actions, [
+        { type: "attack", amount: 777 }, { type: "heal", amount: 77 }, { type: "defend", amount: 77 },
+    ]);
+    assert.equal(playSelectedCards(state).allowed, true);
+    assert.equal(state.enemy.hp, 223);
+    assert.equal(state.player.hp, 75);
+    assert.equal(state.player.shield, 40);
+    assert.equal(state.lastAction, "Flush five: 777 damage and 77 healing and 77 shield; spent 2 energy.");
+});
+
 test("poker cannot be played with only 1 energy left", () => {
     const state = pokerState();
     state.player.energy = 1;
@@ -41,6 +99,20 @@ test("poker cannot be played with only 1 energy left", () => {
     const before = JSON.stringify(state);
     assert.equal(playSelectedCards(state).allowed, false);
     assert.equal(JSON.stringify(state), before);
+});
+
+test("six or seven selected cards cannot spend energy or resolve a poker play", () => {
+    for (const count of [6, 7]) {
+        const state = pokerState();
+        state.player.handSize = 7;
+        state.hand.push(...state.drawPile.splice(0, 2));
+        state.hand.slice(0, count).forEach(card => { card.selected = true; });
+        const before = structuredClone(state);
+        const result = playSelectedCards(state);
+        assert.equal(result.allowed, false);
+        assert.equal(result.reason, "Select 1 to 5 cards to make a poker hand.");
+        assert.deepEqual(state, before);
+    }
 });
 
 test("invalid plays do not spend energy, discard, or redraw", () => {

@@ -15,7 +15,11 @@ export const SOUNDS = {
     exchange: { label: 'Purchase / reward', hint: 'A chip rattles when you buy something or claim a non-cash reward.', files: ['chips-handle-1.ogg'], gain: 0.38 },
     win: { label: 'Blackjack win', hint: 'A short jazz chord when you beat the dealer in blackjack.', files: ['blackjack-win.wav'], gain: 0.31 },
     bust: { label: 'Bust', hint: 'Two falling notes when your blackjack hand goes over its limit.', notes: [311.13, 233.08, 155.56], gain: 0.05 },
-    victory: { label: 'Battle victory', hint: 'A piano and bass flourish when you defeat an enemy or boss.', files: ['battle-victory.wav'], gain: 0.65 },
+    victory: {
+        label: 'Battle victory', hint: 'A piano and bass flourish when you defeat an enemy or boss.',
+        files: ['battle-victory.wav'], gain: 0.65,
+        variants: { rareFinisher: { file: 'rare-hand-finish.mp3', gain: 0.72 } },
+    },
     defeat: { label: 'Battle defeat', hint: 'A low piano phrase when you lose a fight.', files: ['battle-defeat.wav'], gain: 0.65 },
     boss: { label: 'Boss entrance', hint: 'A metallic swell and a heavy hit as a solo boss appears.', files: ['boss-entrance.wav'], gain: 0.40 },
     turn: { label: 'Your turn', hint: 'A chime when your next turn starts, including a handoff in co-op.', notes: [440, 659.25], gain: 0.035 },

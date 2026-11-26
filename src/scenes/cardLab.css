@@ -1,0 +1,43 @@
+/** Positions shared battle panels, deck choices and settings controls for manual dealing. */
+.practicing :is(#floor-route, .mode-toggle, #mulligan-button, #turn-forecast,
+    .panel-actions, .rules-shared, #draw-text, #next-card, #turn-text) { display: none; }
+.lab-action[hidden], #lab-tools[hidden] { display: none; }
+#lab-tools { display: flex; min-width: 0; }
+.lab-heading, .lab-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+}
+.lab-heading { justify-content: space-between; }
+#lab-draw { min-width: 0; padding: 0; margin: 0; border: 0; }
+#lab-suit { margin-block-start: 12px; }
+#lab-ranks {
+    margin-block-start: 12px;
+}
+#lab-dialog .settings-row:has(.table-field) { grid-template-columns: minmax(0, 1fr) minmax(0, 55%); }
+#lab-hp { max-width: 6em; justify-self: end; }
+#lab-dialog footer { flex: none; padding: 12px var(--sheet-padding); border-block-start: 1px solid var(--panel-line); }
+#lab-dialog footer button { width: 100%; }
+#lab-dialog footer p { margin: 0 0 8px; }
+@media (min-width: 901px) {
+    .practicing .layout {
+        grid-template-columns: minmax(0, 1fr) clamp(300px, 32vw, 420px);
+        grid-template-areas: "table rack" "table panel";
+        grid-template-rows: auto minmax(0, 1fr);
+    }
+    .practicing #table { grid-area: table; }
+    .practicing aside.panel { grid-area: panel; }
+    #lab-tools { grid-area: rack; max-height: max(45dvh, calc(100dvh - 18rem)); overflow-y: auto; }
+    #lab-ranks { max-height: none; overflow: visible; }
+}
+.practicing #last-action:not(:empty) {
+    position: static;
+    order: 1;
+    width: auto;
+    height: auto;
+    clip-path: none;
+    white-space: normal;
+    text-align: center;
+    color: var(--secondary);
+}
