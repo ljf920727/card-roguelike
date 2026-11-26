@@ -2,7 +2,8 @@
 import { sourceLabel, setLabel, setText } from '../i18n/dom.js';
 
 import { createCardElement } from "../components/cardElement.js";
-import { deckCards, sortHand, getJinx, DECK_EDITS } from "../systems/DeckSystem.js";
+import { deckCards, getJinx, DECK_EDITS } from "../systems/DeckSystem.js";
+import { sortDeckPickerCards } from './deckPickerOrder.js';
 import { getJoker, jokerSlots, sellPrice } from "../systems/JokerSystem.js";
 import { getCurse } from "../systems/CurseSystem.js";
 import { chooseCurse, chooseReward, eligibleCards, needsCard, needsJokerSlot, skipCurse, skipReward, SKIP_CHIPS } from "../systems/RewardSystem.js";
@@ -221,7 +222,7 @@ export class RunScreen {
         this.onChange();
     }
 
-    /** Displays eligible cards or owned Jokers for the selected offer. */
+    /** Displays eligible cards ordered for the chosen deck edit, or owned Jokers to replace. */
     renderPicker() {
         const pick = this.picking;
         const grid = document.createElement("div");
@@ -236,8 +237,7 @@ export class RunScreen {
             });
         } else {
             setText(this.title, PICK_PROMPTS[pick.kind]);
-            const cards = eligibleCards(this.state, pick, sortHand(deckCards(this.state)));
-            if (pick.kind === "remove") cards.sort((a, b) => Number(Boolean(getJinx(b))) - Number(Boolean(getJinx(a))));
+            const cards = sortDeckPickerCards(eligibleCards(this.state, pick, deckCards(this.state)), pick.kind);
             setText(this.subtitle, `${cards.length} eligible ${cards.length === 1 ? "card" : "cards"} in your deck.`);
             grid.className = "deck-picker";
             cards.forEach(card => {
