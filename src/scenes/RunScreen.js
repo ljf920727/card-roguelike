@@ -50,7 +50,7 @@ export class RunScreen {
         return this.dialog.open;
     }
 
-    /** Opens, updates or closes the dialog to match the run state. */
+    /** Updates the run dialog and starts each new decision at its heading without scrolling to an action. */
     sync() {
         if (this.run !== this.state.run) {
             this.run = this.state.run;
@@ -81,8 +81,12 @@ export class RunScreen {
         else if (!reward?.done) this.renderReward();
         else if (curseChoice && !curseChoice.done) this.renderCurses();
         else this.renderShop();
-        if (!this.dialog.open) this.dialog.showModal();
-        if (this.view !== view) this.dialog.querySelector("button:not(:disabled)")?.focus();
+        const opening = !this.dialog.open;
+        if (opening) this.dialog.showModal();
+        if (opening || this.view !== view) {
+            this.title.focus({ preventScroll: true });
+            this.dialog.scrollTop = 0;
+        }
         this.view = view;
     }
 
