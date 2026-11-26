@@ -2,6 +2,7 @@
 @import "./components/battlePrimitives.css";
 @import "./components/difficultyPicker.css";
 @import "./components/menuButton.css";
+@import "./i18n/fonts.css";
 
 :root {
     --background: #0f2621;
@@ -24,10 +25,8 @@
     --enemy-ring: #6f2732;
     --enemy-heart: #9a5fd0;
     --accent-text: #132f29;
-    --ui-font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     /* Brand lettering and decorative card ranks retain their Latin typeface in every locale. */
     --brand-font: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-    --display-font: var(--brand-font);
     /* Card rows override overlap when their contents exceed the available width. */
     --overlap: 0px;
     --gutter: clamp(12px, 2vw, 24px);

@@ -47,6 +47,14 @@ retain left-to-right order independently of their surrounding controls.
 
 ## Preferences and adding a language
 
+`src/i18n/fonts.css` owns the shared UI and display font stacks. Simplified and
+traditional Chinese use separate regional families; Arabic, Hindi and Punjabi
+use script-specific stacks throughout the interface. Language autonyms use their
+own `lang` attributes and fonts even inside another locale. Canvas Jinx names read
+the same display-font variable when the locale changes. These are system fonts,
+so the installed fallback may differ across operating systems; no font download
+is required. Brand lettering and card ranks retain their Latin typeface.
+
 Settings shows a Language button beside Sound; it opens the same preferences-sheet
 layout with raised language choices and a Chinese group that starts collapsed.
 

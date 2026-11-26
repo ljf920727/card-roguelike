@@ -1,6 +1,4 @@
 /** Adapts reading direction while preserving card geometry and numeric resources. */
-:lang(hi) { font-family: 'Nirmala UI', Mangal, sans-serif; line-height: 1.6; }
-html:lang(ar) { --ui-font: Tahoma, Arial, sans-serif; --display-font: 'Traditional Arabic', Georgia, serif; }
 .language-choice [dir="auto"], .player-seat h3 { unicode-bidi: isolate; }
 /* Arrow glyphs use one explicit mirror, independent of the Unicode bidi algorithm. */
 .settings-arrow, .language-arrow { direction: ltr; unicode-bidi: isolate; }

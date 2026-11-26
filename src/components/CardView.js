@@ -99,12 +99,12 @@ export class CardView extends Container {
         this.drawCard();
     }
 
-    /** Fits translated Jinx names inside the card without rebuilding its selection or animation. */
+    /** Fits translated Jinx names using the page's display font without changing selection or animation. */
     refreshLocalizedName() {
         if (this.cardData.suit !== 'jinx') return;
         this.bottomRankText.text = translate(getJinx(this.cardData)?.name ?? 'Jinx');
-        this.bottomRankText.style.fontFamily = getLocale() === 'ar' ? 'Tahoma, Arial, sans-serif' :
-            ['hi', 'pa-Guru'].includes(getLocale()) ? 'Nirmala UI, sans-serif' : CARD_FONT;
+        this.bottomRankText.style.fontFamily = getComputedStyle(document.documentElement)
+            .getPropertyValue('--display-font').trim() || CARD_FONT;
         this.bottomRankText.style.wordWrap = true;
         this.bottomRankText.style.wordWrapWidth = this.cardWidth - 18;
         this.bottomRankText.style.breakWords = getLocale() !== 'ar';

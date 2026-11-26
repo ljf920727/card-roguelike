@@ -2,10 +2,9 @@
 @import "../components/battlePrimitives.css";
 @import "../components/difficultyPicker.css";
 @import "../components/menuButton.css";
+@import "../i18n/fonts.css";
 
 :root {
-  --ui-font: system-ui, -apple-system, "Segoe UI", sans-serif;
-  --display-font: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
   font-family: var(--ui-font), sans-serif;
   color: var(--text, #f3efe3);
   background: var(--background, #0f2621);

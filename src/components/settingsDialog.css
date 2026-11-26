@@ -179,5 +179,3 @@ body:has(.sound-dialog[open], .language-dialog[open]) .settings-dialog::backdrop
 .language-arrow { margin-left: auto; flex: none; font-size: 1.3em; }
 .language-chinese[open] .language-arrow { rotate: 90deg; }
 .language-variants { display: grid; gap: 12px; margin: 12px 0 0 16px; }
-:lang(pa) { font-family: 'Nirmala UI', 'Raavi', sans-serif; line-height: 1.6; }
-html:lang(zh) { --ui-font: 'Microsoft JhengHei', 'Microsoft YaHei', sans-serif; --display-font: 'Songti SC', 'PMingLiU', 'SimSun', serif; }
