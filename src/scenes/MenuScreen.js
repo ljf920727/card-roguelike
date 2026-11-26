@@ -1,7 +1,10 @@
 /** Shows the main menu over the battle and routes its buttons to the battle scene. */
+import { setText, setLabel } from '../i18n/dom.js';
+
 import { DIFFICULTIES, getDifficulty } from "../systems/DifficultySystem.js";
 import { getTutorialEnabled } from "../tutorialPreferences.js";
 import { DifficultyPicker } from "../components/DifficultyPicker.js";
+import { openDialogAtStart } from '../components/dialogNavigation.js';
 import { getPreferredDifficulty, savePreferredDifficulty } from "../difficultyPreferences.js";
 
 export class MenuScreen {
@@ -51,7 +54,7 @@ export class MenuScreen {
             this.battle.startRun({ difficulty: this.difficulty.value });
             this.hide();
         });
-        document.getElementById("menu-rules").addEventListener("click", () => this.rulesDialog.showModal());
+        document.getElementById("menu-rules").addEventListener("click", () => openDialogAtStart(this.rulesDialog));
         document.getElementById("menu-button").addEventListener("click", () => this.show());
         document.addEventListener("keydown", event => {
             if (event.key !== "Escape" || this.rulesDialog.open || this.battle.runScreen.isOpen()) return;
@@ -93,15 +96,15 @@ export class MenuScreen {
     /** Shows resume controls and identifies difficulty changes pending for the next run. */
     refresh() {
         const inProgress = this.battle.isRunInProgress();
-        this.playButton.textContent = inProgress ? "Continue run" : "Play";
+        setText(this.playButton, inProgress ? "Continue run" : "Play");
         const preset = getDifficulty(this.difficulty.value);
         const tutorialNote = getTutorialEnabled() && preset.id !== "normal" ? " Guided runs use Normal." : "";
-        document.getElementById("difficulty-description").textContent = preset.description + tutorialNote;
-        document.getElementById("difficulty-current").textContent = "♠".repeat(DIFFICULTIES.findIndex(option => option.id === preset.id) + 1);
-        this.difficultyToggle.setAttribute("aria-label", `Difficulty: ${preset.label}`);
+        setText(document.getElementById("difficulty-description"), preset.description + tutorialNote);
+        setText(document.getElementById("difficulty-current"), "♠".repeat(DIFFICULTIES.findIndex(option => option.id === preset.id) + 1));
+        setLabel(this.difficultyToggle, 'aria-label', `Difficulty: ${preset.label}`);
         const difficultyNote = document.getElementById("difficulty-note");
         difficultyNote.hidden = !inProgress || this.difficulty.value === this.battle.state.run.difficulty;
-        difficultyNote.textContent = `Next run only · Current: ${getDifficulty(this.battle.state.run.difficulty).label}`;
+        setText(difficultyNote, `Next run only · Current: ${getDifficulty(this.battle.state.run.difficulty).label}`);
         this.newRunButton.hidden = !inProgress;
     }
 

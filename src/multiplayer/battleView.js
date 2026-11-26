@@ -1,4 +1,7 @@
 /** Keeps cooperative cards and player seats stable so state updates preserve motion and focus. */
+import { sourceLabel, setText, setLabel } from '../i18n/dom.js';
+
+import { translate } from '../i18n/index.js';
 import { createCardElement } from '../components/cardElement.js';
 import { renderHearts } from '../components/healthDisplay.js';
 
@@ -35,16 +38,17 @@ export function renderPlayerSeats(container, players, status, activeIndex) {
         const active = status === 'playing' && index === activeIndex;
         seat.classList.toggle('active', active);
         seat.classList.toggle('ready', player.ready);
-        seat.querySelector('h3').textContent = `${player.name}${player.isYou ? ' (You)' : ''}`;
-        seat.querySelector('.player-status').textContent = !player.connected ? 'Disconnected' :
+        seat.querySelector('h3').dir = 'auto';
+        setText(seat.querySelector('h3'), () => `${player.name}${player.isYou ? ` (${translate('You')})` : ''}`);
+        setText(seat.querySelector('.player-status'), !player.connected ? 'Disconnected' :
             status === 'playing' ? player.hp <= 0 ? 'Defeated' : active ? 'Playing' : 'Waiting' :
-                player.ready ? 'Ready ✓' : 'Not ready';
+                player.ready ? 'Ready ✓' : 'Not ready');
         seat.querySelector('.seat-health').hidden = seat.querySelector('.resources').hidden = status === 'waiting';
         renderHearts(seat.querySelector('.hearts'), player.hp, 100);
-        seat.querySelector('.hp-value').textContent = `${player.hp}/100`;
-        seat.querySelector('.shield-value').textContent = `Shield ${player.shield}`;
+        setText(seat.querySelector('.hp-value'), `${player.hp}/100`);
+        setText(seat.querySelector('.shield-value'), `Shield ${player.shield}`);
         const energy = seat.querySelector('.energy');
-        energy.setAttribute('aria-label', `Energy ${player.energy} of 3`);
+        setLabel(energy, 'aria-label', `Energy ${player.energy} of 3`);
         [...energy.children].forEach((chip, number) => chip.classList.toggle('filled', number < player.energy));
     });
 }
@@ -64,7 +68,7 @@ export function renderPokerCards(container, cards, selected, enabled, onSelect, 
             button.className = 'hand-card';
             button.dataset.cardId = card.id;
             const face = cardFace(card);
-            button.setAttribute('aria-label', face.getAttribute('aria-label'));
+            setLabel(button, 'aria-label', sourceLabel(face, 'aria-label'));
             face.setAttribute('aria-hidden', 'true');
             dealCard(face, arriving++);
             button.append(face);
@@ -129,10 +133,10 @@ export function renderBlackjackTable(data) {
     info.classList.toggle('settled', !active);
     renderBlackjackRow(player, round.player, fresh, 0);
     renderBlackjackRow(dealer, round.dealer, fresh, 1);
-    document.getElementById('bj-player-total').textContent = `You · ${round.playerTotal}`;
-    document.getElementById('bj-dealer-total').textContent = active ? 'Dealer · ?' : `Dealer · ${round.dealerTotal}`;
+    setText(document.getElementById('bj-player-total'), `You · ${round.playerTotal}`);
+    setText(document.getElementById('bj-dealer-total'), active ? 'Dealer · ?' : `Dealer · ${round.dealerTotal}`);
     const result = round.outcome === 'win' ? `Win · ${round.damage} damage` :
         round.outcome === 'push' ? `Push · +${round.refund} energy` :
             `${round.outcome === 'bust' ? 'Bust' : 'Loss'} · −${round.damage} HP${round.blocked ? ` · ${round.blocked} blocked` : ''}`;
-    document.getElementById('round-summary').textContent = active ? 'Blackjack' : result;
+    setText(document.getElementById('round-summary'), active ? 'Blackjack' : result);
 }

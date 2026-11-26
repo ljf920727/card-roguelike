@@ -1,14 +1,18 @@
 /** Provides shared volume, mute and individual sound settings on both game pages. */
+import { setText } from '../i18n/dom.js';
+
 import { audio } from './AudioManager.js';
 import { SOUNDS } from './sounds.js';
 import { TRACKS } from './GameMusic.js';
 import './audio.css';
+import { localizeTree } from '../i18n/dom.js';
+import { openDialogAtStart } from '../components/dialogNavigation.js';
 
 /** Shows each switch with its gameplay description and keeps choices current across tabs. */
 function appendChoices(container, title, catalog, choices) {
     const group = document.createElement('fieldset');
     const legend = document.createElement('legend');
-    legend.textContent = title;
+    setText(legend, title);
     group.append(legend);
     const inputs = new Map();
     for (const [id, entry] of Object.entries(catalog)) {
@@ -16,9 +20,9 @@ function appendChoices(container, title, catalog, choices) {
         const name = document.createElement('span');
         const description = document.createElement('small');
         name.id = `sound-choice-${id}-name`;
-        name.textContent = entry.label;
+        setText(name, entry.label);
         description.id = `sound-choice-${id}-description`;
-        description.textContent = entry.hint;
+        setText(description, entry.hint);
         const input = document.createElement('input');
         input.type = 'checkbox';
         input.className = 'table-switch';
@@ -83,9 +87,9 @@ export function installAudioSettings(music) {
         const output = controls.querySelector('output');
         muted.checked = music.muted;
         slider.value = String(Math.round(music.volume * 100));
-        output.textContent = slider.value + '%';
+        setText(output, slider.value + '%');
         controls.addEventListener('input', () => {
-            output.textContent = slider.value + '%';
+            setText(output, slider.value + '%');
             music.setPreferences(Number(slider.value) / 100, muted.checked);
         });
         audio.addEventListener('change', () => { void music.sync(); });
@@ -102,8 +106,8 @@ export function installAudioSettings(music) {
     const refresh = () => {
         mute.checked = audio.muted;
         volume.value = String(Math.round(audio.volume * 100));
-        dialog.querySelector('#sound-volume-value').textContent = `${volume.value}%`;
-        status.textContent = !audio.muted && audio.volume === 0 ? 'Volume is zero. Raise it to listen.' : audio.status;
+        setText(dialog.querySelector('#sound-volume-value'), `${volume.value}%`);
+        setText(status, !audio.muted && audio.volume === 0 ? 'Volume is zero. Raise it to listen.' : audio.status);
     };
     audio.addEventListener('change', refresh);
     mute.addEventListener('change', () => {
@@ -119,8 +123,7 @@ export function installAudioSettings(music) {
     document.querySelectorAll('[data-sound-settings]').forEach(button => button.addEventListener('click', () => {
         refresh();
         advanced.open = false;
-        dialog.showModal();
-        dialog.querySelector('.preferences-body').scrollTop = 0;
+        openDialogAtStart(dialog);
     }));
     document.addEventListener('pointerdown', () => { void audio.preload(); }, { once: true, capture: true });
     document.addEventListener('keydown', () => { void audio.preload(); }, { once: true, capture: true });
@@ -146,4 +149,5 @@ export function installAudioSettings(music) {
         if (event.target.matches('.difficulty-picker input[type="radio"]')) void audio.play('ui');
     });
     refresh();
+    localizeTree(dialog);
 }

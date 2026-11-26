@@ -5,6 +5,7 @@ import{
     Text,
     Ticker,
 } from "pixi.js";
+import { getLocale, translate, onLocaleChange } from '../i18n/index.js';
 import { getJinx } from "../systems/DeckSystem.js";
 
 const SUIT_SYMBOLS = {
@@ -68,7 +69,7 @@ export class CardView extends Container {
             },
         });
         this.bottomRankText = new Text({
-            text: isJinx ? getJinx(cardData)?.name ?? "Jinx" : cardData.gilded ? `★ ${cardData.rank}` : `${suitSymbol} ${cardData.rank}`,
+            text: isJinx ? translate(getJinx(cardData)?.name ?? "Jinx") : cardData.gilded ? `★ ${cardData.rank}` : `${suitSymbol} ${cardData.rank}`,
             style: {
                 fill: textColor,
                 fontFamily: CARD_FONT,
@@ -77,6 +78,8 @@ export class CardView extends Container {
                 padding: 4,
             },
         });
+        this.refreshLocalizedName();
+        this.unsubscribeLocale = onLocaleChange(() => this.refreshLocalizedName());
         this.face.addChild(this.background, this.rankText, this.topSuitText, this.centerSuitText, this.bottomRankText);
         this.addChild(this.shadow, this.face);
         this.rankText.position.set(10, 4);
@@ -94,6 +97,18 @@ export class CardView extends Container {
         }
         );
         this.drawCard();
+    }
+
+    /** Fits translated Jinx names using the page's display font without changing selection or animation. */
+    refreshLocalizedName() {
+        if (this.cardData.suit !== 'jinx') return;
+        this.bottomRankText.text = translate(getJinx(this.cardData)?.name ?? 'Jinx');
+        this.bottomRankText.style.fontFamily = getComputedStyle(document.documentElement)
+            .getPropertyValue('--display-font').trim() || CARD_FONT;
+        this.bottomRankText.style.wordWrap = true;
+        this.bottomRankText.style.wordWrapWidth = this.cardWidth - 18;
+        this.bottomRankText.style.breakWords = getLocale() !== 'ar';
+        this.bottomRankText.style.align = 'right';
     }
 
     drawCard() {
@@ -140,7 +155,9 @@ export class CardView extends Container {
         this.drawCard();
     }
 
+    /** Releases the card animation and language subscription. */
     destroy(options) {
+        this.unsubscribeLocale();
         if (this.liftTick) Ticker.shared.remove(this.liftTick);
         super.destroy(options);
     }

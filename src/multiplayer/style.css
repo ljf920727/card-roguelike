@@ -2,10 +2,9 @@
 @import "../components/battlePrimitives.css";
 @import "../components/difficultyPicker.css";
 @import "../components/menuButton.css";
+@import "../i18n/fonts.css";
 
 :root {
-  --ui-font: system-ui, -apple-system, "Segoe UI", sans-serif;
-  --display-font: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
   font-family: var(--ui-font), sans-serif;
   color: var(--text, #f3efe3);
   background: var(--background, #0f2621);
@@ -48,8 +47,8 @@ body::before {
 }
 .topbar-label {
   color: var(--muted);
-  border-left: 1px solid var(--panel-line);
-  padding-left: 18px;
+  border-inline-start: 1px solid var(--panel-line);
+  padding-inline-start: 18px;
 }
 #connection {
   margin-left: auto;
@@ -241,7 +240,7 @@ label {
 }
 #room .player-list {
   margin: 32px 0 20px;
-  text-align: left;
+  text-align: start;
 }
 #room-status {
   color: var(--secondary);
@@ -546,7 +545,8 @@ label {
 }
 .blackjack-table .cards {
   display: flex;
-  justify-content: center;
+  /* Overflow starts at the first card so every card remains reachable by scrolling. */
+  justify-content: safe center;
   min-height: 100px;
   gap: 6px;
   padding: 6px 3px 10px;
@@ -602,7 +602,7 @@ details[open] > summary {
 #message {
   margin-bottom: 16px;
   padding: 10px 14px;
-  border-left: 2px solid var(--attack);
+  border-inline-start: 2px solid var(--attack);
   color: var(--attack);
   font-size: 13px;
   overflow-wrap: anywhere;
@@ -632,7 +632,7 @@ details[open] > summary {
     height: 28px;
   }
   .topbar-label {
-    padding-left: 10px;
+    padding-inline-start: 10px;
     font-size: 12px;
   }
   #connection {
@@ -642,11 +642,14 @@ details[open] > summary {
     margin-top: 20px;
   }
   .lobby-options {
+    grid-template-columns: minmax(0, 1fr);
     gap: 24px;
   }
   .lobby-options section + section {
     padding-left: 0;
     border-left: 0;
+    border-top: 1px solid var(--panel-line);
+    padding-top: 24px;
   }
   .lobby-options .difficulty-chip {
     flex-direction: column;
@@ -662,10 +665,10 @@ details[open] > summary {
   #turn {
     order: 3;
     flex-basis: 100%;
-    text-align: left;
+    text-align: start;
   }
   #battle-leave {
-    margin-left: auto;
+    margin-inline-start: auto;
   }
   .enemy-stage {
     gap: 14px;
@@ -739,20 +742,6 @@ details[open] > summary {
   }
 }
 @media (max-width: 440px) {
-  .lobby-options {
-    grid-template-columns: 1fr;
-  }
-  .lobby-options .difficulty-chip {
-    flex-direction: row;
-    gap: 8px;
-  }
-  .lobby-options section + section {
-    border-top: 1px solid var(--panel-line);
-    padding-top: 24px;
-  }
-  .blackjack-table .cards {
-    justify-content: safe center;
-  }
   .blackjack-table {
     grid-template-columns: 1fr;
     gap: 8px;

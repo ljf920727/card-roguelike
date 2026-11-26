@@ -1,0 +1,38 @@
+/** Adapts reading direction while preserving card geometry and numeric resources. */
+.language-choice [dir="auto"], .player-seat h3 { unicode-bidi: isolate; }
+/* Arrow glyphs use one explicit mirror, independent of the Unicode bidi algorithm. */
+.settings-arrow, .language-arrow { direction: ltr; unicode-bidi: isolate; }
+.table-switch, #hand, .bj-row, #bj-player, #bj-dealer, .hand-cards, .hearts, #hp-text, #shield-stat,
+.chip-balance strong, .hp-value, #room-id, #room-code { direction: ltr; }
+html[dir="rtl"] .topbar-end,
+html[dir="rtl"] #connection,
+html[dir="rtl"] .guide-skip,
+html[dir="rtl"] .language-check,
+html[dir="rtl"] .language-arrow,
+html[dir="rtl"] .wallet-note { margin-left: 0; margin-right: auto; }
+html[dir="rtl"] .language-variants { margin-left: 0; margin-right: 16px; }
+html[dir="rtl"] .settings-arrow,
+html[dir="rtl"] .language-arrow { transform: scaleX(-1); }
+html[dir="rtl"] .language-chinese[open] .language-arrow { rotate: -90deg; }
+html[dir="rtl"] .guide,
+html[dir="rtl"] .run-notes,
+html[dir="rtl"] .lobby-options,
+html[dir="rtl"] .offer,
+html[dir="rtl"] section.rules,
+html[dir="rtl"] details.rules,
+html[dir="rtl"] .player-seat,
+html[dir="rtl"] .difficulty-chip { text-align: start; }
+html[dir="rtl"] .guide-facts,
+html[dir="rtl"] .run-notes ol { padding-left: 0; padding-right: 22px; }
+html[dir="rtl"] .menu-settings { right: auto; left: clamp(16px, 3vw, 28px); }
+html[dir="rtl"] .play-options { transform-origin: top left; }
+html[dir="rtl"] .difficulty-toggle .menu-chevron { rotate: 135deg; translate: 2px 0; }
+html[dir="rtl"] .difficulty-toggle[aria-expanded="true"] .menu-chevron { rotate: 45deg; translate: 0 -2px; }
+@media (min-width: 701px) {
+    html[dir="rtl"] .lobby-options section + section {
+        padding-left: 0;
+        padding-right: 32px;
+        border-left: 0;
+        border-right: 1px solid var(--panel-line);
+    }
+}

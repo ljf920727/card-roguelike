@@ -124,6 +124,8 @@
 }
 
 .bj-card {
+    /* Card ranks and suits keep the same visual order in every reading direction. */
+    direction: ltr;
     --deal-delay: 0ms;
     flex: none;
     display: flex;
@@ -136,7 +138,7 @@
     background: #fbf8f0;
     border: 1px solid #d9d2c0;
     box-shadow: 0 4px 8px rgb(0 0 0 / 0.22);
-    font: 700 1.15rem/1 var(--display-font);
+    font: 700 1.15rem/1 "Iowan Old Style", "Palatino Linotype", Georgia, serif;
 }
 
 .bj-card.dealt {
