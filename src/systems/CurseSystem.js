@@ -18,6 +18,8 @@ export const CURSES = [
 export const DEVILS_BARGAIN_HP = 4;
 export const THORNS_EXTRA_DAMAGE = 3;
 export const GLASS_CANNON_MULTIPLIER = 1.5;
+/** Applies Loaded Deck's health bonus after difficulty scaling. */
+export const LOADED_DECK_HP_SCALE = 1.3;
 
 /** One-time stat changes when a Curse is taken. */
 const ON_TAKE = {
@@ -28,7 +30,7 @@ const ON_TAKE = {
     "devils-bargain": state => { state.player.maxEnergy += 1; },
     "loaded-deck": state => {
         state.player.handSize += 2;
-        state.run.enemyHpScale = (state.run.enemyHpScale ?? 1) * 1.3;
+        state.run.enemyHpScale = (state.run.enemyHpScale ?? 1) * LOADED_DECK_HP_SCALE;
     },
 };
 
