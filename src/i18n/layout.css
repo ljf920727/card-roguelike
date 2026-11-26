@@ -3,7 +3,7 @@
 html:lang(ar) { --ui-font: Tahoma, Arial, sans-serif; --display-font: 'Traditional Arabic', Georgia, serif; }
 .language-choice [dir="auto"], .player-seat h3 { unicode-bidi: isolate; }
 /* Arrow glyphs use one explicit mirror, independent of the Unicode bidi algorithm. */
-.settings-link > span, .language-arrow { direction: ltr; unicode-bidi: isolate; }
+.settings-arrow, .language-arrow { direction: ltr; unicode-bidi: isolate; }
 .table-switch, #hand, .bj-row, #bj-player, #bj-dealer, .hand-cards, .hearts, #hp-text, #shield-stat,
 .chip-balance strong, .hp-value, #room-id, #room-code { direction: ltr; }
 html[dir="rtl"] .topbar-end,
@@ -13,7 +13,7 @@ html[dir="rtl"] .language-check,
 html[dir="rtl"] .language-arrow,
 html[dir="rtl"] .wallet-note { margin-left: 0; margin-right: auto; }
 html[dir="rtl"] .language-variants { margin-left: 0; margin-right: 16px; }
-html[dir="rtl"] .settings-link > span,
+html[dir="rtl"] .settings-arrow,
 html[dir="rtl"] .language-arrow { transform: scaleX(-1); }
 html[dir="rtl"] .language-chinese[open] .language-arrow { rotate: -90deg; }
 html[dir="rtl"] .guide,

@@ -2,8 +2,9 @@
 import { getLocale, LOCALES, onLocaleChange, setLocale } from '../i18n/index.js';
 import { localizeTree } from '../i18n/dom.js';
 import { audio } from '../audio/AudioManager.js';
+import { LANGUAGE_ICON } from './settingsIcons.js';
 
-/** Adds a settings button and language sheet without changing a running game. */
+/** Adds a globe-labelled settings button and language sheet without changing a running game. */
 export function installLanguagePicker(container) {
     const button = document.createElement('button');
     button.type = 'button';
@@ -11,7 +12,7 @@ export function installLanguagePicker(container) {
     button.setAttribute('data-language-settings', '');
     button.setAttribute('aria-haspopup', 'dialog');
     button.setAttribute('aria-controls', 'language-dialog');
-    button.innerHTML = 'Language <span aria-hidden="true">›</span>';
+    button.innerHTML = `<span class="settings-link-label"><span>Language</span>${LANGUAGE_ICON}</span><span class="settings-arrow" aria-hidden="true">›</span>`;
     container.append(button);
     const dialog = document.createElement('dialog');
     dialog.id = 'language-dialog';

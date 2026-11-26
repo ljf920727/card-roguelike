@@ -7,9 +7,10 @@ import "./settingsDialog.css";
 import '../i18n/layout.css';
 import { installLanguagePicker } from './LanguagePicker.js';
 import { localizeTree } from '../i18n/dom.js';
+import { SETTINGS_ICON } from './settingsIcons.js';
 
 /**
- * Opens global preferences above the originating menu, battle or co-op lobby.
+ * Marks settings entry points with a shared gear and opens preferences above their originating view.
  * @param {(theme: string) => void} setTheme Applies and saves the page's palette.
  */
 export function installSettings(setTheme) {
@@ -24,7 +25,7 @@ export function installSettings(setTheme) {
                 <input class="table-switch" type="checkbox" role="switch" id="settings-tutorial" aria-describedby="tutorial-setting-note">
                 <p id="tutorial-setting-note">Guide my next solo run. Turns off when I finish or skip the tutorial.</p></div>
             <button type="button" class="menu-button settings-link settings-sound" data-sound-settings aria-haspopup="dialog">
-                Sound <span aria-hidden="true">›</span></button>
+                Sound <span class="settings-arrow" aria-hidden="true">›</span></button>
         </div>`;
     document.body.append(dialog);
     installLanguagePicker(dialog.querySelector('.preferences-body'));
@@ -44,9 +45,12 @@ export function installSettings(setTheme) {
     dialog.addEventListener("keydown", event => {
         if (event.key === "Escape") event.stopPropagation();
     });
-    document.querySelectorAll("[data-game-settings]").forEach(button => button.addEventListener("click", () => {
-        light.checked = document.documentElement.style.colorScheme === "light";
-        tutorial.checked = getTutorialEnabled();
-        dialog.showModal();
-    }));
+    document.querySelectorAll("[data-game-settings]").forEach(button => {
+        button.insertAdjacentHTML('afterbegin', SETTINGS_ICON);
+        button.addEventListener("click", () => {
+            light.checked = document.documentElement.style.colorScheme === "light";
+            tutorial.checked = getTutorialEnabled();
+            dialog.showModal();
+        });
+    });
 }
