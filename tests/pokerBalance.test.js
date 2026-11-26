@@ -1,3 +1,4 @@
+/** Verifies poker hand effects and shield balance across turns and encounters. */
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createInitialState } from "../src/gameState.js";
@@ -12,8 +13,15 @@ test("high card scales by 1.5 with a hard cap of 15 including aces", () => {
     }
 });
 
+test("five identical twos qualify as flush five ahead of five of a kind and flush", () => {
+    const hand = Array.from({ length: 5 }, () => ({ rank: "2", suit: "clubs" }));
+    assert.equal(evaluatePokerHand(hand).name, "FLUSH_FIVE");
+});
+
 test("poker hands have stronger full-turn effects", () => {
     const expected = {
+        FLUSH_FIVE: [["attack", 250], ["heal", 30]],
+        FIVE_OF_A_KIND: [["attack", 110]],
         ROYAL_FLUSH: [["attack", 100]],
         STRAIGHT_FLUSH: [["attack", 75], ["heal", 25]],
         FOUR_OF_A_KIND: [["attack", 65]],

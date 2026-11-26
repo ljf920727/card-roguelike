@@ -1,8 +1,11 @@
+/** Classifies poker selections and defines the combat effects for each hand. */
 import { getCardValue } from "../BlackjackSystem.js";
 
 const RANK_ORDER = { J: 11, Q: 12, K: 13, A: 14 };
 
 export const POKER_HANDS = [
+    { name: "FLUSH_FIVE", label: "Flush five", needs: "5 of one rank and suit", actions: [{ type: "attack", amount: 250 }, { type: "heal", amount: 30 }] },
+    { name: "FIVE_OF_A_KIND", label: "Five of a kind", needs: "5 of one rank", actions: [{ type: "attack", amount: 110 }] },
     { name: "ROYAL_FLUSH", label: "Royal flush", needs: "10, J, Q, K, A of one suit", actions: [{ type: "attack", amount: 100 }] },
     { name: "STRAIGHT_FLUSH", label: "Straight flush", needs: "5 in a row, one suit", actions: [{ type: "attack", amount: 75 }, { type: "heal", amount: 25 }] },
     { name: "FOUR_OF_A_KIND", label: "Four of a kind", needs: "4 of one rank", actions: [{ type: "attack", amount: 65 }] },
@@ -26,6 +29,11 @@ function isStraight(cards) {
     return ranks.join() === "2,3,4,5,14" || ranks[4] - ranks[0] === 4;
 }
 
+/**
+ * Finds the highest qualifying hand, including duplicate cards from deck upgrades.
+ * @param {Object[]} cards Up to five playable cards.
+ * @returns {Object|null} The hand and its base actions, or null for an empty selection.
+ */
 export function evaluatePokerHand(cards) {
     if (!cards.length) return null;
     const counts = Object.values(cards.reduce((tally, card) => {
@@ -37,7 +45,9 @@ export function evaluatePokerHand(cards) {
     const ranks = cards.map(card => rankOrder(card.rank));
 
     let name = "HIGH_CARD";
-    if (straight && flush) {
+    if (counts[0] === 5) {
+        name = flush ? "FLUSH_FIVE" : "FIVE_OF_A_KIND";
+    } else if (straight && flush) {
         name = ranks.includes(14) && ranks.includes(10) ? "ROYAL_FLUSH" : "STRAIGHT_FLUSH";
     } else if (counts[0] === 4) {
         name = "FOUR_OF_A_KIND";

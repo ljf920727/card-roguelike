@@ -1,8 +1,9 @@
+/** Checks solo poker previews, played-card effects and turn resource costs. */
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createInitialState, resetGameState } from "../src/gameState.js";
 import { createDeck } from "../src/systems/DeckSystem.js";
-import { playSelectedCards, PLAY_COST } from "../src/systems/PlaySystem.js";
+import { evaluatePlay, playSelectedCards, PLAY_COST } from "../src/systems/PlaySystem.js";
 import { beginEndTurn, completeEndTurn } from "../src/systems/TurnSystem.js";
 
 function pokerState() {
@@ -33,6 +34,19 @@ for (const count of [1, 2, 5]) {
         assert.equal(new Set(cards.map(card => card.id)).size, 52);
     });
 }
+
+test("selecting the fifth ace upgrades four of a kind to five of a kind", () => {
+    const state = pokerState();
+    const suits = ["spades", "hearts", "hearts", "diamonds", "clubs"];
+    state.hand.forEach((card, index) => Object.assign(card, { rank: "A", suit: suits[index], selected: true }));
+    for (const [count, name, damage] of [[4, "FOUR_OF_A_KIND", 65], [5, "FIVE_OF_A_KIND", 110]]) {
+        const preview = evaluatePlay(state, state.hand.slice(0, count));
+        assert.equal(preview.name, name);
+        assert.deepEqual(preview.actions, [{ type: "attack", amount: damage }]);
+    }
+    assert.equal(playSelectedCards(state).allowed, true);
+    assert.equal(state.enemy.hp, state.enemy.maxHp - 110);
+});
 
 test("poker cannot be played with only 1 energy left", () => {
     const state = pokerState();
