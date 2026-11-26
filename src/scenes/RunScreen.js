@@ -1,7 +1,7 @@
 /** Shows the between-fight dialog: the reward choice, the Curse choice, card and Joker pickers, and the shop. */
-import { sourceLabel, setLabel, setText } from '../i18n/dom.js';
+import { setText } from '../i18n/dom.js';
 
-import { createCardElement } from "../components/cardElement.js";
+import { createCardElement, createDeckChoice } from "../components/cardElement.js";
 import { deckCards, getJinx, DECK_EDITS } from "../systems/DeckSystem.js";
 import { sortDeckPickerCards } from './deckPickerOrder.js';
 import { getJoker, jokerSlots, sellPrice } from "../systems/JokerSystem.js";
@@ -241,12 +241,7 @@ export class RunScreen {
             setText(this.subtitle, `${cards.length} eligible ${cards.length === 1 ? "card" : "cards"} in your deck.`);
             grid.className = "deck-picker";
             cards.forEach(card => {
-                const button = document.createElement("button");
-                button.type = "button";
-                button.className = "deck-card";
-                const face = createCardElement(card);
-                button.append(face);
-                setLabel(button, 'aria-label', sourceLabel(face, 'aria-label'));
+                const button = createDeckChoice(card);
                 const jinx = getJinx(card);
                 if (jinx) {
                     button.classList.add("jinx-choice");

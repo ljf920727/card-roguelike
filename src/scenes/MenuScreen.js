@@ -4,6 +4,7 @@ import { setText, setLabel } from '../i18n/dom.js';
 import { DIFFICULTIES, getDifficulty } from "../systems/DifficultySystem.js";
 import { getTutorialEnabled } from "../tutorialPreferences.js";
 import { DifficultyPicker } from "../components/DifficultyPicker.js";
+import { CardLab } from "./CardLab.js";
 import { openDialogAtStart } from '../components/dialogNavigation.js';
 import { getPreferredDifficulty, savePreferredDifficulty } from "../difficultyPreferences.js";
 
@@ -21,6 +22,13 @@ export class MenuScreen {
         this.newRunButton = document.getElementById("menu-new-run");
         this.rulesDialog = document.getElementById("rules-dialog");
         this.gameRegions = [document.querySelector(".topbar"), document.querySelector(".layout")];
+        this.lab = new CardLab(battle);
+        document.getElementById("menu-lab").addEventListener("click", () => {
+            this.setPlayOptions(false);
+            this.menu.hidden = true;
+            this.gameRegions.forEach(region => { region.inert = false; });
+            this.lab.open(this.difficulty.value);
+        });
         this.difficulty = new DifficultyPicker(document.getElementById("menu-difficulty"), getPreferredDifficulty(), value => {
             savePreferredDifficulty(value);
             this.refresh();
@@ -57,7 +65,7 @@ export class MenuScreen {
         document.getElementById("menu-rules").addEventListener("click", () => openDialogAtStart(this.rulesDialog));
         document.getElementById("menu-button").addEventListener("click", () => this.show());
         document.addEventListener("keydown", event => {
-            if (event.key !== "Escape" || this.rulesDialog.open || this.battle.runScreen.isOpen()) return;
+            if (event.key !== "Escape" || document.querySelector("dialog[open]")) return;
             if (!this.difficultyOptions.hidden) {
                 event.preventDefault();
                 this.setDifficultyOptions(false);
@@ -110,9 +118,10 @@ export class MenuScreen {
 
     /** Opens the main menu with the split button collapsed and focus on the primary action. */
     show() {
+        this.menu.hidden = false;
+        if (this.battle.lab) this.lab.close();
         this.setPlayOptions(false);
         this.refresh();
-        this.menu.hidden = false;
         this.battle.runScreen.sync();
         this.battle.guide.refresh();
         this.gameRegions.forEach(region => { region.inert = true; });

@@ -5,6 +5,22 @@ import { audio } from '../audio/AudioManager.js';
 import { LANGUAGE_ICON } from './settingsIcons.js';
 import { openDialogAtStart } from './dialogNavigation.js';
 
+/** Builds a raised settings choice with a native radio and the shared selection mark. */
+export function createPreferenceChoice(group, value, name) {
+    const label = document.createElement('label');
+    label.className = 'menu-button language-choice';
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = group;
+    input.value = value;
+    const check = document.createElement('span');
+    check.className = 'language-check';
+    check.setAttribute('aria-hidden', 'true');
+    check.textContent = '✓';
+    label.append(input, name, check);
+    return label;
+}
+
 /** Adds a globe-labelled settings button and language sheet without changing a running game. */
 export function installLanguagePicker(container) {
     const button = document.createElement('button');
@@ -33,22 +49,13 @@ export function installLanguagePicker(container) {
     chinese.innerHTML = '<summary class="menu-button"><span lang="zh" translate="no">中文</span><span class="language-arrow" aria-hidden="true">›</span></summary><div class="language-variants"></div>';
     const inputs = new Map();
     for (const locale of LOCALES) {
-        const label = document.createElement('label');
-        label.className = 'menu-button language-choice';
-        const input = document.createElement('input');
-        input.type = 'radio';
-        input.name = 'game-language';
-        input.value = locale.id;
         const name = document.createElement('span');
         name.lang = locale.id;
         name.dir = 'auto';
         name.setAttribute('translate', 'no');
         name.textContent = locale.name;
-        const check = document.createElement('span');
-        check.className = 'language-check';
-        check.setAttribute('aria-hidden', 'true');
-        check.textContent = '✓';
-        label.append(input, name, check);
+        const label = createPreferenceChoice('game-language', locale.id, name);
+        const input = label.querySelector('input');
         (locale.id.startsWith('zh') ? chinese.querySelector('.language-variants') : options).append(label);
         inputs.set(locale.id, input);
         input.addEventListener('change', () => {

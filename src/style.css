@@ -1475,7 +1475,7 @@ button {
     filter: brightness(1.08);
 }
 
-.offer:disabled {
+.offer:disabled, .deck-card:disabled {
     opacity: 0.45;
     cursor: default;
 }
@@ -1521,7 +1521,7 @@ button {
     transition: transform 120ms ease;
 }
 
-.deck-card:hover,
+.deck-card:hover:enabled,
 .deck-card:focus-visible {
     transform: translateY(-4px);
 }

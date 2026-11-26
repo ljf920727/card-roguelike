@@ -1,4 +1,13 @@
 {
+  "Card Lab": "Taller de cartas",
+  "Trial setup": "Configurar prueba",
+  "Choose a rank to draw. Repeats are allowed.": "Elige un valor para robar una carta. Puedes repetir cartas.",
+  "Suit": "Palo",
+  "Remove selected cards": "Quitar cartas seleccionadas",
+  "Replay hand": "Repetir mano",
+  "Starting HP": "Vida inicial",
+  "Remove cards before reducing the hand size.": "Quita cartas antes de reducir el tamaño de la mano.",
+  "Start trial with this hand": "Probar con esta mano",
   "Settings": "Ajustes",
   "Close": "Cerrar",
   "Back": "Volver",

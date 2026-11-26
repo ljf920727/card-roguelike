@@ -1,5 +1,5 @@
 /** Builds small HTML playing cards for blackjack rows, reward pickers and the shop. */
-import { setLabel, setText } from '../i18n/dom.js';
+import { setLabel, setText, sourceLabel } from '../i18n/dom.js';
 
 import { getJinx, describeCard } from "../systems/DeckSystem.js";
 export const SUIT_SYMBOLS = { hearts: "♥", diamonds: "♦", clubs: "♣", spades: "♠", jinx: "✖" };
@@ -46,6 +46,17 @@ export function createCardElement(card, faceDown = false) {
         element.append(name);
     }
     return element;
+}
+
+/** Builds a keyboard-selectable deck card with the face's localized accessible name. */
+export function createDeckChoice(card) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "deck-card";
+    const face = createCardElement(card);
+    button.append(face);
+    setLabel(button, "aria-label", sourceLabel(face, "aria-label"));
+    return button;
 }
 
 /** Returns a compact source label for a playing card or a Jinx. */

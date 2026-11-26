@@ -1,4 +1,13 @@
 {
+  "Card Lab": "مختبر الأوراق",
+  "Trial setup": "إعداد التجربة",
+  "Choose a rank to draw. Repeats are allowed.": "اختر رتبة لسحب ورقة. يمكنك سحب الورقة نفسها عدة مرات.",
+  "Suit": "نوع الورقة",
+  "Remove selected cards": "إزالة الأوراق المحددة",
+  "Replay hand": "إعادة تجربة اليد",
+  "Starting HP": "الصحة الأولية",
+  "Remove cards before reducing the hand size.": "أزل بعض الأوراق قبل تقليل حجم اليد.",
+  "Start trial with this hand": "ابدأ التجربة بهذه اليد",
   "Settings": "الإعدادات",
   "Close": "إغلاق",
   "Back": "رجوع",

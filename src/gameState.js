@@ -6,25 +6,25 @@ import { JOKER_SLOTS } from "./systems/JokerSystem.js";
 import { getDifficulty } from "./systems/DifficultySystem.js";
 
 /**
- * Creates an independent run with a shuffled deck, the first floor's fights and an opening hand.
- * @param {Object} [options] Tutorial mode and the difficulty locked for this run.
+ * Creates a run with an opening hand, or an empty practice table for a chosen encounter.
+ * @param {Object} [options] Tutorial, difficulty, and optional practice enemy and floor.
  * @returns {Object} Initial player, enemy, run, deck and hand data.
  */
-export function createInitialState({ tutorial = false, difficulty = "normal" } = {}) {
+export function createInitialState({ tutorial = false, difficulty = "normal", practiceEnemy = null, floor = 1 } = {}) {
     const preset = getDifficulty(tutorial ? "normal" : difficulty);
-    const encounters = createEncounters(1, tutorial ? "Goblin" : null);
+    const encounters = practiceEnemy ? [practiceEnemy] : createEncounters(floor, tutorial ? "Goblin" : null);
     const state = {
         phase: "player",
-        mode: "blackjack",
+        mode: practiceEnemy ? "poker" : "blackjack",
         result: null,
         lastAction: "",
         player: { hp: 100, maxHp: 100, shield: 0, shieldOld: 0, energy: 3, maxEnergy: 3, handSize: HAND_SIZE },
         enemy: createEnemy(encounters[0], preset.id),
         // gold holds the casino chips won at blackjack.
-        run: { floor: 1, fight: 1, turn: 1, gold: 0, encounters, rules: FLOORS[0].rules, jokers: [], jokerSlots: JOKER_SLOTS,
+        run: { floor, fight: 1, turn: 1, gold: 0, encounters, rules: FLOORS[floor - 1].rules, jokers: [], jokerSlots: JOKER_SLOTS,
             curses: [], enemyHpScale: 1, difficulty: preset.id },
         flags: { freeMulliganUsed: false, insuranceUsed: false },
-        drawPile: shuffle(createDeck()),
+        drawPile: practiceEnemy ? [] : shuffle(createDeck()),
         discardPile: [],
         hand: [],
         usedCards: [],
@@ -36,6 +36,7 @@ export function createInitialState({ tutorial = false, difficulty = "normal" } =
         tutorial: null,
         selection: { cards: [], value: 0, results: [], primaryAction: null },
     };
+    if (practiceEnemy) return state;
     state.lastAction = `A new run begins in ${FLOORS[0].name}. ${withArticle(state.enemy.name)} blocks the way.`;
     if (tutorial) setupTutorial(state);
     addEncounterJinxes(state);

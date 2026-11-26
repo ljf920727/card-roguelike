@@ -1,4 +1,13 @@
 {
+  "Card Lab": "Pagawaan ng baraha",
+  "Trial setup": "Ayusin ang pagsubok",
+  "Choose a rank to draw. Repeats are allowed.": "Pumili ng ranggo para bumunot. Maaaring ulitin ang parehong baraha.",
+  "Suit": "Palo",
+  "Remove selected cards": "Alisin ang mga napiling baraha",
+  "Replay hand": "Ulitin ang kamay",
+  "Starting HP": "Panimulang HP",
+  "Remove cards before reducing the hand size.": "Mag-alis muna ng baraha bago bawasan ang laki ng kamay.",
+  "Start trial with this hand": "Simulan ang pagsubok gamit ang kamay na ito",
   "Settings": "Mga setting",
   "Close": "Isara",
   "Back": "Bumalik",

@@ -1,4 +1,18 @@
-/** Shared health indicators, rare-hand selection effects and card faces for both battle screens. */
+/** Shared table fields, health indicators, rare-hand effects and card faces for both battle screens. */
+.table-field {
+    width: 100%;
+    min-width: 0;
+    padding: 12px 14px;
+    border: 1px solid var(--panel-line);
+    border-radius: 8px;
+    background: var(--panel);
+    color: var(--text);
+    font: 1rem var(--ui-font);
+    box-shadow: inset 0 2px 4px #0001;
+    transition: border-color 160ms;
+}
+.table-field:focus { border-color: var(--rim); }
+
 .hearts {
     position: relative;
     display: flex;

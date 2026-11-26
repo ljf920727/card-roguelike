@@ -168,7 +168,7 @@ export class BattleScene {
       if (this.handCards && !this.handCards.has(card)) arriving.push(cardView);
     });
     this.handCards = new WeakSet(this.state.hand);
-    if (this.runStarted && this.state.mode === 'poker' && document.getElementById('menu').hidden) {
+    if ((this.runStarted || this.lab) && this.state.mode === 'poker' && document.getElementById('menu').hidden) {
       arriving.forEach((view, index) => { void audio.play('deal', {delay: index * DEAL_STAGGER_MS / 1000}); });
     }
     if (arriving.length && !matchMedia('(prefers-reduced-motion: reduce)').matches) this.dealCards(arriving);
@@ -213,6 +213,10 @@ export class BattleScene {
 
   /** Resolves the active primary action and sounds only a successfully played poker hand. */
   onPrimaryAction() {
+    if (this.lab && this.state.result) {
+      this.lab.replay();
+      return;
+    }
     if (this.state.result === 'victory' && !isFinalFight(this.state)) {
       const wasGuided = isTutorialActive(this.state);
       if (!startNextFight(this.state)) {
@@ -254,6 +258,7 @@ export class BattleScene {
    */
   afterAction(pokerHit) {
     this.refreshBattle(pokerHit);
+    if (this.lab) return;
     const {phase, result, hand, player} = this.state;
     if (tutorialHoldsTurn(this.state) || this.autoEndTimeout || phase !== 'player' || result || isRoundActive(this.state)) return;
     if (hand.length && player.energy > 0) return;
@@ -304,13 +309,17 @@ export class BattleScene {
       cardView.input.setAttribute('aria-pressed', String(cardView.cardData.selected));
     });
     this.refreshModeToggle();
-    this.guide.refresh();
+    if (this.lab) this.lab.refresh();
+    else this.guide.refresh();
     this.resize();
   }
 
+  /** Presents the trial result or the campaign's next progression step. */
   describeFightEnd() {
     const {enemy, run, reward, curseChoice, shop} = this.state;
     const color = this.state.result === 'victory' ? this.theme.heal : this.theme.danger;
+    if (this.lab) return {result: this.state.result === 'victory' ? `${enemy.name} defeated` : 'You were defeated',
+      color, primaryLabel: 'Replay hand', primaryEnabled: true, feedback: ''};
     if (this.state.result === 'defeat') {
       return {
         result: 'You were defeated', color, primaryLabel: 'New run', primaryEnabled: true,
@@ -335,10 +344,13 @@ export class BattleScene {
     };
   }
 
+  /** Describes the current poker selection and its available action. */
   describePoker(selectedCards, result) {
     const validation = validatePlay(this.state);
     const count = selectedCards.length;
     if (!count) {
+      if (this.lab) return {result: 'Pick your cards', feedback: 'Select 1 to 5 cards to make a poker hand.',
+        primaryLabel: 'Play cards', primaryEnabled: false};
       const prompts = {
         intro: ['3 energy per turn', 'Read the tip, then choose Let\'s go.'],
         pair: ['Select both 7s', `A pair grants 25 shield for ${PLAY_COST} energy.`],
@@ -359,7 +371,8 @@ export class BattleScene {
       selection: `${count} ${count === 1 ? 'card' : 'cards'} selected`,
       result: `${result.label}: ${describePokerActions(result.actions)}`,
       color: this.theme[ACTION_COLORS[result.actions[0]?.type]],
-      feedback: validation.reason || `Costs ${validation.cost} energy. Only the played cards are discarded.`,
+      feedback: this.lab && this.state.player.energy < validation.cost ? 'End turn' :
+          validation.reason || `Costs ${validation.cost} energy. Only the played cards are discarded.`,
       primaryLabel: 'Play cards',
       primaryEnabled: validation.allowed,
     };
@@ -509,11 +522,43 @@ export class BattleScene {
     if (!outcome.allowed) return;
     this.refreshBattle();
     if (this.state.phase === 'finished') return;
+    this.schedulePlayerTurn();
+  }
+
+  /** Finishes the enemy phase once its input lock expires. */
+  schedulePlayerTurn() {
     this.turnTimeout = setTimeout(() => {
       this.turnTimeout = null;
-      completeEndTurn(this.state);
+      completeEndTurn(this.state, !this.lab);
       this.refreshBattle();
     }, ENEMY_PHASE_MS);
+  }
+
+  /** Suspends campaign turn timers while the same table presents an independent trial. */
+  openLab(lab) {
+    this.pausedRun = {state: this.state, autoEnd: Boolean(this.autoEndTimeout), enemyTurn: Boolean(this.turnTimeout)};
+    this.lab = lab;
+  }
+
+  /** Cancels work for the departing encounter before binding the table to another state. */
+  bindEncounter(state) {
+    clearTimeout(this.turnTimeout);
+    clearTimeout(this.autoEndTimeout);
+    this.turnTimeout = this.autoEndTimeout = null;
+    this.soundSnapshot = this.handCards = this.finishingEnemy = null;
+    for (const row of [this.ui['hp-hearts'], this.ui['enemy-hearts']]) delete row.dataset.maxHp;
+    audio.stop();
+    this.state = state;
+  }
+
+  /** Restores the exact campaign hand and resumes any suspended turn transition. */
+  closeLab() {
+    const {state, autoEnd, enemyTurn} = this.pausedRun;
+    this.lab = this.pausedRun = null;
+    this.bindEncounter(state);
+    if (enemyTurn) this.schedulePlayerTurn();
+    if (autoEnd) this.afterAction();
+    else this.refreshBattle();
   }
 
   /** Starts a solo run using the guided opening preference and the selected difficulty. */
@@ -545,7 +590,7 @@ export class BattleScene {
    * @param {{hand: string, damage: number}} [pokerHit] Rare attack resolved by this action.
    */
   refreshBattle(pokerHit) {
-    ensureRewards(this.state);
+    if (!this.lab) ensureRewards(this.state);
     this.ui.table.dataset.mode = this.state.mode;
     this.refreshBlackjack();
     this.createCards();
@@ -556,7 +601,9 @@ export class BattleScene {
     setText(this.ui['last-action'], this.state.lastAction);
     this.resize();
     const finisher = Boolean(pokerHit && this.state.result === 'victory');
-    if (finisher && impact) {
+    if (this.lab) {
+      gameMusic.setScene(this.state.result ? null : 'battle');
+    } else if (finisher && impact) {
       const enemy = this.state.enemy;
       this.finishingEnemy = enemy;
       gameMusic.setScene(null);
@@ -567,7 +614,7 @@ export class BattleScene {
     } else if (this.finishingEnemy !== this.state.enemy) {
       this.runScreen.sync();
     }
-    this.guide.refresh();
+    if (!this.lab) this.guide.refresh();
     const snapshot = soloSoundSnapshot(this.state);
     playSoundCues(audio, soloSoundCues(this.soundSnapshot, snapshot), this.soundDealDelay, finisher);
     this.soundSnapshot = snapshot;
@@ -662,7 +709,7 @@ export class BattleScene {
       className: 'muted',
       textContent: ''
     })]));
-    if (!jokers.length) setText(this.ui['joker-list'].firstElementChild, 'Win fights to earn Jokers.');
+    if (!jokers.length) setText(this.ui['joker-list'].firstElementChild, this.lab ? 'None' : 'Win fights to earn Jokers.');
     setText(this.ui['draw-text'], `${this.state.drawPile.length} cards in draw pile`);
     setText(this.ui['discard-text'], `${this.state.discardPile.length + this.state.usedCards.length} cards in discard`);
     setText(this.ui['intent-title'], `${this.state.enemy.name}'s next move`);

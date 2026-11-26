@@ -1,4 +1,13 @@
 {
+  "Card Lab": "Card Lab",
+  "Trial setup": "Trial setup",
+  "Choose a rank to draw. Repeats are allowed.": "Choose a rank to draw. Repeats are allowed.",
+  "Suit": "Suit",
+  "Remove selected cards": "Remove selected cards",
+  "Replay hand": "Replay hand",
+  "Starting HP": "Starting HP",
+  "Remove cards before reducing the hand size.": "Remove cards before reducing the hand size.",
+  "Start trial with this hand": "Start trial with this hand",
   "Settings": "Settings",
   "Close": "Close",
   "Back": "Back",

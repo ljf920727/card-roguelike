@@ -1,3 +1,4 @@
+/** Exercises solo combat transitions with campaign and manually dealt hands. */
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createInitialState } from "../src/gameState.js";
@@ -5,9 +6,26 @@ import { createDeck } from "../src/systems/DeckSystem.js";
 import { evaluatePlay, mulligan, playSelectedCards, validatePlay } from "../src/systems/PlaySystem.js";
 import { beginEndTurn, completeEndTurn } from "../src/systems/TurnSystem.js";
 import { applyAction, forecastIntent } from "../src/systems/CombatSystem.js";
-import { createEnemy, rollIntent } from "../src/systems/RunSystem.js";
+import { createEnemy, rollIntent, FLOORS } from "../src/systems/RunSystem.js";
 
 const card = (rank, suit, id, extra = {}) => ({ id, rank, suit, selected: false, ...extra });
+
+test("practice uses the chosen encounter and leaves even available discards undrawn next turn", () => {
+    const floor = FLOORS[3];
+    const state = createInitialState({practiceEnemy: floor.boss, floor: 4, difficulty: "hard"});
+    assert.equal(state.enemy.name, floor.boss.name);
+    assert.equal(state.enemy.maxHp, createEnemy(floor.boss, "hard").maxHp);
+    assert.equal(state.run.rules, floor.rules);
+    assert.equal(state.mode, "poker");
+    assert.equal(state.hand.length + state.drawPile.length, 0);
+    state.discardPile.push(card("A", "hearts", 1));
+    state.player.energy = 0;
+    assert.equal(beginEndTurn(state).allowed, true);
+    assert.equal(completeEndTurn(state, false), true);
+    assert.equal(state.player.energy, state.player.maxEnergy);
+    assert.equal(state.hand.length, 0);
+    assert.equal(state.discardPile.length, 1);
+});
 
 function setup(hand, intent = { type: "attack", value: 10 }) {
     const state = createInitialState();

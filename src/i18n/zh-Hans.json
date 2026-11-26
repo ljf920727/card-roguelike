@@ -1,4 +1,13 @@
 {
+  "Card Lab": "试牌室",
+  "Trial setup": "试验设置",
+  "Choose a rank to draw. Repeats are allowed.": "点击点数抽牌，可以重复抽同一张牌。",
+  "Suit": "花色",
+  "Remove selected cards": "移除所选牌",
+  "Replay hand": "重试这手牌",
+  "Starting HP": "初始生命",
+  "Remove cards before reducing the hand size.": "请先移除多出的牌，再减少手牌上限。",
+  "Start trial with this hand": "用这手牌开始试验",
   "Settings": "设置",
   "Close": "关闭",
   "Back": "返回",

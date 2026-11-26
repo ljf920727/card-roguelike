@@ -1,4 +1,13 @@
 {
+  "Card Lab": "Atelier de cartes",
+  "Trial setup": "Réglages de l’essai",
+  "Choose a rank to draw. Repeats are allowed.": "Choisissez une valeur pour piocher. Les doublons sont permis.",
+  "Suit": "Couleur",
+  "Remove selected cards": "Retirer les cartes choisies",
+  "Replay hand": "Rejouer cette main",
+  "Starting HP": "PV de départ",
+  "Remove cards before reducing the hand size.": "Retirez des cartes avant de réduire la taille de la main.",
+  "Start trial with this hand": "Commencer l’essai avec cette main",
   "Settings": "Paramètres",
   "Close": "Fermer",
   "Back": "Retour",
