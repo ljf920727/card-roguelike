@@ -83,7 +83,11 @@ export class AudioManager extends EventTarget {
     /** Warms the small sample bank after the first gesture. */
     async preload() {
         if (!await this.unlock()) return;
-        await Promise.all([...new Set(Object.values(SOUNDS).flatMap(sound => sound.files ?? []))].map(file => this.load(file)));
+        const samples = Object.values(SOUNDS).flatMap(sound => [
+            ...(sound.files ?? []),
+            ...Object.values(sound.variants ?? {}).map(variant => variant.file),
+        ]);
+        await Promise.all([...new Set(samples)].map(file => this.load(file)));
     }
 
     /** Saves preferences and immediately silences both active and pending cues when muted. */
@@ -111,9 +115,10 @@ export class AudioManager extends EventTarget {
         }
     }
 
-    /** Connects one voice with a short envelope to prevent clicks and release audio nodes. */
+    /** Keeps the card play and victory audible even during overlapping deal, heal and shield sounds. */
     voice(id, source, start, duration, gain) {
-        if (this.voices.size >= MAX_VOICES) return;
+        const limit = id === 'victory' ? MAX_VOICES : id === 'play' ? MAX_VOICES - 1 : MAX_VOICES - 2;
+        if (this.voices.size >= limit) return;
         const envelope = this.context.createGain();
         envelope.gain.setValueAtTime(0, start);
         envelope.gain.linearRampToValueAtTime(gain, start + Math.min(0.008, duration / 4));
@@ -134,10 +139,10 @@ export class AudioManager extends EventTarget {
     /**
      * Plays a cue only while audible; delayed sounds are cancelled by mute, hide or reset.
      * @param {string} id Catalog cue name.
-     * @param {{delay?: number}} [options] Delay in seconds, aligned to card animations.
+     * @param {{delay?: number, variant?: string}} [options] Delay in seconds and optional named sample.
      * @returns {Promise<boolean>} Whether a playable cue was scheduled.
      */
-    async play(id, { delay = 0 } = {}) {
+    async play(id, { delay = 0, variant } = {}) {
         const sound = SOUNDS[id];
         if (!sound || this.muted || this.volume === 0 || globalThis.document?.hidden || this.context?.state !== 'running') return false;
         this.cueRequests++;
@@ -147,9 +152,11 @@ export class AudioManager extends EventTarget {
         const requested = performance.now();
         const start = this.context.currentTime + delay;
         if (sound.files) {
-            const variant = this.variants.get(id) ?? 0;
-            this.variants.set(id, variant + 1);
-            const buffer = await this.load(sound.files[variant % sound.files.length]);
+            const named = sound.variants?.[variant];
+            const next = this.variants.get(id) ?? 0;
+            if (!named) this.variants.set(id, next + 1);
+            const defaultFile = sound.files[next % sound.files.length];
+            const buffer = await this.load(named?.file ?? defaultFile);
             if (!buffer || generation !== this.generation || cueGeneration !== this.cueGenerations.get(id) || this.muted || globalThis.document?.hidden ||
                 this.context.state !== 'running' || performance.now() - requested > delay * 1000 + MAX_LATENESS_MS) return false;
             const source = this.context.createBufferSource();
@@ -157,7 +164,7 @@ export class AudioManager extends EventTarget {
             source.playbackRate.value = sound.rate ?? 1;
             const onset = Math.max(start, this.context.currentTime);
             const duration = Math.min(sound.duration ?? Infinity, buffer.duration / source.playbackRate.value);
-            this.voice(id, source, onset, duration, sound.gain);
+            this.voice(id, source, onset, duration, named?.gain ?? sound.gain);
             if (id === 'victory' || id === 'defeat' || id === 'boss') {
                 this.dispatchEvent(new CustomEvent('music-hold', { detail: onset + duration }));
             }

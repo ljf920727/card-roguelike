@@ -57,11 +57,17 @@ test('co-op flush five displays fixed jackpot values and caps the resolved resou
     start(room, host, guest);
     host.hp = 50;
     host.hand.forEach(card => Object.assign(card, { rank: 'A', suit: '♥' }));
-    assert.equal(handleAction(room, host, { type: 'poker', cardIds: host.hand.map(card => card.id) }), null);
+    const calls = [];
+    const hp = room.enemy.hp;
+    const onPokerPlay = (hand, lethal, hit) => calls.push([hand, lethal, room.enemy.hp, room.result, hit]);
+    assert.notEqual(handleAction(room, guest, { type: 'poker', cardIds: [] }, onPokerPlay), null);
+    assert.equal(handleAction(room, host, { type: 'poker', cardIds: host.hand.map(card => card.id) }, onPokerPlay), null);
+    assert.deepEqual(calls, [['FLUSH_FIVE', true, hp, null, { hand: 'FLUSH_FIVE', damage: 777 }]]);
     assert.equal(room.result, 'victory');
     assert.equal(room.enemy.hp, 0);
     assert.equal(host.hp, 100);
     assert.equal(host.shield, 40);
+    assert.equal(getPublicState(room, guest).winningHand, 'FLUSH_FIVE');
     assert.ok(room.log.some(entry => entry.includes('777 damage, 77 healing, 77 shield')));
 });
 

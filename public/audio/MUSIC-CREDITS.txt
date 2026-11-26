@@ -16,3 +16,10 @@ https://creativecommons.org/licenses/by/4.0/
 
 Both recordings are bundled as supplied. Game playback loops them, adjusts
 their relative levels and applies fades when the scene changes.
+
+Battle selection percussion
+Virtuosity Drums by Versilian Studios and Karoryfer Samples, performed by Austin McMahon.
+Source: https://github.com/sfzinstruments/virtuosity_drums
+License: CC0 1.0 Universal (https://creativecommons.org/publicdomain/zero/1.0/).
+Kick, snare and closed hi-hat samples were trimmed and arranged to match
+the attacks and dynamics of the bundled Bass Walker recording.

@@ -1,5 +1,5 @@
 /** Authoritative two-player cooperative rules, shared by the Durable Object and the tests. */
-import { describePokerActions, evaluatePokerHand } from '../src/systems/rules/PokerRule.js';
+import { describePokerActions, evaluatePokerHand, isLethalPokerHand, rarePokerHit } from '../src/systems/rules/PokerRule.js';
 import { getDifficulty, scaleEnemyStat } from '../src/systems/DifficultySystem.js';
 
 const SUITS = ['♠', '♥', '♣', '♦'];
@@ -122,6 +122,7 @@ export function getPublicState(room, viewer) {
     roomId: room.id,
     status: room.status,
     result: room.result,
+    winningHand: room.winningHand ?? null,
     difficulty: room.difficulty,
     turn: room.turn,
 
@@ -269,6 +270,7 @@ export function leaveRoom(room, player) {
 function startGame(room) {
   room.status = 'playing';
   room.result = null;
+  room.winningHand = null;
   room.turn = 1;
   room.active = 0;
 
@@ -526,8 +528,15 @@ function resolveBlackjack(room, player) {
   if (player.hp <= 0 && room.status === 'playing') nextTurn(room);
 }
 
-/** Validates a requested action against the authoritative room and private hand. */
-export function handleAction(room, player, data) {
+/**
+ * Validates a room action and announces an accepted poker play before applying its effects.
+ * @param {Object} room Authoritative room state.
+ * @param {Object} player Seat submitting the request.
+ * @param {Object} data Requested action and selected card IDs.
+ * @param {(hand: string, lethal: boolean, hit?: {hand: string, damage: number}) => void} [onPokerPlay] Live notification for connected seats.
+ * @returns {string|null} Rejection reason, or null when accepted.
+ */
+export function handleAction(room, player, data, onPokerPlay) {
   if (!isActivePlayer(room, player)) {
     return 'Not your turn or waiting for opponent';
   }
@@ -577,6 +586,8 @@ export function handleAction(room, player, data) {
       return 'Invalid Poker hand';
     }
 
+    const lethal = isLethalPokerHand(evaluation, room.enemy.hp);
+    onPokerPlay?.(evaluation.name, lethal, rarePokerHit(evaluation));
     player.energy = 0;
 
     applyActions(
@@ -585,6 +596,7 @@ export function handleAction(room, player, data) {
       evaluation.actions
     );
 
+    if (room.result === 'victory') room.winningHand = evaluation.name;
     const played = `${player.name} plays ${evaluation.label}.`;
     const effects = evaluation.fixedAmounts ? ` ${describePokerActions(evaluation.actions, { separator: ', ' })}.` : '';
     addLog(room, played + effects);

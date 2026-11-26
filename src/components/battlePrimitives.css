@@ -1,5 +1,6 @@
-/** Shared glass hearts and playing-card faces for solo and cooperative battles. */
+/** Shared health indicators, rare-hand selection effects and card faces for both battle screens. */
 .hearts {
+    position: relative;
     display: flex;
     gap: 2px;
     min-width: 0;
@@ -75,6 +76,151 @@
     100% { opacity: 0; transform: translate(-50%, -220%) scale(1); }
 }
 
+.poker-impact {
+    --ink: var(--shield);
+    position: absolute;
+    top: 50%;
+    z-index: 4;
+    isolation: isolate;
+    pointer-events: none;
+    width: max-content;
+    font: 800 clamp(24px, 3vw, 40px)/1 var(--display-font, Georgia), serif;
+    font-variant-numeric: lining-nums tabular-nums;
+    color: var(--ink);
+    transform: translate(-50%, -50%);
+}
+
+.poker-impact.impact-in-viewport {
+    position: fixed;
+    left: 50%;
+    top: clamp(100px, 24vh, 170px);
+    z-index: 8;
+}
+
+.poker-impact:not([data-hand="FLUSH_FIVE"]) .impact-value {
+    text-shadow: 0 1px 3px var(--panel);
+}
+
+.poker-impact[data-hand="FLUSH_FIVE"]::before,
+.poker-impact[data-hand="FLUSH_FIVE"]::after,
+.poker-impact[data-hand="ROYAL_FLUSH"]::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+}
+
+.poker-impact[data-hand="ROYAL_FLUSH"] {
+    --ink: var(--jackpot-gold);
+}
+
+.poker-impact[data-hand="ROYAL_FLUSH"]::after {
+    top: -.31em;
+    left: calc(50% - .28em);
+    width: .56em;
+    height: .32em;
+    background: currentColor;
+    clip-path: polygon(0 0, 32% 48%, 50% 0, 68% 48%, 100% 0, 86% 100%, 14% 100%);
+}
+
+.poker-impact[data-hand="FIVE_OF_A_KIND"] {
+    --ink: var(--rare-hand);
+}
+
+.poker-impact[data-hand="FLUSH_FIVE"] {
+    --ink: var(--jackpot-gold);
+    font-size: clamp(32px, 4.6vw, 60px);
+    transform: translate(-50%, -100%);
+}
+
+.poker-impact[data-hand="FLUSH_FIVE"]:not(.impact-in-viewport) {
+    top: 0;
+}
+
+.poker-impact[data-hand="FLUSH_FIVE"] .impact-value {
+    display: flex;
+    align-items: center;
+    gap: .045em;
+    padding: .1em .16em .12em;
+    border: 2px solid currentColor;
+    border-radius: .18em;
+    background: var(--panel);
+    box-shadow: 0 0 0 2px var(--panel), 0 0 .38em var(--rim);
+}
+
+.impact-reel {
+    display: inline-grid;
+    place-items: center;
+    overflow: clip;
+    min-width: .69em;
+    padding-block: .025em;
+    color: #412c20;
+    border-radius: .07em;
+    background: linear-gradient(#fff3c8, #f5cb72 48%, #e5a957 51%, #ffe5a2);
+    box-shadow: inset 0 -2px 0 #814726;
+}
+
+.poker-impact[data-hand="FLUSH_FIVE"]::before {
+    inset: -.42em -.62em;
+    z-index: -1;
+    background:
+        radial-gradient(ellipse at center, var(--jackpot-gold) 25%, transparent 55%) 3% 70% / .24em .24em,
+        radial-gradient(ellipse at center, var(--jackpot-rose) 25%, transparent 55%) 12% 9% / .19em .19em,
+        radial-gradient(ellipse at center, var(--jackpot-mint) 25%, transparent 55%) 81% 0% / .22em .22em,
+        radial-gradient(ellipse at center, var(--jackpot-gold) 25%, transparent 55%) 99% 37% / .32em .32em,
+        radial-gradient(ellipse at center, var(--jackpot-mint) 25%, transparent 55%) 89% 96% / .19em .19em;
+    background-repeat: no-repeat;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .poker-impact {
+        animation: poker-impact-rise var(--impact-duration) both;
+    }
+
+    .impact-reel > span {
+        text-shadow: 0 1em currentColor, 0 2em currentColor;
+        animation: jackpot-reel-stop 430ms cubic-bezier(.16,.76,.28,1) both;
+    }
+
+    .impact-reel:nth-child(2) > span { animation-delay: 90ms; }
+    .impact-reel:nth-child(3) > span { animation-delay: 180ms; }
+
+    .poker-impact[data-hand="FLUSH_FIVE"]::before {
+        animation: jackpot-sparks 800ms ease-out 120ms both;
+    }
+
+    .poker-impact[data-hand="FLUSH_FIVE"]::after {
+        inset: -.12em;
+        border: 2px solid var(--jackpot-gold);
+        border-radius: .24em;
+        animation: jackpot-ripple 600ms ease-out 450ms both;
+    }
+}
+
+@keyframes poker-impact-rise {
+    0% { opacity: .5; transform: translate(-50%, -55%) scale(.65); }
+    16% { opacity: 1; transform: translate(-50%, -102%) scale(1.1); }
+    30%, 72% { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -140%) scale(.98); }
+}
+
+@keyframes jackpot-reel-stop {
+    from { transform: translateY(-2em); }
+    78% { transform: translateY(.075em); }
+    to { transform: none; }
+}
+
+@keyframes jackpot-ripple {
+    from { opacity: 0; scale: .95; }
+    20% { opacity: .8; }
+    to { opacity: 0; scale: 1.35 1.6; }
+}
+
+@keyframes jackpot-sparks {
+    from { opacity: 0; transform: scale(.7); }
+    30% { opacity: 1; }
+    to { opacity: 0; transform: scale(1.28); }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .hearts.hit,
     .damage-pop {
@@ -117,6 +263,93 @@
     width: clamp(18px, 3.6cqi, 44px);
     min-width: 14px;
     background: color-mix(in srgb, var(--enemy-heart) 14%, #0b0710);
+}
+
+.rare-hand-ready :is(#result-text, #poker-preview) {
+    color: var(--rare-hand);
+}
+
+.jackpot-letters {
+    display: none;
+}
+
+.flush-five-ready :is(#result-text, #poker-preview) {
+    color: var(--jackpot-gold);
+    --jackpot-foil: linear-gradient(105deg, var(--jackpot-gold) 10%, var(--jackpot-rose) 49%, var(--jackpot-mint) 82%, var(--jackpot-gold));
+}
+
+@supports (background-clip: text) {
+    @media (forced-colors: none) {
+        .flush-five-ready .poker-description,
+        .flush-five-ready .foil-letter,
+        .flush-five-ready .jackpot-letters:not(:has(> span)) {
+            color: transparent;
+            background-image: var(--jackpot-foil);
+            background-clip: text;
+        }
+
+        /* Each moving glyph carries its own slice of the foil across the full phrase. */
+        .flush-five-ready .foil-letter {
+            background-size: 1600% 100%;
+            background-position-x: var(--foil-position);
+        }
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .rare-hand-ready .enemy-token {
+        animation: enemy-tremble 300ms ease-in-out infinite;
+    }
+
+    .rare-hand-ready .enemy-hearts .heart {
+        animation: enemy-heart-hop 1s ease-out calc(var(--damage-order) * 75ms) infinite;
+    }
+
+    /* The live region announces the whole hand even while its visible text shakes. */
+    .flush-five-ready .poker-description {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+
+    .flush-five-ready .jackpot-letters {
+        display: inline;
+    }
+
+    .jackpot-number {
+        white-space: nowrap;
+    }
+
+    .jackpot-digit,
+    .jackpot-digit > .foil-letter {
+        display: inline-block;
+    }
+
+    .jackpot-digit {
+        overflow: clip;
+    }
+
+    .flush-five-ready .foil-letter {
+        animation: jackpot-foil-sweep 1.05s ease-in-out infinite alternate;
+    }
+}
+
+@keyframes enemy-tremble {
+    20%, 65% { translate: -0.75px 0.25px; }
+    40%, 85% { translate: 0.75px -0.25px; }
+}
+
+@keyframes enemy-heart-hop {
+    0%, 17%, 100% { translate: 0 0; }
+    7% { translate: 0 -20%; }
+}
+
+@keyframes jackpot-foil-sweep {
+    from { background-position-x: calc(var(--foil-position) * 0.64); }
+    to { background-position-x: calc(36% + var(--foil-position) * 0.64); }
 }
 
 .bj-card + .bj-card {

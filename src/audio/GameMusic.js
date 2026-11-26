@@ -1,13 +1,14 @@
-/** Streams the menu and battle scores on independent, fading Web Audio channels. */
+/** Mixes independent menu and battle scores with scene fades and result holds. */
 import { audio } from './AudioManager.js';
 import { AUDIO_BASE } from './sounds.js';
 import { SoundChoices } from './SoundChoices.js';
+import { BattleMusic } from './BattleMusic.js';
 
 const STORAGE_KEY = 'juniper.music';
 /** Relative gains leave room for card, chip and result cues at the saved music volume. */
 export const TRACKS = {
     menu: { label: 'Menu music', hint: 'Jazz on the main menu and in the co-op lobby.', file: 'fusion-jazz.ogg', gain: 0.72 },
-    battle: { label: 'Battle music', hint: 'A walking bass line during solo and co-op fights.', file: 'bass-walker.mp3', gain: 0.38 },
+    battle: { label: 'Battle music', hint: 'A walking bass line during solo and co-op fights.', file: 'bass-walker.mp3', drums: 'bass-walker-drums.flac', gain: 0.38 },
 };
 
 /** Keeps each recording at its own playback position across scene changes. */
@@ -17,6 +18,7 @@ class GameMusic {
         this.volume = 0.16;
         this.muted = false;
         this.scene = null;
+        this.anticipation = false;
         this.choices = new SoundChoices('juniper.music.track.', TRACKS);
         this.choices.addEventListener('change', () => this.sync());
         this.channels = new Map();
@@ -52,15 +54,29 @@ class GameMusic {
         this.sync();
     }
 
-    /** Creates one streaming source per recording so long tracks need no decoded buffer cache. */
+    /** Applies the same battle mix to each of the qualifying poker selections. */
+    setAnticipation(active) {
+        if (this.anticipation === active) return;
+        this.anticipation = active;
+        const channel = this.channels.get('battle');
+        if (channel?.level) channel.media.setAnticipation(active);
+    }
+
+    /** Builds a streaming menu channel or the synchronized battle mix. */
     channel(scene) {
         if (!this.channels.has(scene)) {
-            const media = new Audio(AUDIO_BASE + TRACKS[scene].file);
-            media.loop = true;
-            const gain = audio.context.createGain();
+            const context = audio.context;
+            const track = TRACKS[scene];
+            const gain = context.createGain();
             gain.gain.value = 0;
-            audio.context.createMediaElementSource(media).connect(gain);
-            gain.connect(audio.context.destination);
+            gain.connect(context.destination);
+            let media;
+            if (track.drums) media = new BattleMusic(context, gain, track.file, track.drums);
+            else {
+                media = new Audio(AUDIO_BASE + track.file);
+                media.loop = true;
+                context.createMediaElementSource(media).connect(gain);
+            }
             this.channels.set(scene, { media, gain, level: 0, pauseTimer: null });
         }
         return this.channels.get(scene);
@@ -71,6 +87,7 @@ class GameMusic {
         for (const [scene, channel] of this.channels) {
             if (scene === except || channel.level === 0) continue;
             channel.level = 0;
+            if (scene === 'battle') channel.media.setAnticipation(false);
             channel.gain.gain.setTargetAtTime(0, audio.context.currentTime, 0.023);
             channel.pauseTimer = setTimeout(() => channel.media.pause(), 140);
         }
@@ -92,6 +109,7 @@ class GameMusic {
         }
         this.pause(this.scene);
         const channel = this.channel(this.scene);
+        if (this.scene === 'battle') channel.media.setAnticipation(this.anticipation);
         const level = this.volume * TRACKS[this.scene].gain;
         if (level === channel.level) return;
         clearTimeout(channel.pauseTimer);

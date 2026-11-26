@@ -4,7 +4,8 @@ import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { AudioManager } from '../src/audio/AudioManager.js';
 import { SOUNDS } from '../src/audio/sounds.js';
-import { soloSoundSnapshot, soloSoundCues, multiplayerSoundCues, playSoundCues } from '../src/audio/battleSounds.js';
+import { soloSoundSnapshot, soloSoundCues, multiplayerSoundCues, playPokerSounds, playSoundCues } from '../src/audio/battleSounds.js';
+import { isLethalPokerHand, POKER_HANDS, rarePokerHit } from '../src/systems/rules/PokerRule.js';
 import { createInitialState } from '../src/gameState.js';
 import { playSelectedCards } from '../src/systems/PlaySystem.js';
 import { beginEndTurn, completeEndTurn } from '../src/systems/TurnSystem.js';
@@ -14,7 +15,73 @@ test('all sample variants exist locally and catalog levels stay in range', () =>
     for (const sound of Object.values(SOUNDS)) {
         assert.ok(sound.gain > 0 && sound.gain <= 1);
         for (const file of sound.files ?? []) assert.ok(existsSync(new URL(`../public/audio/${file}`, import.meta.url)), file);
+        for (const { file, gain } of Object.values(sound.variants ?? {})) {
+            assert.ok(existsSync(new URL(`../public/audio/${file}`, import.meta.url)), file);
+            assert.ok(gain > 0 && gain <= 1);
+        }
     }
+});
+
+test('the finisher starts with the card play and replaces the result flourish', async () => {
+    const audio = new AudioManager();
+    const buffer = { duration: 2 };
+    const played = [];
+    audio.context = { state: 'running', currentTime: 0, createBufferSource: () => ({ playbackRate: {} }) };
+    audio.buffers.set('rare-hand-finish.mp3', Promise.resolve(buffer));
+    audio.buffers.set(SOUNDS.play.files[0], Promise.resolve(buffer));
+    audio.voice = (id, source, time) => played.push({ id, buffer: source.buffer, time });
+    const pending = [];
+    const mixer = { choices: audio.choices, play: (id, options) => pending.push(audio.play(id, options)) };
+    const finisher = playPokerSounds(mixer, 'FLUSH_FIVE', true);
+    playSoundCues(mixer, ['victory'], 0, finisher);
+    await Promise.all(pending);
+    assert.deepEqual(played, [{ id: 'play', buffer, time: 0 }, { id: 'victory', buffer, time: 0 }]);
+    audio.choices.setEnabled('victory', false);
+    assert.equal(await audio.play('victory', { variant: 'rareFinisher' }), false);
+});
+
+test('simultaneous deal and resource cues leave voices for the play and finish', () => {
+    const audio = new AudioManager();
+    const gain = { setValueAtTime() {}, linearRampToValueAtTime() {} };
+    audio.context = { createGain: () => ({ gain, connect() {} }) };
+    const started = [];
+    for (const id of [...Array(20).fill('deal'), 'play', 'victory']) {
+        const source = { connect() {}, start: () => started.push(id), stop() {} };
+        audio.voice(id, source, 0, 1, 0.5);
+    }
+    assert.deepEqual(started.slice(-2), ['play', 'victory']);
+    assert.ok(started.length < 22);
+});
+
+test('only the four rare hands trigger the ending at exact lethal or overkill', () => {
+    for (const hand of POKER_HANDS) {
+        const damage = hand.actions.find(action => action.type === 'attack')?.amount ?? 0;
+        const rare = ['STRAIGHT_FLUSH', 'ROYAL_FLUSH', 'FIVE_OF_A_KIND', 'FLUSH_FIVE'].includes(hand.name);
+        for (const hp of [damage - 1, damage, damage + 1].filter(value => value > 0)) {
+            const played = [];
+            const mixer = { play: (id, options) => played.push(options?.variant ?? id) };
+            playPokerSounds(mixer, hand.name, isLethalPokerHand(hand, hp));
+            assert.deepEqual(played, rare && hp <= damage ? ['play', 'rareFinisher'] : ['play'], hand.name);
+        }
+    }
+});
+
+test('the solo pre-play cue uses gilded damage and only fires after validation', () => {
+    const state = createInitialState();
+    state.tutorial = null;
+    state.mode = 'poker';
+    state.enemy.hp = 80;
+    state.hand.forEach((card, i) => Object.assign(card, { rank: i + 3, suit: 'hearts', selected: true, gilded: i === 0 }));
+    const observed = [];
+    const onPlay = evaluation => observed.push([state.enemy.hp, state.result, isLethalPokerHand(evaluation, state.enemy.hp)]);
+    state.player.energy = 0;
+    assert.equal(playSelectedCards(state, onPlay).allowed, false);
+    state.player.energy = 3;
+    const play = playSelectedCards(state, onPlay);
+    assert.equal(play.allowed, true);
+    assert.deepEqual(rarePokerHit(play.evaluation), { hand: 'STRAIGHT_FLUSH', damage: 80 });
+    assert.deepEqual(observed, [[80, null, true]]);
+    assert.equal(state.enemy.hp, 0);
 });
 
 test('real poker and enemy turns distinguish shielding, blocking and silent shield decay', () => {

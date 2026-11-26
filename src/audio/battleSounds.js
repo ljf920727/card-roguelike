@@ -1,5 +1,7 @@
 /** Derives audible changes from presentation snapshots without modifying gameplay state. */
 
+import { isRarePokerHand } from '../systems/rules/PokerRule.js';
+
 /** Captures scalar solo values before mutable game objects change again. */
 export function soloSoundSnapshot(state) {
     return {
@@ -64,9 +66,30 @@ export function multiplayerSoundCues(before, after) {
     return [...new Set(cues)];
 }
 
-/** Spaces result cues so a single action does not bury its feedback under simultaneous sounds. */
-export function playSoundCues(audio, cues, delay = 0) {
+/**
+ * Starts the poker play and, for a lethal rare hand, its finish on the same beat.
+ * @param {Object} audio The battle audio mixer.
+ * @param {string} hand Evaluated poker hand ID.
+ * @param {boolean} lethal Whether the evaluated attack will defeat the enemy.
+ * @returns {boolean} Whether the play owns the victory cue for this transition.
+ */
+export function playPokerSounds(audio, hand, lethal) {
+    void audio.play('play');
+    const finisher = lethal && isRarePokerHand(hand);
+    if (finisher) void audio.play('victory', { variant: 'rareFinisher' });
+    return finisher;
+}
+
+/**
+ * Spaces result cues and omits a victory already sounded at play time.
+ * @param {Object} audio The battle audio mixer.
+ * @param {string[]} cues Effects requested by the state transition.
+ * @param {number} [delay] Opening delay in seconds.
+ * @param {boolean} [finisher] Whether the poker play owns the victory cue.
+ */
+export function playSoundCues(audio, cues, delay = 0, finisher = false) {
     for (const cue of cues) {
+        if (cue === 'victory' && finisher) continue;
         void audio.play(cue, { delay });
         if (!audio.choices.isEnabled(cue)) continue;
         // Leave space for a payout or round result before the battle ending.

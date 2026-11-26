@@ -3,17 +3,18 @@ import { installLocalization, setText } from '../i18n/dom.js';
 
 import { SERVER_URL, checkServer, createRoomCode, RoomConnection } from './connection.js';
 import { getDifficulty } from '../systems/DifficultySystem.js';
-import { evaluatePokerHand } from '../systems/rules/PokerRule.js';
+import { describePokerActions, evaluatePokerHand, isRarePokerHand } from '../systems/rules/PokerRule.js';
 import { BATTLE_THEMES, getPreferredTheme, savePreferredTheme } from '../themes.js';
 import { canAct, battleStatus } from './viewState.js';
 import { DifficultyPicker } from '../components/DifficultyPicker.js';
 import { renderHearts } from '../components/healthDisplay.js';
+import { PokerPreview } from '../components/PokerPreview.js';
 import { ENEMY_ICONS } from '../enemyIcons.js';
 import { renderPlayerSeats, renderPokerCards, renderBlackjackTable } from './battleView.js';
 import { audio } from '../audio/AudioManager.js';
 import { installSettings } from '../components/SettingsDialog.js';
 import { gameMusic } from '../audio/GameMusic.js';
-import { multiplayerSoundCues, playSoundCues } from '../audio/battleSounds.js';
+import { multiplayerSoundCues, playPokerSounds, playSoundCues } from '../audio/battleSounds.js';
 import { translate } from '../i18n/index.js';
 
 installLocalization();
@@ -22,16 +23,23 @@ gameMusic.setScene('menu');
 
 const connection = new RoomConnection({
   onOpen: joinCurrentRoom,
-  onUpdate: data => {
-    playSoundCues(audio, multiplayerSoundCues(synced ? state : null, data));
+  onPokerPlay: (hand, lethal) => {
+    if (synced && (state.players[state.activeIndex]?.isYou || (lethal && isRarePokerHand(hand)))) {
+      playPokerSounds(audio, hand, lethal);
+    }
+  },
+  onUpdate: (data, pokerHit) => {
+    const liveHit = synced ? pokerHit : undefined;
+    playSoundCues(audio, multiplayerSoundCues(synced ? state : null, data), 0, isRarePokerHand(data.winningHand));
     if (!synced) message('');
     synced = true;
     saveRoom(data.roomId);
-    render(data);
+    render(data, liveHit);
   },
   onStatus: status => {
     if (status === 'reconnecting') {
       audio.stop();
+      gameMusic.setAnticipation(false);
       synced = false;
       requestVersion++;
       pending = false;
@@ -51,6 +59,7 @@ const connection = new RoomConnection({
 
 /** Finds a cooperative UI element by its stable ID. */
 const byId = id => document.getElementById(id);
+const pokerPreview = new PokerPreview(byId('battle'), byId('poker-preview'));
 
 let state = null;
 let roomId = readStorage('sessionStorage', 'juniper.room');
@@ -182,6 +191,7 @@ function saveRoom(id) {
 /** Displays the lobby, waiting room or battle while preserving global status feedback. */
 function showPage(page) {
   const playing = synced && state?.status === 'playing' && state.players.every(player => player.connected);
+  if (page !== 'battle' || !playing) gameMusic.setAnticipation(false);
   gameMusic.setScene(page === 'battle' ? (playing ? 'battle' : null) : 'menu');
   document.body.dataset.page = page;
   byId('lobby').hidden = page !== 'lobby';
@@ -261,7 +271,6 @@ async function action(type, cardIds) {
     if (!result.success) {
       message(result.error);
     } else {
-      if (type === 'poker') void audio.play('play');
       selectedCards.clear();
       message('');
       if (state) render(state);
@@ -319,7 +328,7 @@ function isMyTurn(data) {
 }
 
 /** Renders battle feedback, selection effects, replay readiness and enabled actions. */
-function renderBattle(data) {
+function renderBattle(data, pokerHit) {
   const turn = byId('turn');
   const label = battleStatus(data, connection.connected && synced);
   if (turn.textContent !== translate(label)) {
@@ -334,7 +343,7 @@ function renderBattle(data) {
   setText(byId('enemy-name'), data.enemy.name);
   setText(byId('enemy-hp'), `HP ${data.enemy.hp}/${data.enemy.maxHp}`);
 
-  renderHearts(byId('enemy-hearts'), data.enemy.hp, data.enemy.maxHp);
+  renderHearts(byId('enemy-hearts'), data.enemy.hp, data.enemy.maxHp, pokerHit);
   byId('enemy-token').classList.toggle('defeated', data.enemy.hp <= 0);
 
   renderPlayers(byId('battle-players'), data.players);
@@ -344,9 +353,9 @@ function renderBattle(data) {
   const myTurn = isMyTurn(data);
   const me = data.players.find(p => p.isYou);
   const evaluation = evaluatePokerHand(data.hand.filter(card => selectedCards.has(card.id)));
-  setText(byId('poker-preview'), evaluation
-    ? `${evaluation.label} · ${evaluation.actions.map(effect => `${effect.amount} ${effect.type === 'attack' ? 'damage' : effect.type === 'defend' ? 'shield' : 'healing'}`).join(' · ')} · Ends turn`
-    : 'Select 1–5 cards');
+  const description = evaluation
+    ? `${evaluation.label} · ${describePokerActions(evaluation.actions, { separator: ' · ' })} · Ends turn`
+    : 'Select 1–5 cards';
   byId('poker-area').hidden = Boolean(data.blackjack);
   setText(byId('hand-title'), data.blackjack ? 'Blackjack' : 'Your hand');
   byId('hit').hidden = byId('stand').hidden = !data.blackjack;
@@ -358,6 +367,9 @@ function renderBattle(data) {
   byId('play-poker').disabled =
     !myTurn || selectedCards.size === 0 ||
     me.energy < 3 || !!data.blackjack;
+  const ready = !byId('play-poker').disabled && isRarePokerHand(evaluation?.name);
+  pokerPreview.update(description, ready ? evaluation : null);
+  gameMusic.setAnticipation(ready);
 
   byId('deal').disabled =
     !myTurn || me.energy < 1 || !!data.blackjack;
@@ -375,7 +387,7 @@ function renderBattle(data) {
 }
 
 /** Applies a fresh private server snapshot and switches to the appropriate screen. */
-function render(data) {
+function render(data, pokerHit) {
   if (data.status !== state?.status) message('');
   state = data;
   roomId = data.roomId;
@@ -385,7 +397,7 @@ function render(data) {
     renderLobby(data);
   } else {
     showPage('battle');
-    renderBattle(data);
+    renderBattle(data, pokerHit);
   }
 }
 

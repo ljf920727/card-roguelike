@@ -2,12 +2,13 @@
 import { appendText, setText, setLabel, setChildren } from '../i18n/dom.js';
 
 import {renderHearts} from '../components/healthDisplay.js';
+import {PokerPreview} from '../components/PokerPreview.js';
 import {Container} from 'pixi.js';
 
 import {CARD_SELECTED_LIFT, CardView} from '../components/CardView.js';
 import {cardLabel, createCardElement} from '../components/cardElement.js';
 import {POKER_HANDS} from '../systems/RuleEngine.js';
-import {describePokerActions} from '../systems/rules/PokerRule.js';
+import {describePokerActions, isLethalPokerHand, isRarePokerHand, rarePokerHit} from '../systems/rules/PokerRule.js';
 import {
   bustLimit,
   calculateBlackjackValue,
@@ -58,7 +59,8 @@ import {shieldCap} from '../systems/CombatSystem.js';
 import {describeCard, getJinx} from '../systems/DeckSystem.js';
 import {DEFAULT_ENEMY_ICON, ENEMY_ICONS} from '../enemyIcons.js';
 import {audio} from '../audio/AudioManager.js';
-import {soloSoundSnapshot, soloSoundCues, playSoundCues} from '../audio/battleSounds.js';
+import {playPokerSounds, soloSoundSnapshot, soloSoundCues, playSoundCues} from '../audio/battleSounds.js';
+import {gameMusic} from '../audio/GameMusic.js';
 
 /** @typedef {CardView & {input: HTMLButtonElement}} HandCardView A canvas card paired with its keyboard control. */
 
@@ -98,6 +100,7 @@ export class BattleScene {
       'mulligan-button', 'double-button', 'surrender-button', 'chips-text', 'house-rule', 'next-card',
       'intent-detail', 'joker-list', 'jokers-title', 'curse-list', 'curses-section', 'floor-route', 'boss-label',
     ].map(id => [id, document.getElementById(id)]));
+    this.pokerPreview = new PokerPreview(this.ui.table, this.ui['result-text']);
     this.runScreen = new RunScreen(state, () => this.refreshBattle());
     this.modeOptions = [...document.querySelectorAll('.mode-option')];
 
@@ -235,17 +238,22 @@ export class BattleScene {
       this.afterAction();
       return;
     }
-    const validation = playSelectedCards(this.state);
+    const validation = playSelectedCards(this.state, evaluation => {
+      playPokerSounds(audio, evaluation.name, isLethalPokerHand(evaluation, this.state.enemy.hp));
+    });
     if (!validation.allowed) {
       setText(this.ui['feedback-text'], validation.reason);
       return;
     }
-    void audio.play('play');
-    this.afterAction();
+    this.afterAction(rarePokerHit(validation.evaluation));
   }
 
-  afterAction() {
-    this.refreshBattle();
+  /**
+   * Refreshes combat and schedules the turn to end when no further moves are possible.
+   * @param {{hand: string, damage: number}} [pokerHit] Rare attack resolved by this action.
+   */
+  afterAction(pokerHit) {
+    this.refreshBattle(pokerHit);
     const {phase, result, hand, player} = this.state;
     if (tutorialHoldsTurn(this.state) || this.autoEndTimeout || phase !== 'player' || result || isRoundActive(this.state)) return;
     if (hand.length && player.energy > 0) return;
@@ -269,12 +277,15 @@ export class BattleScene {
         this.state.mode === 'blackjack' ? this.describeBlackjack() : this.describePoker(selectedCards, result);
 
     setText(this.ui['selection-text'], view.selection ?? '');
-    setText(this.ui['result-text'], view.result);
-    this.ui['result-text'].style.color = view.color ?? this.theme.text;
+    this.ui['result-text'].style.setProperty('--result-color', view.color ?? this.theme.text);
     const autoEnding = Boolean(this.autoEndTimeout);
     setText(this.ui['feedback-text'], autoEnding ? `${this.autoEndReason} Ending your turn…` : view.feedback);
     setText(this.ui['play-button'], view.primaryLabel);
     this.ui['play-button'].disabled = !view.primaryEnabled || autoEnding;
+    const ready = !this.state.result && this.state.mode === 'poker' &&
+        view.primaryEnabled && !autoEnding && isRarePokerHand(result.name);
+    this.pokerPreview.update(view.result, ready ? result : null);
+    gameMusic.setAnticipation(ready);
     const roundActive = isRoundActive(this.state);
     this.ui['stand-button'].disabled = !roundActive || !tutorialAllows(this.state, 'stand');
     const mulliganCheck = validateMulligan(this.state);
@@ -529,22 +540,36 @@ export class BattleScene {
     this.refreshBattle();
   }
 
-  /** Refreshes battle views and sounds only changes since the previous presentation snapshot. */
-  refreshBattle() {
+  /**
+   * Refreshes battle views and sounds only changes since the previous presentation snapshot.
+   * @param {{hand: string, damage: number}} [pokerHit] Rare attack resolved by this action.
+   */
+  refreshBattle(pokerHit) {
     ensureRewards(this.state);
     this.ui.table.dataset.mode = this.state.mode;
     this.refreshBlackjack();
     this.createCards();
-    this.refreshEnemy();
+    const impact = this.refreshEnemy(pokerHit);
     this.refreshHUD();
     this.refreshSidePanel();
     this.onCardSelectionChanged();
     setText(this.ui['last-action'], this.state.lastAction);
     this.resize();
-    this.runScreen.sync();
+    const finisher = Boolean(pokerHit && this.state.result === 'victory');
+    if (finisher && impact) {
+      const enemy = this.state.enemy;
+      this.finishingEnemy = enemy;
+      gameMusic.setScene(null);
+      impact.then(() => {
+        if (this.finishingEnemy === enemy) this.finishingEnemy = null;
+        if (this.state.enemy === enemy && !this.runScreen.isOpen()) this.runScreen.sync();
+      });
+    } else if (this.finishingEnemy !== this.state.enemy) {
+      this.runScreen.sync();
+    }
     this.guide.refresh();
     const snapshot = soloSoundSnapshot(this.state);
-    playSoundCues(audio, soloSoundCues(this.soundSnapshot, snapshot), this.soundDealDelay);
+    playSoundCues(audio, soloSoundCues(this.soundSnapshot, snapshot), this.soundDealDelay, finisher);
     this.soundSnapshot = snapshot;
   }
 
@@ -578,20 +603,21 @@ export class BattleScene {
     phase.classList.toggle('enemy-turn', this.state.phase === 'enemy');
   }
 
-  /** Displays enemy HP and the attack that End Turn will resolve. */
-  refreshEnemy() {
+  /** Displays enemy health and intent, returning the lifetime of any rare damage number. */
+  refreshEnemy(pokerHit) {
     const {name, hp, maxHp, intent, boss} = this.state.enemy;
     setText(this.ui['enemy-name'], name);
     this.ui['boss-label'].hidden = !boss;
     setText(this.ui['boss-label'], `Floor ${this.state.run.floor} boss`);
     this.ui['enemy-icon'].setAttribute('d', ENEMY_ICONS[name] ?? DEFAULT_ENEMY_ICON);
     this.ui['enemy-token'].classList.toggle('defeated', hp <= 0);
-    renderHearts(this.ui['enemy-hearts'], hp, maxHp);
+    const impact = renderHearts(this.ui['enemy-hearts'], hp, maxHp, pokerHit);
     setText(this.ui['enemy-hp'], `${hp} / ${maxHp} HP`);
     this.ui['enemy-token'].style.setProperty('--hp', String(Math.max(0, hp / maxHp)));
     this.ui['enemy-token'].classList.toggle('boss', Boolean(boss));
     setText(this.ui['enemy-intent'], this.state.result ? 'Out of the fight' : this.describeIntent(intent));
     this.ui['enemy-intent'].dataset.intent = intent?.type ?? 'attack';
+    return impact;
   }
 
   /** Renders run information and structured rules that reflow between a sidebar and a bottom panel. */

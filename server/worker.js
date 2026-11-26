@@ -206,9 +206,13 @@ export class GameRoom extends DurableObject {
     }
 
     if (message.type === 'action') {
-      const error = handleAction(this.room, player, message.action);
+      let pokerHit;
+      const error = handleAction(this.room, player, message.action, (hand, lethal, hit) => {
+        pokerHit = hit;
+        this.broadcast(() => ({ type: 'pokerPlay', hand, lethal }));
+      });
       if (error) return reply({ success: false, error });
-      await this.commit();
+      await this.commit(pokerHit);
       return reply({ success: true });
     }
 
@@ -282,17 +286,22 @@ export class GameRoom extends DurableObject {
     await this.ctx.storage.put('room', this.room);
   }
 
-  /** Persists room state and broadcasts private snapshots to accepted sockets. */
-  async commit() {
+  /** Persists room state and attaches a transient hit only to the resolving broadcast. */
+  async commit(pokerHit) {
     await this.save();
     if (!this.room.players.some(p => p.connected)) {
       await this.ctx.storage.setAlarm(Date.now() + EMPTY_ROOM_TTL_MS);
     }
+    this.broadcast(viewer => ({ type: 'roomUpdate', state: getPublicState(this.room, viewer), pokerHit }));
+  }
+
+  /** Delivers a live message to each connected seat without interrupting resolution on disconnect. */
+  broadcast(messageFor) {
     for (const ws of this.ctx.getWebSockets()) {
       const viewer = this.playerFor(ws);
       if (!viewer || ws.readyState !== WebSocket.OPEN) continue;
       try {
-        ws.send(JSON.stringify({ type: 'roomUpdate', state: getPublicState(this.room, viewer) }));
+        ws.send(JSON.stringify(messageFor(viewer)));
       } catch {
         // The socket closed mid-broadcast; its close handler updates the room.
       }

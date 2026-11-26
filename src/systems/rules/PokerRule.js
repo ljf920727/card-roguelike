@@ -19,6 +19,26 @@ export const POKER_HANDS = [
     { name: "HIGH_CARD", label: "High card", needs: "any cards", actions: [] },
 ];
 
+/** Returns the attack before it is capped by the enemy's remaining HP. */
+function pokerDamage(evaluation) {
+    return evaluation.actions.reduce((sum, action) => sum + (action.type === 'attack' ? action.amount : 0), 0);
+}
+
+/** Identifies the four hands with anticipation music and a distinctive impact. */
+export function isRarePokerHand(hand) {
+    return ['STRAIGHT_FLUSH', 'ROYAL_FLUSH', 'FIVE_OF_A_KIND', 'FLUSH_FIVE'].includes(hand);
+}
+
+/** Captures a rare hand's evaluated hit for the single transition resolving the play. */
+export function rarePokerHit(evaluation) {
+    if (isRarePokerHand(evaluation.name)) return { hand: evaluation.name, damage: pokerDamage(evaluation) };
+}
+
+/** Predicts a knockout from the final evaluated attacks and the enemy's pre-play HP. */
+export function isLethalPokerHand(evaluation, enemyHp) {
+    return enemyHp > 0 && pokerDamage(evaluation) >= enemyHp;
+}
+
 /**
  * Formats a poker effect list as English source text for localization.
  * @param {{type: string, amount: number}[]} actions Evaluated poker effects in display order.

@@ -27,8 +27,8 @@ export async function createRoomCode(difficulty) {
 /** Owns one room connection, matching replies without replaying combat requests. */
 export class RoomConnection {
   /** Registers callbacks for transport events and authoritative room snapshots. */
-  constructor({ onOpen, onUpdate, onStatus, onLatency, onClosed }) {
-    Object.assign(this, { onOpen, onUpdate, onStatus, onLatency, onClosed });
+  constructor({ onOpen, onUpdate, onPokerPlay, onStatus, onLatency, onClosed }) {
+    Object.assign(this, { onOpen, onUpdate, onPokerPlay, onStatus, onLatency, onClosed });
     this.socket = null;
     /** Each request keeps both completion callbacks until a reply or transport failure. */
     this.pending = new Map();
@@ -77,7 +77,9 @@ export class RoomConnection {
         this.pending.get(message.id)?.resolve(message);
         this.pending.delete(message.id);
       } else if (message.type === 'roomUpdate') {
-        this.onUpdate?.(message.state);
+        this.onUpdate?.(message.state, message.pokerHit);
+      } else if (message.type === 'pokerPlay') {
+        this.onPokerPlay?.(message.hand, message.lethal);
       }
     };
 
