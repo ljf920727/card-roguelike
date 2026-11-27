@@ -60,6 +60,7 @@ import {DEFAULT_ENEMY_ICON, ENEMY_ICONS} from '../enemyIcons.js';
 import {audio} from '../audio/AudioManager.js';
 import {playPokerSounds, soloSoundSnapshot, soloSoundCues, playSoundCues} from '../audio/battleSounds.js';
 import {gameMusic} from '../audio/GameMusic.js';
+import {showRareHandBanner} from '../components/RareHandBanner.js';
 
 /** @typedef {CardView & {input: HTMLButtonElement}} HandCardView A canvas card paired with its keyboard control. */
 
@@ -595,6 +596,7 @@ export class BattleScene {
    * @param {{hand: string, damage: number}} [pokerHit] Rare attack resolved by this action.
    */
   refreshBattle(pokerHit) {
+    showRareHandBanner(this.ui.table, pokerHit);
     if (!this.lab) ensureRewards(this.state);
     this.ui.table.dataset.mode = this.state.mode;
     this.refreshBlackjack();
