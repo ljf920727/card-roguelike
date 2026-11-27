@@ -3,7 +3,7 @@ import './guidebook.css';
 import './settingsDialog.css';
 import { localizeTree, setText } from '../i18n/dom.js';
 import { getGuidebookSeen, saveGuidebookSeen } from '../tutorialPreferences.js';
-import { GUIDEBOOK_PROSE, GUIDEBOOK_TABS, guidebookTabForMode, jinxRows, pokerHandRows } from '../scenes/guidebookContent.js';
+import { GUIDEBOOK_PROSE, GUIDEBOOK_TABS, guidebookTab, jinxRows, pokerHandRows } from '../scenes/guidebookContent.js';
 import { openDialogAtStart } from './dialogNavigation.js';
 import { BOOK_ICON } from './settingsIcons.js';
 
@@ -37,10 +37,9 @@ function definitionList(rows, className) {
 
 /**
  * Adds the Guidebook dialog and wires every `[data-guidebook]` button and open event to it.
- * @param {() => object} getState Returns the live solo run state.
  * @returns {{ open: (tab?: string) => void }} Opens the dialog on a tab.
  */
-export function installGuidebook(getState) {
+export function installGuidebook() {
     const dialog = document.createElement('dialog');
     dialog.className = 'preferences-dialog guidebook-dialog';
     dialog.setAttribute('aria-labelledby', 'guidebook-title');
@@ -53,6 +52,8 @@ export function installGuidebook(getState) {
     const body = dialog.querySelector('.guidebook-body');
     const tabs = new Map();
     const panels = new Map();
+    let bookmark;
+    try { bookmark = localStorage.getItem('juniper.guidebookTab'); } catch { /* Storage is optional. */ }
 
     GUIDEBOOK_TABS.forEach(({ id, title }) => {
         const tab = document.createElement('button');
@@ -86,6 +87,7 @@ export function installGuidebook(getState) {
 
     /** Shows one tab and hides the rest. */
     function select(id, focus = false) {
+        bookmark = id;
         tabs.forEach((tab, tabId) => {
             const active = tabId === id;
             tab.setAttribute('aria-selected', String(active));
@@ -107,6 +109,9 @@ export function installGuidebook(getState) {
         select(ids[(next + ids.length) % ids.length], true);
     });
     dialog.querySelector('.guidebook-close').addEventListener('click', () => dialog.close());
+    dialog.addEventListener('close', () => {
+        try { localStorage.setItem('juniper.guidebookTab', bookmark); } catch { /* Keep the in-memory bookmark. */ }
+    });
     dialog.addEventListener('keydown', event => {
         if (event.key === 'Escape') event.stopPropagation();
     });
@@ -117,9 +122,9 @@ export function installGuidebook(getState) {
         button.classList.toggle('attention', !getGuidebookSeen());
     });
 
-    /** Opens on the requested tab, or the one matching the current combo mode. */
+    /** Opens a section shortcut or resumes reading at the bookmarked section. */
     function open(tab) {
-        select(tabs.has(tab) ? tab : guidebookTabForMode(getState().mode));
+        select(tabs.has(tab) ? tab : guidebookTab(bookmark));
         if (dialog.open) return;
         openDialogAtStart(dialog);
         saveGuidebookSeen(true);

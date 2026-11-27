@@ -1,4 +1,6 @@
 {
+  "Hand presets": "Manos predefinidas",
+  "Choose a hand type to replace your hand with a random example using only the cards it needs.": "Elige una combinación para reemplazar tu mano por un ejemplo aleatorio con solo las cartas necesarias.",
   "Card Lab": "Taller de cartas",
   "Trial setup": "Configurar prueba",
   "Choose a rank to draw. Repeats are allowed.": "Elige un valor para robar una carta. Puedes repetir cartas.",
@@ -156,7 +158,6 @@
   "{n} damage": "{n} de daño",
   "{n} dmg": "{n} de daño",
   "{n} shield": "{n} de escudo",
-  "{n} healing": "{n} curación",
   "heal {n}": "{n} de curación",
   "{n} healing": "{n} de curación",
   "{n} chips": "{n} fichas",

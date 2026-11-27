@@ -11,10 +11,23 @@
     gap: 8px 12px;
 }
 .lab-heading { justify-content: space-between; }
+#lab-preset-choices { margin-block-start: 12px; }
+.lab-preset {
+    display: grid;
+    gap: 2px;
+    text-align: start;
+    overflow-wrap: anywhere;
+}
+.lab-preset small {
+    color: var(--secondary);
+    font: .875rem/1.4 var(--ui-font), sans-serif;
+}
 #lab-draw { min-width: 0; padding: 0; margin: 0; border: 0; }
 #lab-suit { margin-block-start: 12px; }
 #lab-ranks {
-    margin-block-start: 12px;
+    min-width: 0;
+    margin: 12px 0 0;
+    border: 0;
 }
 #lab-dialog .settings-row:has(.table-field) { grid-template-columns: minmax(0, 1fr) minmax(0, 55%); }
 #lab-hp { max-width: 6em; justify-self: end; }

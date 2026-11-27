@@ -1,4 +1,6 @@
 {
+  "Hand presets": "तयशुदा हाथ",
+  "Choose a hand type to replace your hand with a random example using only the cards it needs.": "हाथ का प्रकार चुनें। आपके मौजूदा पत्तों की जगह एक नया हाथ मिलेगा, जिसमें केवल उस प्रकार के लिए ज़रूरी पत्ते यादृच्छिक रूप से चुने जाएँगे।",
   "Card Lab": "कार्ड प्रयोगशाला",
   "Trial setup": "अभ्यास की सेटिंग",
   "Choose a rank to draw. Repeats are allowed.": "पत्ता खींचने के लिए उसका मान चुनें। एक ही पत्ता कई बार खींच सकते हैं।",
@@ -156,7 +158,6 @@
   "{n} damage": "{n} क्षति",
   "{n} dmg": "{n} क्षति",
   "{n} shield": "{n} कवच",
-  "{n} healing": "{n} उपचार",
   "heal {n}": "{n} उपचार",
   "{n} healing": "{n} उपचार",
   "{n} chips": "{n} चिप्स",

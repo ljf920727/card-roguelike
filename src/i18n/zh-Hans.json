@@ -1,4 +1,6 @@
 {
+  "Hand presets": "预制牌型",
+  "Choose a hand type to replace your hand with a random example using only the cards it needs.": "选择一种牌型，用随机生成的示例替换手牌。只发组成该牌型所需的牌。",
   "Card Lab": "试牌室",
   "Trial setup": "试验设置",
   "Choose a rank to draw. Repeats are allowed.": "点击点数抽牌，可以重复抽同一张牌。",
@@ -156,7 +158,6 @@
   "{n} damage": "{n} 伤害",
   "{n} dmg": "{n} 伤害",
   "{n} shield": "{n} 护盾",
-  "{n} healing": "{n} 治疗",
   "heal {n}": "{n} 治疗",
   "{n} healing": "{n} 治疗",
   "{n} chips": "{n} 筹码",

@@ -60,7 +60,7 @@ The first solo run starts with the tutorial enabled. It teaches the loop in six 
 
 ### Normal runs
 
-The game opens on a main menu. **Play** starts a run; its right-hand heart opens play options, then **Difficulty** reveals Easy (♠), Normal (♠♠), and Hard (♠♠♠). **Guidebook** opens the rules. During a run, the top bar's **Guidebook** button (or the `?` key) opens the same rules reference on the tab for your current combo mode; it shows a pulsing dot until it has been opened once. **Menu** in the top bar or the Esc key brings the menu back with **Continue run** and **New run**. Esc closes each settings level before returning to the battle.
+The game opens on a main menu. **Play** starts a run; its right-hand heart opens play options, then **Difficulty** reveals Easy (♠), Normal (♠♠), and Hard (♠♠♠). **Guidebook** opens the rules. During a run, the top bar's **Guidebook** button (or the `?` key) opens the same rules reference on Basics the first time and on the last section you closed thereafter; it shows a pulsing dot until it has been opened once. **Menu** in the top bar or the Esc key brings the menu back with **Continue run** and **New run**. Esc closes each settings level before returning to the battle.
 
 Choose **Easy**, **Normal** or **Hard** before starting a solo run. Easy multiplies enemy HP and attack ranges by 0.8; Normal preserves the standard balance; Hard multiplies them by 1.25. Values round to whole points. Blackjack loss penalties and enemy intents use the scaled attack range. Card effects, rewards, healing and energy costs stay the same. The difficulty badge shows the active run's setting; changing the menu selection affects only the next run. The preference is saved locally when storage is available. Guided solo runs always use Normal and preserve the selected difficulty for regular runs. Difficulty scaling applies to all five floors and stacks with Loaded Deck's HP multiplier. These presets are playtest values, not finalized balance.
 
@@ -460,7 +460,7 @@ Keep play permission and resource consumption here; keep combination detection i
 
 ### `src/components/Guidebook.js`
 
-**Purpose:** The tabbed rules dialog (Basics, Poker, Blackjack, Jinxes, Between fights). Any `[data-guidebook]` button opens it (the value names the starting tab; without one it opens on the current combo mode's tab), as does the `?` key or a `juniper:guidebook` event with `detail.tab`, which the Card Lab uses. `src/scenes/guidebookContent.js` holds the text and builds the poker and Jinx tables from `POKER_HANDS` and `JINXES`; prose reuses existing catalogue strings so every language is covered. Co-op does not install it yet because its energy costs differ from solo.
+**Purpose:** The tabbed rules dialog (Basics, Poker, Blackjack, Jinxes, Between fights). Any `[data-guidebook]` button opens it (the value names the starting tab; without one it restores the last section, defaulting to Basics), as does the `?` key or a `juniper:guidebook` event with `detail.tab`. Card Lab presets use the same hand labels and base effects as the Poker tab. `src/scenes/guidebookContent.js` holds the text and builds the poker and Jinx tables from `POKER_HANDS` and `JINXES`; prose reuses existing catalogue strings so every language is covered. Co-op does not install it yet because its energy costs differ from solo.
 
 ---
 

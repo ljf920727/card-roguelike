@@ -1,4 +1,6 @@
 {
+  "Hand presets": "Mga nakahandang kombinasyon",
+  "Choose a hand type to replace your hand with a random example using only the cards it needs.": "Pumili ng kombinasyon para palitan ang hawak mong baraha ng isang random na halimbawa na may mga barahang kailangan lang para mabuo ito.",
   "Card Lab": "Pagawaan ng baraha",
   "Trial setup": "Ayusin ang pagsubok",
   "Choose a rank to draw. Repeats are allowed.": "Pumili ng ranggo para bumunot. Maaaring ulitin ang parehong baraha.",
@@ -156,7 +158,6 @@
   "{n} damage": "{n} pinsala",
   "{n} dmg": "{n} pinsala",
   "{n} shield": "{n} panangga",
-  "{n} healing": "{n} pagpapagaling",
   "heal {n}": "{n} puntos ng paggaling",
   "{n} healing": "{n} puntos ng paggaling",
   "{n} chips": "{n} chip",

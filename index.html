@@ -88,14 +88,14 @@
             <output class="muted" id="lab-count" dir="ltr" aria-live="polite"></output>
           </div>
           <div class="lab-links">
-            <button type="button" class="button secondary small" id="lab-reference">Poker hands</button>
+            <button type="button" class="button secondary small" id="lab-presets" aria-haspopup="dialog" aria-controls="lab-presets-dialog">Hand presets</button>
             <button type="button" class="button secondary small" id="lab-config" aria-haspopup="dialog">Trial setup</button>
           </div>
           <fieldset id="lab-draw">
-            <legend class="muted">Choose a rank to draw. Repeats are allowed.</legend>
+            <legend class="muted" id="lab-draw-label">Choose a rank to draw. Repeats are allowed.</legend>
             <fieldset class="difficulty-picker" id="lab-suit"><legend>Suit</legend></fieldset>
             <label class="settings-row" for="lab-gilded">Gilded<input class="table-switch" type="checkbox" role="switch" id="lab-gilded"></label>
-            <div class="deck-picker" id="lab-ranks" dir="ltr"></div>
+            <fieldset class="deck-picker" id="lab-ranks" dir="ltr" aria-labelledby="lab-draw-label"></fieldset>
           </fieldset>
         </section>
       <main class="table" id="table">
@@ -291,11 +291,19 @@
           </div>
           <button type="button" class="menu-button new-run" id="menu-new-run" hidden>New run</button>
           <button type="button" class="menu-button play" onclick="window.location.href='./multiplayer.html'">Multiplayer Co-op</button>
-          <button type="button" class="menu-button rules" id="menu-rules" data-guidebook="basics" aria-haspopup="dialog">Guidebook</button>
+          <button type="button" class="menu-button rules" id="menu-rules" data-guidebook aria-haspopup="dialog">Guidebook</button>
         </div>
       </div>
     </div>
 
+    <dialog class="preferences-dialog" id="lab-presets-dialog" aria-labelledby="lab-presets-title">
+      <header class="preferences-heading"><h2 id="lab-presets-title" tabindex="-1" autofocus>Hand presets</h2>
+        <button type="button" class="menu-button preferences-return" id="lab-presets-back">Back</button></header>
+      <div class="preferences-body">
+        <p class="muted">Choose a hand type to replace your hand with a random example using only the cards it needs.</p>
+        <div class="language-options" id="lab-preset-choices"></div>
+      </div>
+    </dialog>
     <dialog class="preferences-dialog" id="lab-dialog" aria-labelledby="lab-dialog-title">
       <header class="preferences-heading"><h2 id="lab-dialog-title" tabindex="-1" autofocus>Trial setup</h2>
         <button type="button" class="menu-button preferences-return" id="lab-cancel">Back</button></header>

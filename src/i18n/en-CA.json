@@ -1,4 +1,6 @@
 {
+  "Hand presets": "Hand presets",
+  "Choose a hand type to replace your hand with a random example using only the cards it needs.": "Choose a hand type to replace your hand with a random example using only the cards it needs.",
   "Card Lab": "Card Lab",
   "Trial setup": "Trial setup",
   "Choose a rank to draw. Repeats are allowed.": "Choose a rank to draw. Repeats are allowed.",
@@ -156,7 +158,6 @@
   "{n} damage": "{n} damage",
   "{n} dmg": "{n} dmg",
   "{n} shield": "{n} shield",
-  "{n} healing": "{n} healing",
   "heal {n}": "{n} healing",
   "{n} healing": "{n} healing",
   "{n} chips": "{n} chips",

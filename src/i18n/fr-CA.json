@@ -1,4 +1,6 @@
 {
+  "Hand presets": "Mains prédéfinies",
+  "Choose a hand type to replace your hand with a random example using only the cards it needs.": "Choisissez une combinaison pour remplacer votre main par un exemple aléatoire contenant uniquement les cartes nécessaires.",
   "Card Lab": "Atelier de cartes",
   "Trial setup": "Réglages de l’essai",
   "Choose a rank to draw. Repeats are allowed.": "Choisissez une valeur pour piocher. Les doublons sont permis.",
@@ -156,7 +158,6 @@
   "{n} damage": "{n} dégâts",
   "{n} dmg": "{n} dég.",
   "{n} shield": "{n} points de bouclier",
-  "{n} healing": "{n} soins",
   "heal {n}": "{n} PV restaurés",
   "{n} healing": "{n} PV restaurés",
   "{n} chips": "{n} jetons",

@@ -38,7 +38,7 @@ async function main() {
   app.canvas.setAttribute('aria-hidden', 'true');
   const battle = new BattleScene(app, gameState);
   installSettings(theme => battle.setTheme(theme));
-  installGuidebook(() => gameState);
+  installGuidebook();
   new MenuScreen(battle).show();
 }
 
