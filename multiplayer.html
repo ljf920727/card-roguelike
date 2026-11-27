@@ -44,6 +44,7 @@
     <section id="room" class="lobby-screen screen" hidden>
       <p class="eyebrow">Your table</p>
       <h1 id="room-id"></h1>
+       <button id="copy-room" class="secondary small" type="button">Copy room code</button>
       <p id="room-difficulty" class="difficulty-badge"></p>
       <div id="players" class="player-list"></div>
       <p id="room-status"></p>
@@ -93,7 +94,7 @@
               </div>
             </details>
           </div>
-
+          <p id="action-hint" class="hint" role="status" aria-live="polite" hidden></p>
           <div class="buttons battle-actions">
             <button id="play-poker" data-action-sound>Play poker <span class="cost">3 energy</span></button>
             <button id="deal" data-action-sound>Deal blackjack <span class="cost">1 energy</span></button>

@@ -9,6 +9,7 @@ import { canAct, battleStatus } from './viewState.js';
 import { DifficultyPicker } from '../components/DifficultyPicker.js';
 import { renderHearts } from '../components/healthDisplay.js';
 import { PokerPreview } from '../components/PokerPreview.js';
+import { showRareHandBanner } from '../components/RareHandBanner.js';
 import { ENEMY_ICONS } from '../enemyIcons.js';
 import { renderPlayerSeats, renderPokerCards, renderBlackjackTable } from './battleView.js';
 import { audio } from '../audio/AudioManager.js';
@@ -16,6 +17,7 @@ import { installSettings } from '../components/SettingsDialog.js';
 import { gameMusic } from '../audio/GameMusic.js';
 import { multiplayerSoundCues, playPokerSounds, playSoundCues } from '../audio/battleSounds.js';
 import { translate } from '../i18n/index.js';
+
 
 installLocalization();
 
@@ -29,6 +31,12 @@ const connection = new RoomConnection({
     }
   },
   onUpdate: (data, pokerHit) => {
+    if (data.result === 'abandoned') {
+      connection.close();
+      forgetRoom();
+      message('Your teammate left. The battle has ended.');
+      return;
+    }
     const liveHit = synced ? pokerHit : undefined;
     playSoundCues(audio, multiplayerSoundCues(synced ? state : null, data), 0, isRarePokerHand(data.winningHand));
     if (!synced) message('');
@@ -146,6 +154,7 @@ function forgetRoom() {
   state = null;
   synced = false;
   selectedCards.clear();
+  delete byId('enemy-token').dataset.hp;
   showPage('lobby');
   refreshControls();
 }
@@ -226,6 +235,35 @@ function joinRoom() {
   saveRoom(id);
   message('');
   connection.open(id);
+}
+/** Copies the room code and shows feedback without interrupt. */
+async function copyRoomCode() {
+     const code = roomId;
+    try {
+        await navigator.clipboard.writeText(code);
+        
+        if(roomId === code){
+            message('Room code copied to clipboard.');
+        }
+    }catch {
+        if (roomId !== code) return;
+        const range = document.createRange();
+        range.selectNodeContents(byId('room-id'));
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        message('Select and copy the room code above.');
+    }
+}
+
+/** Confirms leaving because it ends the battle for both players. */
+function confirmLeave() {
+   if (pending) return;
+    if (state?.status === 'playing') {
+      const confirmed = window.confirm('Leave this game? This will end the battle for both players.');
+      if (!confirmed) return;
+    }
+    void leave();
 }
 
 /** Readies the local player for the first battle or a shared replay. */
@@ -329,6 +367,7 @@ function isMyTurn(data) {
 
 /** Renders battle feedback, selection effects, replay readiness and enabled actions. */
 function renderBattle(data, pokerHit) {
+  showRareHandBanner(byId('battle'), pokerHit);
   const turn = byId('turn');
   const label = battleStatus(data, connection.connected && synced);
   if (turn.textContent !== translate(label)) {
@@ -342,6 +381,21 @@ function renderBattle(data, pokerHit) {
 
   setText(byId('enemy-name'), data.enemy.name);
   setText(byId('enemy-hp'), `HP ${data.enemy.hp}/${data.enemy.maxHp}`);
+
+  const enemyToken = byId('enemy-token');
+  const previousHp = enemyToken.dataset.hp;
+  if (previousHp !== undefined && data.enemy.hp < Number(previousHp) && !matchMedia('(prefers-reduced-motion: reduce)').matches){
+       enemyToken.animate([
+        { translate: '0 0',filter: 'brightness(1)',},
+        { translate: '-6px 0',filter: 'brightness(1.8) drop-shadow(0 0 12px #ef4444)', offset: 0.2,},
+        { translate: '6px 0', filter: 'brightness(1.3)', offset: 0.4,},
+        { translate: '-3px 0',filter: 'brightness(1.1)', offset: 0.6,},
+        { translate: '0 0',filter: 'brightness(1)',},
+        ],
+        { duration: 400, easing: 'ease-out', }
+      );
+  }
+  enemyToken.dataset.hp = String(data.enemy.hp);
 
   renderHearts(byId('enemy-hearts'), data.enemy.hp, data.enemy.maxHp, pokerHit);
   byId('enemy-token').classList.toggle('defeated', data.enemy.hp <= 0);
@@ -357,7 +411,7 @@ function renderBattle(data, pokerHit) {
     ? `${evaluation.label} · ${describePokerActions(evaluation.actions, { separator: ' · ' })} · Ends turn`
     : 'Select 1–5 cards';
   byId('poker-area').hidden = Boolean(data.blackjack);
-  setText(byId('hand-title'), data.blackjack ? 'Blackjack' : 'Your hand');
+  setText(byId('hand-title'), data.blackjack ? 'Blackjack' : `Your hand · Selected ${selectedCards.size} / 5`);
   byId('hit').hidden = byId('stand').hidden = !data.blackjack;
   byId('deal').hidden = byId('play-poker').hidden = Boolean(data.blackjack);
   byId('rematch').hidden = data.status !== 'finished' || data.players.length !== 2;
@@ -377,6 +431,16 @@ function renderBattle(data, pokerHit) {
   byId('hit').disabled = !myTurn || !data.blackjack;
   byId('stand').disabled = !myTurn || !data.blackjack;
   byId('end-turn').disabled = !myTurn || !!data.blackjack;
+
+  let energyHint = '';
+  if (myTurn && !data.blackjack && me.energy < 3) {
+       energyHint = me.energy > 0
+       ? 'Poker requires 3 energy. You can still play Blackjack or end your turn.'
+       : 'Out of energy. End your turn to restore energy.';
+  }
+
+  setText(byId('action-hint'), energyHint);
+  byId('action-hint').hidden = !energyHint;
 
   const log = byId('log');
   log.replaceChildren();
@@ -411,8 +475,9 @@ function refreshControls() {
 byId('create').onclick = createRoom;
 byId('join').onclick = joinRoom;
 byId('ready').onclick = ready;
-byId('leave').onclick = leave;
-byId('battle-leave').onclick = leave;
+byId('copy-room').onclick = copyRoomCode;
+byId('leave').onclick = confirmLeave;
+byId('battle-leave').onclick = confirmLeave;
 byId('rematch').onclick = ready;
 installSettings(name => {
   theme = name;
