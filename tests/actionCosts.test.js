@@ -25,11 +25,22 @@ test("a free mulligan shows no pips", () => {
 test("blackjack shows Deal before a round, then only Double down while it is available", () => {
     const state = createInitialState();
     state.mode = "blackjack";
+    state.drawPile = [{ rank: "8", suit: "clubs" }, { rank: "6", suit: "hearts" }];
     assert.deepEqual(actionCosts(state), { play: 0, mulligan: 0, deal: 1, double: 0 });
     dealRound(state);
     assert.deepEqual(actionCosts(state), { play: 0, mulligan: 0, deal: 0, double: 1 });
     state.blackjack.doubled = true;
     assert.equal(actionCosts(state).double, 0);
+});
+
+test("a natural settles on the deal and shows the cost of dealing again", () => {
+    const state = createInitialState();
+    state.mode = "blackjack";
+    state.drawPile = [{ rank: "A", suit: "clubs" }, { rank: "K", suit: "hearts" }];
+    state.enemy.deck.drawPile = [{ rank: "9", suit: "clubs" }, { rank: "8", suit: "hearts" }];
+    dealRound(state);
+    assert.deepEqual(actionCosts(state), { play: 0, mulligan: 0, deal: 1, double: 0 });
+    assert.equal(state.blackjack.status, "done");
 });
 
 test("nothing shows once the fight is over", () => {
