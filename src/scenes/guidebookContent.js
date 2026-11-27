@@ -11,14 +11,15 @@ export const GUIDEBOOK_TABS = [
     { id: 'between', title: 'Between fights' },
 ];
 
-/** Maps the battle's combo mode to the tab that explains it. */
-export function guidebookTabForMode(mode) {
-    return mode === 'blackjack' ? 'blackjack' : 'poker';
+/** Resolves a saved section, defaulting to the first page for new or obsolete bookmarks. */
+export function guidebookTab(bookmark) {
+    return GUIDEBOOK_TABS.find(tab => tab.id === bookmark)?.id ?? GUIDEBOOK_TABS[0].id;
 }
 
-/** One row per poker hand, best first, generated from the same table that drives combat. */
+/** Shares combat hand IDs, labels and base effects between the Guidebook and Card Lab. */
 export function pokerHandRows() {
     return POKER_HANDS.map(hand => ({
+        name: hand.name,
         label: hand.label,
         effect: hand.name === 'HIGH_CARD' ? '1.5x value, max 15 dmg' : describePokerActions(hand.actions, { compact: true }),
     }));

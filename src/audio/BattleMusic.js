@@ -58,6 +58,7 @@ export class BattleMusic {
         const request = ++this.generation;
         await this.load();
         if (request !== this.generation) return;
+        this.applyAnticipation(true);
         if (this.fallback) {
             try { await this.fallback.play(); }
             catch (error) {
@@ -100,20 +101,27 @@ export class BattleMusic {
         if (this.fallback) this.fallback.currentTime = 0;
     }
 
-    /** Continues the current gain ramps when the player reverses a selection. */
+    /** Tracks the current selection even while the score is loading or paused. */
     setAnticipation(active) {
         if (active === this.active) return;
         this.active = active;
+        if (this.sources.length || (this.fallback && !this.fallback.paused)) this.applyAnticipation();
+    }
+
+    /**
+     * Fades live stems from their current levels. A new playback starts from the
+     * normal mix because a silent graph can stop processing an unfinished fade.
+     * @param {boolean} restart Whether the stems are about to resume from silence.
+     */
+    applyAnticipation(restart = false) {
         const now = this.context.currentTime;
-        const end = now + (active ? 1.8 : 1.4);
-        for (const [gain, target] of [[this.emphasis.gain, active ? ANTICIPATION_GAIN : 1], [this.drums.gain, active ? 1.32 : 0]]) {
-            if (gain.cancelAndHoldAtTime) gain.cancelAndHoldAtTime(now);
-            else {
-                const current = gain.value;
-                gain.cancelScheduledValues(now);
-                gain.setValueAtTime(current, now);
-            }
-            gain.linearRampToValueAtTime(target, end);
+        const end = now + (this.active ? 1.8 : 1.4);
+        for (const [gain, normal, raised] of [[this.emphasis.gain, 1, ANTICIPATION_GAIN], [this.drums.gain, 0, 1.32]]) {
+            const start = restart ? normal : gain.value;
+            const target = this.active ? raised : normal;
+            gain.cancelScheduledValues(0);
+            gain.setValueAtTime(start, now);
+            if (start !== target) gain.linearRampToValueAtTime(target, end);
         }
     }
 }

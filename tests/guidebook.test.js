@@ -1,7 +1,7 @@
 /** Checks that Guidebook content mirrors the game's rules and is fully localized. */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { GUIDEBOOK_PROSE, GUIDEBOOK_TABS, guidebookTabForMode, jinxRows, pokerHandRows } from "../src/scenes/guidebookContent.js";
+import { GUIDEBOOK_PROSE, GUIDEBOOK_TABS, guidebookTab, jinxRows, pokerHandRows } from "../src/scenes/guidebookContent.js";
 import { POKER_HANDS } from "../src/systems/rules/PokerRule.js";
 import { JINXES } from "../src/systems/DeckSystem.js";
 import { PLAY_COST, MULLIGAN_COST, MULLIGAN_MAX } from "../src/systems/PlaySystem.js";
@@ -25,10 +25,10 @@ test("energy costs in the prose match the game constants", () => {
     assert.ok(text.includes(`Mulligan (${MULLIGAN_COST} energy): swap up to ${MULLIGAN_MAX}`));
 });
 
-test("opening from a battle picks the tab for the current combo mode", () => {
-    assert.equal(guidebookTabForMode("poker"), "poker");
-    assert.equal(guidebookTabForMode("blackjack"), "blackjack");
-    assert.ok(GUIDEBOOK_TABS.some(tab => tab.id === guidebookTabForMode("poker")));
+test("the Guidebook starts on Basics and accepts bookmarks for every section", () => {
+    assert.equal(guidebookTab(), "basics");
+    assert.equal(guidebookTab("obsolete"), "basics");
+    for (const {id} of GUIDEBOOK_TABS) assert.equal(guidebookTab(id), id);
 });
 
 test("all prose and tab titles are translated in every non-English locale", () => {

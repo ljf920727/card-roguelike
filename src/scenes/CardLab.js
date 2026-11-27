@@ -1,7 +1,7 @@
 /** Configures repeatable poker encounters and deals only the cards chosen by the player. */
 import { createInitialState } from '../gameState.js';
 import { FLOORS } from '../systems/RunSystem.js';
-import { RANKS, SUITS, HAND_SIZE } from '../systems/DeckSystem.js';
+import { RANKS, SUITS, HAND_SIZE, sortHand } from '../systems/DeckSystem.js';
 import { JOKERS, addJoker } from '../systems/JokerSystem.js';
 import { CURSES, addCurse, LOADED_DECK_HP_SCALE } from '../systems/CurseSystem.js';
 import { getDifficulty, scaleEnemyStat } from '../systems/DifficultySystem.js';
@@ -9,7 +9,8 @@ import { appendText, setLabel, setText } from '../i18n/dom.js';
 import { createDeckChoice, SUIT_SYMBOLS } from '../components/cardElement.js';
 import { createPreferenceChoice } from '../components/LanguagePicker.js';
 import { openDialogAtStart } from '../components/dialogNavigation.js';
-import { OPEN_GUIDEBOOK_EVENT } from '../components/Guidebook.js';
+import { pokerHandRows } from './guidebookContent.js';
+import { dealPreset } from './cardLabPresets.js';
 import './cardLab.css';
 
 /** Shows a modifier's rules with the same switch as the game's settings. */
@@ -77,10 +78,27 @@ export class CardLab {
         });
         JOKERS.forEach(entry => addModifier(ui.jokers, entry, [entry.text]));
         CURSES.forEach(entry => addModifier(ui.curses, entry, [entry.boon, entry.cost]));
+        const presets = document.getElementById('lab-presets-dialog');
+        ui.presets = document.getElementById('lab-presets');
+        ui.presets.addEventListener('click', () => openDialogAtStart(presets));
+        document.getElementById('lab-presets-back').addEventListener('click', () => presets.close());
+        const choices = document.getElementById('lab-preset-choices');
+        for (const {name, label, effect} of pokerHandRows()) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'menu-button lab-preset';
+            const title = document.createElement('span');
+            const detail = document.createElement('small');
+            setText(title, label);
+            setText(detail, effect);
+            button.append(title, detail);
+            button.addEventListener('click', () => {
+                presets.close();
+                this.replaceHand(name);
+            });
+            choices.append(button);
+        }
         ui.config.addEventListener('click', () => this.configure());
-        document.getElementById('lab-reference').addEventListener('click', () => {
-            document.dispatchEvent(new CustomEvent(OPEN_GUIDEBOOK_EVENT, {detail: {tab: 'poker'}}));
-        });
         ui.dialog.addEventListener('input', () => this.validateSetup());
         ui.cancel.addEventListener('click', () => ui.dialog.close());
         ui.apply.addEventListener('click', () => {
@@ -201,11 +219,22 @@ export class CardLab {
         }));
     }
 
-    /** Deals a distinct copy of the chosen face on each press. */
+    /** Inserts a distinct copy of the chosen face in campaign hand order. */
     draw(card) {
         const state = this.battle.state;
         if (state.phase !== 'player' || state.hand.length >= state.player.handSize) return;
-        state.hand.push({ ...card, id: state.nextCardId++, selected: false });
+        state.hand = sortHand([...state.hand, { ...card, id: state.nextCardId++, selected: false }]);
+        this.rememberOpening();
+        this.battle.refreshBattle();
+    }
+
+    /** Deals a preset in campaign hand order with the rack's gilding and fresh card identities. */
+    replaceHand(name) {
+        const state = this.battle.state;
+        if (state.phase !== 'player' || state.result) return;
+        state.hand = sortHand(dealPreset(name)).map(card => ({
+            ...card, id: state.nextCardId++, selected: false, gilded: this.ui.gilded.checked,
+        }));
         this.rememberOpening();
         this.battle.refreshBattle();
     }
@@ -213,7 +242,9 @@ export class CardLab {
     /** Keeps the rack and editing controls in sync with the live selection and phase. */
     refresh() {
         const {phase, hand, player, result} = this.battle.state;
-        this.ui.draw.disabled = phase !== 'player' || hand.length >= player.handSize;
+        this.ui.draw.disabled = phase !== 'player';
+        this.ui.ranks.disabled = hand.length >= player.handSize;
+        this.ui.presets.disabled = phase !== 'player' || Boolean(result);
         setText(this.ui.count, `${hand.length} / ${player.handSize}`);
         this.ui.remove.disabled = phase !== 'player' || !hand.some(card => card.selected);
         this.ui.replay.hidden = Boolean(result);

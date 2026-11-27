@@ -1,12 +1,27 @@
 /** Verifies catalogue contracts, regional preferences and composed game-message localization. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { CATALOGUES } from '../src/i18n/catalogues.js';
 import { getDirection, getLocale, LOCALES, onLocaleChange, resolveLocale, setLocale, translate } from '../src/i18n/index.js';
 import { JOKERS } from '../src/systems/JokerSystem.js';
 import { CURSES } from '../src/systems/CurseSystem.js';
 import { JINXES } from '../src/systems/DeckSystem.js';
 import { FLOORS } from '../src/systems/RunSystem.js';
+
+test('locale source files define each translation key only once', () => {
+    for (const { id } of LOCALES) {
+        const raw = readFileSync(new URL('../src/i18n/' + id + '.json', import.meta.url), 'utf8');
+        const keys = new Set();
+        // Read the string pairs before JSON parsing can overwrite a duplicate key.
+        for (const [, quotedKey] of raw.matchAll(/("(?:\\.|[^"\\])*")\s*:\s*"(?:\\.|[^"\\])*"/g)) {
+            const key = JSON.parse(quotedKey);
+            assert.ok(!keys.has(key), id + ': duplicate key ' + key);
+            keys.add(key);
+        }
+        assert.deepEqual(keys, new Set(Object.keys(CATALOGUES[id])));
+    }
+});
 
 test('all nine locale files contain the same keys and preserve numeric and player placeholders', () => {
     assert.equal(LOCALES.length, 9);
