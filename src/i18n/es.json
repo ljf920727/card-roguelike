@@ -492,7 +492,7 @@
   "A poker play costs 2 energy, leaving 1 for a mulligan or a blackjack round. Unplayed cards stay for next turn, so you can build toward a flush or full house. Shield lasts a turn, then halves, then vanishes: time it against the enemy's move.": "El póquer cuesta 2 energía, dejando 1 para cambiar o jugar blackjack. Las cartas no jugadas permanecen para formar color o full. El escudo dura un turno, se reduce a la mitad y desaparece: úsalo según el ataque enemigo.",
   "Blackjack is the gamble: wins deal your total in damage and pay chips, losses let the enemy hit you. Double down on a strong start, surrender a bad one. Count what's left in your deck.": "El blackjack es una apuesta: ganar causa daño igual a tus puntos y da fichas; perder permite al enemigo atacar. Dobla un buen inicio o ríndete con uno malo. Cuenta las cartas restantes.",
   "You're on your own": "Ahora te toca",
-  "Each floor is two fights and a boss. Beating a boss offers a Curse and opens the shop, where blackjack chips buy potions, cards and Jokers. Turn Hints on in the side panel if you want tips along the way.": "Cada piso tiene dos combates y un jefe. Vencerlo ofrece una maldición y abre la tienda para comprar pociones, cartas y comodines con fichas. Activa los consejos laterales si necesitas ayuda.",
+  "Each floor is two fights and a boss. Beating a boss offers a Curse and opens the shop, where blackjack chips buy potions, cards and Jokers. Every rule and hand is in the Guidebook (top right); turn Hints on in Settings if you want tips along the way.": "Cada piso tiene dos combates y un jefe. Vencerlo ofrece una maldición y abre la tienda para comprar pociones, cartas y comodines con fichas. Todas las reglas están en la Guía; activa los consejos en Ajustes si necesitas ayuda.",
   "Goblin down": "Duende derrotado",
   "Try again": "Inténtalo otra vez",
   "Pick a reward, then choose Next fight to finish the tutorial.": "Elige una recompensa y luego Siguiente combate para terminar el tutorial.",
@@ -502,7 +502,7 @@
   "Play the pair": "Juega la pareja",
   "25 shield for 2 energy. Only the cards you play are discarded; the rest stay in your hand.": "25 escudo por 2 energía. Solo descartas las cartas jugadas; el resto permanece.",
   "Make a poker hand": "Forma una mano",
-  "Select the two 7s. Pairs shield, flushes heal, and bigger hands hit harder: the full list is in the side panel.": "Selecciona los dos 7. Las parejas dan escudo, el color cura y las manos grandes golpean más. La lista está en el panel lateral.",
+  "Select the two 7s. Pairs shield, flushes heal, and bigger hands hit harder: the Guidebook (top right) lists every hand.": "Selecciona los dos 7. Las parejas dan escudo, el color cura y las manos grandes golpean más. La lista está en la Guía (arriba a la derecha).",
   "Mulligan what you don't need": "Cambia lo que no necesitas",
   "You have 1 energy left. Select up to 3 cards and swap them for new ones. Your hand carries into next turn, so keep what helps you build a bigger hand.": "Te queda 1 energía. Cambia hasta 3 cartas. Tu mano pasa al siguiente turno: conserva lo que ayude a formar una mejor combinación.",
   "End turn: the Goblin acts": "Fin del turno: actúa el duende",
@@ -657,5 +657,11 @@
   "Menu ·": "Menú ·",
   "Battle ·": "Batalla ·",
   "by Julie Damsgaard / Spring Spring / Spring Enterprises.": "de Julie Damsgaard / Spring Spring / Spring Enterprises.",
-  "by Kevin MacLeod (incompetech.com).": "de Kevin MacLeod (incompetech.com)."
+  "by Kevin MacLeod (incompetech.com).": "de Kevin MacLeod (incompetech.com).",
+  "Guidebook": "Guía",
+  "Basics": "Lo básico",
+  "Jinxes": "Infortunios",
+  "Guidebook sections": "Secciones de la guía",
+  "Hints": "Consejos",
+  "Deck": "Mazo"
 }

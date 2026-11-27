@@ -7,6 +7,7 @@ import {
 } from './scenes/BattleScene.js';
 import { MenuScreen } from './scenes/MenuScreen.js';
 import { installSettings } from './components/SettingsDialog.js';
+import { installGuidebook } from './components/Guidebook.js';
 import { installLocalization } from './i18n/dom.js';
 
 installLocalization();
@@ -37,6 +38,7 @@ async function main() {
   app.canvas.setAttribute('aria-hidden', 'true');
   const battle = new BattleScene(app, gameState);
   installSettings(theme => battle.setTheme(theme));
+  installGuidebook(() => gameState);
   new MenuScreen(battle).show();
 }
 

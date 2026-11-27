@@ -492,7 +492,7 @@
   "A poker play costs 2 energy, leaving 1 for a mulligan or a blackjack round. Unplayed cards stay for next turn, so you can build toward a flush or full house. Shield lasts a turn, then halves, then vanishes: time it against the enemy's move.": "पोकर की लागत 2 ऊर्जा है; 1 ऊर्जा बदलने या ब्लैकजैक के लिए बचती है। अनखेले पत्ते अगली बारी रहते हैं, ताकि फ्लश या फुल हाउस बना सकें। कवच एक बारी रहता है, फिर आधा, फिर खत्म; शत्रु की चाल के अनुसार समय चुनें।",
   "Blackjack is the gamble: wins deal your total in damage and pay chips, losses let the enemy hit you. Double down on a strong start, surrender a bad one. Count what's left in your deck.": "ब्लैकजैक एक जोखिम है: जीत पर अंकों जितनी क्षति और चिप्स, हार पर शत्रु का वार। अच्छे शुरुआती पत्तों पर दोगुना करें, खराब पर समर्पण। गड्डी में बचे पत्ते गिनें।",
   "You're on your own": "अब आपकी मर्ज़ी",
-  "Each floor is two fights and a boss. Beating a boss offers a Curse and opens the shop, where blackjack chips buy potions, cards and Jokers. Turn Hints on in the side panel if you want tips along the way.": "हर मंज़िल में दो लड़ाइयाँ और एक बॉस है। बॉस हराने पर अभिशाप और दुकान मिलते हैं, जहाँ ब्लैकजैक के चिप्स से औषधि, पत्ते और जोकर खरीदें। संकेत चाहिए तो साइड पैनल में चालू करें।",
+  "Each floor is two fights and a boss. Beating a boss offers a Curse and opens the shop, where blackjack chips buy potions, cards and Jokers. Every rule and hand is in the Guidebook (top right); turn Hints on in Settings if you want tips along the way.": "हर मंज़िल में दो लड़ाइयाँ और एक बॉस है। बॉस हराने पर अभिशाप और दुकान मिलते हैं, जहाँ ब्लैकजैक के चिप्स से औषधि, पत्ते और जोकर खरीदें। सभी नियम गाइडबुक में हैं; संकेत चाहिए तो सेटिंग्स में चालू करें।",
   "Goblin down": "गोब्लिन पराजित",
   "Try again": "फिर प्रयास करें",
   "Pick a reward, then choose Next fight to finish the tutorial.": "पुरस्कार चुनें, फिर प्रशिक्षण समाप्त करने के लिए अगली लड़ाई चुनें।",
@@ -502,7 +502,7 @@
   "Play the pair": "जोड़ी खेलें",
   "25 shield for 2 energy. Only the cards you play are discarded; the rest stay in your hand.": "2 ऊर्जा में 25 कवच। केवल खेले पत्ते फेंके जाते हैं; बाकी हाथ में रहते हैं।",
   "Make a poker hand": "पोकर संयोजन बनाएँ",
-  "Select the two 7s. Pairs shield, flushes heal, and bigger hands hit harder: the full list is in the side panel.": "दोनों 7 चुनें। जोड़ियाँ कवच, फ्लश उपचार और बड़े संयोजन अधिक क्षति देते हैं; पूरी सूची साइड पैनल में है।",
+  "Select the two 7s. Pairs shield, flushes heal, and bigger hands hit harder: the Guidebook (top right) lists every hand.": "दोनों 7 चुनें। जोड़ियाँ कवच, फ्लश उपचार और बड़े संयोजन अधिक क्षति देते हैं; पूरी सूची ऊपर दाईं ओर गाइडबुक में है।",
   "Mulligan what you don't need": "अनचाहे पत्ते बदलें",
   "You have 1 energy left. Select up to 3 cards and swap them for new ones. Your hand carries into next turn, so keep what helps you build a bigger hand.": "1 ऊर्जा बची है। अधिकतम 3 पत्ते चुनकर बदलें। हाथ अगली बारी रहता है, इसलिए बड़े संयोजन में काम आने वाले पत्ते रखें।",
   "End turn: the Goblin acts": "बारी समाप्त: गोब्लिन की चाल",
@@ -657,5 +657,11 @@
   "Menu ·": "मेनू ·",
   "Battle ·": "लड़ाई ·",
   "by Julie Damsgaard / Spring Spring / Spring Enterprises.": "संगीत: Julie Damsgaard / Spring Spring / Spring Enterprises।",
-  "by Kevin MacLeod (incompetech.com).": "संगीत: Kevin MacLeod (incompetech.com)।"
+  "by Kevin MacLeod (incompetech.com).": "संगीत: Kevin MacLeod (incompetech.com)।",
+  "Guidebook": "गाइडबुक",
+  "Basics": "बुनियादी बातें",
+  "Jinxes": "मनहूस पत्ते",
+  "Guidebook sections": "गाइडबुक अनुभाग",
+  "Hints": "संकेत",
+  "Deck": "डेक"
 }

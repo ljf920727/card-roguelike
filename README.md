@@ -60,7 +60,7 @@ The first solo run starts with the tutorial enabled. It teaches the loop in six 
 
 ### Normal runs
 
-The game opens on a main menu. **Play** starts a run; its right-hand heart opens play options, then **Difficulty** reveals Easy (♠), Normal (♠♠), and Hard (♠♠♠). **How to play** shows the rules. During a run, **Menu** in the top bar or the Esc key brings the menu back with **Continue run** and **New run**. Esc closes each settings level before returning to the battle.
+The game opens on a main menu. **Play** starts a run; its right-hand heart opens play options, then **Difficulty** reveals Easy (♠), Normal (♠♠), and Hard (♠♠♠). **Guidebook** opens the rules. During a run, the top bar's **Guidebook** button (or the `?` key) opens the same rules reference on the tab for your current combo mode; it shows a pulsing dot until it has been opened once. **Menu** in the top bar or the Esc key brings the menu back with **Continue run** and **New run**. Esc closes each settings level before returning to the battle.
 
 Choose **Easy**, **Normal** or **Hard** before starting a solo run. Easy multiplies enemy HP and attack ranges by 0.8; Normal preserves the standard balance; Hard multiplies them by 1.25. Values round to whole points. Blackjack loss penalties and enemy intents use the scaled attack range. Card effects, rewards, healing and energy costs stay the same. The difficulty badge shows the active run's setting; changing the menu selection affects only the next run. The preference is saved locally when storage is available. Guided solo runs always use Normal and preserve the selected difficulty for regular runs. Difficulty scaling applies to all five floors and stacks with Loaded Deck's HP multiplier. These presets are playtest values, not finalized balance.
 
@@ -125,7 +125,7 @@ Jinxes persist between fights until removed through rewards or the shop. Mulliga
 
 **Shop.** After the Curse choice, chips from blackjack buy a healing potion (25 HP, restocked every visit), cards, card removal, gilding, Jokers and extra Joker slots (expensive, and pricier each time). Jokers sell back for half price.
 
-Outside the tutorial, your turn ends on its own about a second after you run out of cards or energy (unless a blackjack round is still in progress). **End turn** resolves the enemy's intent; the forecast under the buttons shows what it will do.
+Outside the tutorial, your turn ends on its own about a second after you run out of cards or energy (unless a blackjack round is still in progress). **End turn** resolves the enemy's intent; a row of pictograms centred under the End turn button shows what it will do: shield spent (shield with a minus), shield broken (shield with a cross), HP lost (heart with a minus), a charge's hit next turn (bolt, then dashed heart) and the shield's decay (dashed shield). Hover or use a screen reader for the full sentence. Actions that spend energy (Play cards, Deal, Double down and a paid Mulligan) show one pip per energy under their button, turning red when you can't afford them; `src/systems/ActionCosts.js` decides which pips apply.
 
 All numbers are placeholders for playtesting. Battle visuals use PixiJS drawing code and system fonts; no runtime requests to external asset services are needed.
 
@@ -149,9 +149,9 @@ Hosted clients require `VITE_MULTIPLAYER_URL` at build time, pointing to the dep
 Tutorial lesson setup, restrictions, and action-driven progression live in
 `src/systems/TutorialSystem.js`. `src/scenes/tutorialLessons.js` supplies contextual
 lesson content; `src/scenes/guidePosition.js` places tooltips without covering their
-targets. `src/scenes/GuideView.js` displays lessons, tips, and the turn forecast;
+targets. `src/scenes/GuideView.js` displays lessons and tips and refreshes the turn forecast;
 `src/scenes/guide.css` styles guidance and keyboard card
-controls. `src/tutorialPreferences.js` stores guided-run and hint preferences so
+controls. `src/tutorialPreferences.js` stores guided-run, hint and Guidebook-seen preferences so
 future account integration can replace local persistence independently of combat.
 
 Run `npm test` for the Node built-in test suite, and `npm run build` for production
@@ -255,7 +255,7 @@ The interface itself is HTML in `index.html`, laid out with flexbox and grid in 
 - Run progress, deck counts and rules for the active combo type
 - Blackjack / Poker combo type toggle
 - Selected card preview and feedback
-- Play cards / Next fight / New run and End turn buttons
+- Play cards / Next fight and End turn buttons
 - Light / dark mode, published as CSS custom properties from `themes.js`
 
 Only the player hand is drawn with PixiJS. `resize()` scales the cards to the width of the `#hand` element and sizes the canvas to fit.
@@ -322,7 +322,7 @@ A hand can grant more than one action (a full house deals damage and gives shiel
 
 ### `src/systems/rules/PokerRule.js`
 
-**Purpose:** Detects poker hands from high card to flush five in 1 to 5 cards, and defines each hand's effect in `POKER_HANDS`. The side panel's hand list is generated from `POKER_HANDS`, so changing an effect there updates the UI too.
+**Purpose:** Detects poker hands from high card to flush five in 1 to 5 cards, and defines each hand's effect in `POKER_HANDS`. The Guidebook's Poker tab lists the hands from `POKER_HANDS`, so changing an effect there updates the UI too.
 
 ✅ Safe for gameplay balancing.
 
@@ -332,7 +332,7 @@ A hand can grant more than one action (a full house deals damage and gives shiel
 
 **Purpose:** Applies combat actions, shield decay and enemy intents to the game state.
 
-`damagePlayer()` spends decaying shield before fresh shield; `decayShield()` runs at the start of each turn. `resolveIntent()` carries out the enemy's telegraphed move (attack, pierce, shatter, multi-hit, charge) and `forecastIntent()` predicts it for the UI without changing state. Encounter Jinx batches live in `RunSystem`; blackjack Jinx penalties live in `BlackjackSystem`.
+`damagePlayer()` spends decaying shield before fresh shield; `decayShield()` runs at the start of each turn. `resolveIntent()` carries out the enemy's telegraphed move (attack, pierce, shatter, multi-hit, charge) and `forecastIntent()` / `forecastTurnEnd()` predict it (damage, then shield decay) for the UI without changing state; `src/components/TurnForecast.js` draws the pictograms. Encounter Jinx batches live in `RunSystem`; blackjack Jinx penalties live in `BlackjackSystem`.
 
 Current actions:
 
@@ -438,7 +438,19 @@ Keep play permission and resource consumption here; keep combination detection i
 
 ### `src/scenes/MenuScreen.js`
 
-**Purpose:** Shows the main menu over the battle, starts or resumes solo runs through `BattleScene`, and opens How to play. While the menu is open the battle is made inert, so it can't be clicked or tabbed into.
+**Purpose:** Shows the main menu over the battle, starts or resumes solo runs through `BattleScene`, and wires its buttons; the Guidebook button is handled by `Guidebook.js`. While the menu is open the battle is made inert, so it can't be clicked or tabbed into.
+
+---
+
+### `src/components/JokersDialog.js`
+
+**Purpose:** The Jokers button beside the draw pile and the modal it opens. The button shows `Jokers (n/slots)`; the modal lists each Joker and, once any are taken, the run's Curses. `BattleScene.refreshRunInfo()` updates it every refresh.
+
+---
+
+### `src/components/Guidebook.js`
+
+**Purpose:** The tabbed rules dialog (Basics, Poker, Blackjack, Jinxes, Between fights). Any `[data-guidebook]` button opens it (the value names the starting tab; without one it opens on the current combo mode's tab), as does the `?` key or a `juniper:guidebook` event with `detail.tab`, which the Card Lab uses. `src/scenes/guidebookContent.js` holds the text and builds the poker and Jinx tables from `POKER_HANDS` and `JINXES`; prose reuses existing catalogue strings so every language is covered. Co-op does not install it yet because its energy costs differ from solo.
 
 ---
 
@@ -471,7 +483,7 @@ Theme preference is separate from battle data. `BattleScene` repaints the views;
 
 **Purpose:** Lays out and styles the battle interface.
 
-It uses flexbox and grid, so the layout adapts to the screen: the side panel moves below the table under 900px wide, and the hand row stacks with a horizontal combo toggle under 640px. Colors are CSS custom properties set from `themes.js`.
+It uses flexbox and grid, so the layout adapts to the screen: the table is a single full-width column (floor title, house rule and progress stepper on top, the turn counter in the middle, the draw pile and a Jokers button beside the actions), a status ribbon beneath the table with the draw pile on its left, HP, shield, energy and chips in the middle, and the Jokers button on its right, and the hand row stacks with a horizontal combo toggle under 640px. Colors are CSS custom properties set from `themes.js`.
 
 ✅ Safe for UI / presentation changes.
 

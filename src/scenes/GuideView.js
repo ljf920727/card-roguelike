@@ -1,10 +1,10 @@
 /** Presents localized game information and accessible controls. */
-import { setLabel, setText } from '../i18n/dom.js';
+import { setText } from '../i18n/dom.js';
 import { advanceTutorial, isTutorialActive, skipTutorial, TUTORIAL_STEPS } from "../systems/TutorialSystem.js";
-import { getHintsEnabled, saveHintsEnabled } from "../tutorialPreferences.js";
+import { getHintsEnabled, HINTS_CHANGED_EVENT } from "../tutorialPreferences.js";
 import { getTutorialLesson } from "./tutorialLessons.js";
 import { positionGuide } from "./guidePosition.js";
-import { forecastIntent } from "../systems/CombatSystem.js";
+import { TurnForecast } from "../components/TurnForecast.js";
 import "./guide.css";
 
 export class GuideView {
@@ -20,11 +20,9 @@ export class GuideView {
         this.highlight = document.getElementById("guide-highlight");
         this.dismiss = document.getElementById("guide-dismiss");
         this.skip = document.getElementById("guide-skip");
-        this.forecast = document.getElementById("turn-forecast");
-        this.toggle = document.getElementById("hints-button");
-        this.toggle.addEventListener("click", () => {
-            this.enabled = !this.enabled;
-            saveHintsEnabled(this.enabled);
+        this.forecastView = new TurnForecast(document.getElementById("turn-forecast"));
+        document.addEventListener(HINTS_CHANGED_EVENT, () => {
+            this.enabled = getHintsEnabled();
             this.dismissedKey = null;
             this.revealRequested = this.enabled;
             this.refresh();
@@ -55,10 +53,6 @@ export class GuideView {
     refresh() {
         const state = this.state;
         const active = isTutorialActive(state);
-        this.toggle.setAttribute("aria-pressed", String(this.enabled));
-        setText(this.toggle, `Hints: ${this.enabled ? "on" : "off"}`);
-        this.toggle.disabled = active;
-        setLabel(this.toggle, 'title', active ? "Tutorial guidance stays on until you reach the next fight." : "Show optional combat tips");
         let lesson = getTutorialLesson(state);
         if (!lesson && this.enabled) {
             lesson = { key: `hint:${state.mode}:${state.result}`, title: "Choose your approach", target: ".mode-toggle",
@@ -104,10 +98,7 @@ export class GuideView {
         }
         this.lastKey = visible ? lesson.key : null;
         this.revealRequested = false;
-        const forecast = forecastIntent(state);
-        setText(this.forecast, state.result ? "" :
-            state.enemy.intent?.type === "charge" ? `Click End turn: ${state.enemy.name} charges up and hits for ${state.enemy.intent.next} next turn. Then: hand tops up to 5, ${state.player.maxEnergy} energy.` :
-            `Click End turn: ${state.enemy.name} deals ${forecast.incoming}; shield blocks ${forecast.blocked}; you lose ${forecast.damage} HP. Then: hand tops up to 5, ${state.player.maxEnergy} energy, shield decays.`);
+        this.forecastView.update(state);
     }
 
     schedulePosition() {

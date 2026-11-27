@@ -3,6 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
     getTutorialEnabled, saveTutorialEnabled, getHintsEnabled, saveHintsEnabled,
+    getGuidebookSeen, saveGuidebookSeen,
 } from "../src/tutorialPreferences.js";
 
 /** Provides isolated preference storage with optional existing records. */
@@ -42,4 +43,11 @@ test("unavailable storage keeps tutorial choices for the current session", () =>
     saveTutorialEnabled(true, storage);
     assert.equal(getTutorialEnabled(storage), true);
     assert.doesNotThrow(() => saveHintsEnabled(true, storage));
+});
+
+test("the Guidebook counts as unseen until opened, then stays seen", () => {
+    const storage = stored();
+    assert.equal(getGuidebookSeen(storage), false);
+    saveGuidebookSeen(true, storage);
+    assert.equal(getGuidebookSeen(storage), true);
 });

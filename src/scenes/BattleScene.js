@@ -1,5 +1,5 @@
 /** Binds the HTML battle interface to game state and draws the hand with PixiJS. */
-import { appendText, setText, setLabel, setChildren } from '../i18n/dom.js';
+import { setText, setLabel } from '../i18n/dom.js';
 
 import {renderHearts} from '../components/healthDisplay.js';
 import {PokerPreview} from '../components/PokerPreview.js';
@@ -7,7 +7,6 @@ import {Container} from 'pixi.js';
 
 import {CARD_SELECTED_LIFT, CardView} from '../components/CardView.js';
 import {cardLabel, createCardElement} from '../components/cardElement.js';
-import {POKER_HANDS} from '../systems/RuleEngine.js';
 import {describePokerActions, isLethalPokerHand, isRarePokerHand, rarePokerHit} from '../systems/rules/PokerRule.js';
 import {
   bustLimit,
@@ -21,7 +20,6 @@ import {
   hit,
   isRoundActive,
   lossPenalty,
-  NATURAL_DAMAGE,
   stand,
   surrender,
   WIN_CHIPS,
@@ -45,8 +43,7 @@ import {
   startNextFight,
 } from '../systems/RunSystem.js';
 import {ensureRewards} from '../systems/RewardSystem.js';
-import {CARD_COUNTER_REVEAL, getJoker, hasJoker, jokerSlots} from '../systems/JokerSystem.js';
-import {getCurse} from '../systems/CurseSystem.js';
+import {CARD_COUNTER_REVEAL, hasJoker} from '../systems/JokerSystem.js';
 import {resetGameState} from '../gameState.js';
 import {getPreferredDifficulty} from '../difficultyPreferences.js';
 import {getDifficulty} from '../systems/DifficultySystem.js';
@@ -54,6 +51,8 @@ import {BATTLE_THEMES, getPreferredTheme, savePreferredTheme} from '../themes.js
 import {isTutorialActive, tutorialAllows, tutorialHoldsTurn} from '../systems/TutorialSystem.js';
 import {getTutorialEnabled, saveTutorialEnabled} from '../tutorialPreferences.js';
 import {GuideView} from './GuideView.js';
+import {actionCosts} from '../systems/ActionCosts.js';
+import {JokersDialog} from '../components/JokersDialog.js';
 import {RunScreen} from './RunScreen.js';
 import {shieldCap} from '../systems/CombatSystem.js';
 import {describeCard, getJinx} from '../systems/DeckSystem.js';
@@ -94,13 +93,15 @@ export class BattleScene {
       'hp-hearts', 'hp-text', 'shield-stat', 'shield-text', 'shield-cap', 'shield-fill', 'shield-fresh', 'energy-chips', 'phase-text',
       'last-action', 'enemy-token', 'enemy-icon', 'enemy-hearts', 'enemy-name', 'enemy-hp', 'enemy-intent',
       'selection-text', 'result-text', 'feedback-text', 'hand', 'play-button', 'end-turn-button',
-      'fight-text', 'turn-text', 'draw-text', 'discard-text', 'intent-title', 'side-intent',
-      'rules-title', 'rules-body', 'restart-button', 'table', 'stand-button',
+      'fight-text', 'turn-text', 'draw-text', 'deck-box',
+      'table', 'stand-button',
       'bj-dealer', 'bj-player', 'bj-dealer-total', 'bj-player-total', 'bj-dealer-label', 'hand-inputs',
       'mulligan-button', 'double-button', 'surrender-button', 'chips-text', 'house-rule', 'next-card',
-      'intent-detail', 'joker-list', 'jokers-title', 'curse-list', 'curses-section', 'floor-route', 'boss-label',
+      'intent-detail', 'floor-route', 'boss-label', 'jokers-button', 'selection-detail',
+      'play-cost', 'mulligan-cost', 'double-cost',
     ].map(id => [id, document.getElementById(id)]));
     this.pokerPreview = new PokerPreview(this.ui.table, this.ui['result-text']);
+    this.jokersDialog = new JokersDialog(this.ui['jokers-button']);
     this.runScreen = new RunScreen(state, () => this.refreshBattle());
     this.modeOptions = [...document.querySelectorAll('.mode-option')];
 
@@ -114,6 +115,7 @@ export class BattleScene {
       const validation = mulligan(this.state);
       if (!validation.allowed) {
         setText(this.ui['feedback-text'], validation.reason);
+        this.ui['selection-detail'].dataset.idle = 'false';
         return;
       }
       void audio.play('shuffle');
@@ -127,7 +129,6 @@ export class BattleScene {
       surrender(this.state);
       this.afterAction();
     });
-    this.ui['restart-button'].addEventListener('click', () => this.startRun());
     this.modeOptions.forEach(option => option.addEventListener('click', () => this.setMode(option.dataset.mode)));
     new ResizeObserver(() => this.scheduleResize()).observe(this.ui.hand);
 
@@ -247,6 +248,7 @@ export class BattleScene {
     });
     if (!validation.allowed) {
       setText(this.ui['feedback-text'], validation.reason);
+      this.ui['selection-detail'].dataset.idle = 'false';
       return;
     }
     this.afterAction(rarePokerHit(validation.evaluation));
@@ -285,6 +287,7 @@ export class BattleScene {
     this.ui['result-text'].style.setProperty('--result-color', view.color ?? this.theme.text);
     const autoEnding = Boolean(this.autoEndTimeout);
     setText(this.ui['feedback-text'], autoEnding ? `${this.autoEndReason} Ending your turn…` : view.feedback);
+    this.ui['selection-detail'].dataset.idle = String(Boolean(view.idle) && !autoEnding);
     setText(this.ui['play-button'], view.primaryLabel);
     this.ui['play-button'].disabled = !view.primaryEnabled || autoEnding;
     const ready = !this.state.result && this.state.mode === 'poker' &&
@@ -296,6 +299,7 @@ export class BattleScene {
     const mulliganCheck = validateMulligan(this.state);
     setText(this.ui['mulligan-button'], `Mulligan (${mulliganCheck.cost ? `${mulliganCheck.cost} energy` : 'free'})`);
     this.ui['mulligan-button'].disabled = !mulliganCheck.allowed || autoEnding || Boolean(this.state.result);
+    this.renderCostPips();
     this.ui['double-button'].disabled = !canDoubleDown(this.state);
     this.ui['surrender-button'].disabled = !canSurrender(this.state);
     const canAct = this.state.phase === 'player' && this.state.player.hp > 0 && this.state.enemy.hp > 0 && !autoEnding;
@@ -364,7 +368,8 @@ export class BattleScene {
         result: 'Pick your cards',
         feedback: `Select 1 to 5 cards to play a poker hand (${PLAY_COST} energy), or up to 3 to mulligan.`,
         primaryLabel: 'Play cards',
-        primaryEnabled: false
+        primaryEnabled: false,
+        idle: true
       };
     }
     return {
@@ -385,7 +390,7 @@ export class BattleScene {
     const dealFeedback = dealable ? `Costs ${DEAL_COST} energy. Win: damage and ${WIN_CHIPS}+ chips. Lose: ${name} hits you for ${lossPenalty(this.state)}.` :
         isTutorialActive(this.state) ? 'Follow the tutorial prompt above.' : 'Not enough energy. End your turn to restore energy.';
     if (!round) {
-      return {result: 'Deal to play a round', feedback: dealFeedback, primaryLabel: 'Deal', primaryEnabled: dealable};
+      return {result: 'Deal to play a round', feedback: dealFeedback, primaryLabel: 'Deal', primaryEnabled: dealable, idle: dealable};
     }
     if (round.status === 'playing') {
       const options = round.player.length === 2 && !round.doubled ? ' Double down or surrender now, or' : '';
@@ -596,7 +601,7 @@ export class BattleScene {
     this.createCards();
     const impact = this.refreshEnemy(pokerHit);
     this.refreshHUD();
-    this.refreshSidePanel();
+    this.refreshRunInfo();
     this.onCardSelectionChanged();
     setText(this.ui['last-action'], this.state.lastAction);
     this.resize();
@@ -667,88 +672,63 @@ export class BattleScene {
     return impact;
   }
 
-  /** Renders run information and structured rules that reflow between a sidebar and a bottom panel. */
-  refreshSidePanel() {
-    const {floor, fight, turn, encounters, rules, jokers, curses} = this.state.run;
+  /** Shows one energy pip per point of cost under each action that spends energy. */
+  renderCostPips() {
+    const costs = actionCosts(this.state);
+    const energy = this.state.player.energy;
+    [['play-cost', costs.play || costs.deal], ['mulligan-cost', costs.mulligan], ['double-cost', costs.double]].forEach(([id, cost]) => {
+      const element = this.ui[id];
+      element.hidden = !cost;
+      if (!cost) {
+        element.replaceChildren();
+        return;
+      }
+      element.classList.toggle('short', energy < cost);
+      element.replaceChildren(...Array.from({length: cost}, () => Object.assign(document.createElement('i'), {className: 'cost-pip'})));
+      setLabel(element, 'aria-label', `${cost} energy`);
+    });
+  }
+
+  /** Renders the floor header and progress, turn counter, deck pile, enemy detail and Jokers. */
+  refreshRunInfo() {
+    const {floor, fight, turn, encounters, rules} = this.state.run;
     setText(this.ui['fight-text'], `Floor ${floor}: ${getFloor(this.state).name}`);
     this.ui['floor-route'].replaceChildren(...encounters.map((enemy, index) => {
-      const step = document.createElement('span');
       const cleared = index + 1 < fight || (index + 1 === fight && this.state.result === 'victory');
-      step.className = cleared ? 'cleared' : index + 1 === fight ? 'current' : '';
-      setText(step, `${cleared ? 'Cleared: ' : ''}${enemy.boss ? `Boss: ${enemy.name}` : `Fight ${index + 1}`}`);
-      if (index + 1 === fight) step.setAttribute('aria-current', 'step');
+      const current = index + 1 === fight && !cleared;
+      const name = enemy.boss ? `Boss: ${enemy.name}` : `Fight ${index + 1}`;
+      const step = document.createElement('li');
+      step.className = cleared ? 'cleared' : current ? 'current' : 'upcoming';
+      step.dataset.boss = String(Boolean(enemy.boss));
+      const marker = document.createElement('span');
+      marker.className = 'step-marker';
+      marker.setAttribute('aria-hidden', 'true');
+      marker.textContent = cleared ? '✓' : enemy.boss ? '♛' : String(index + 1);
+      const label = document.createElement('span');
+      label.className = 'step-label';
+      label.setAttribute('aria-hidden', 'true');
+      setText(label, name);
+      const spoken = document.createElement('span');
+      spoken.className = 'sr-only';
+      setText(spoken, cleared ? `Cleared: ${name}` : name);
+      step.append(marker, label, spoken);
+      if (current) step.setAttribute('aria-current', 'step');
       return step;
     }));
-    setText(this.ui['turn-text'], `${isBossFight(this.state) ? 'Boss fight' : `Fight ${fight} of ${encounters.length}`} · Turn ${turn}`);
-    setText(this.ui['house-rule'], rules ? `House rule: ${rules.label}` : 'No house rule');
+    setText(this.ui['turn-text'], `Turn ${turn}`);
+    this.ui['house-rule'].hidden = !rules;
+    if (rules) setText(this.ui['house-rule'], `House rule: ${rules.label}`);
     const top = this.state.drawPile.slice(-CARD_COUNTER_REVEAL).reverse();
     this.ui['next-card'].hidden = !hasJoker(this.state, 'card-counter');
     setText(this.ui['next-card'], top.length ? `Next cards: ${top.map(cardLabel).join(', ')}${top.length < CARD_COUNTER_REVEAL ? ', then a reshuffle' : ''}` :
         'Next cards: reshuffle');
     setText(this.ui['intent-detail'], this.state.result ? '' : this.intentDetail(this.state.enemy.intent));
-    setText(this.ui['jokers-title'], `Jokers (${jokers.length}/${jokerSlots(this.state)})`);
-    this.ui['curses-section'].hidden = !curses.length;
-    this.ui['curse-list'].replaceChildren(...curses.map(id => {
-      const curse = getCurse(id);
-      const item = document.createElement('li');
-      const name = document.createElement('strong');
-      setText(name, curse.name);
-      item.append(name);
-      appendText(item, ` ${curse.boon} ${curse.cost}`);
-      return item;
-    }));
-    this.ui['joker-list'].replaceChildren(...(jokers.length ? jokers.map(id => {
-      const joker = getJoker(id);
-      const item = document.createElement('li');
-      const name = document.createElement('strong');
-      setText(name, joker.name);
-      item.append(name);
-      appendText(item, ` ${joker.text}`);
-      return item;
-    }) : [Object.assign(document.createElement('li'), {
-      className: 'muted',
-      textContent: ''
-    })]));
-    if (!jokers.length) setText(this.ui['joker-list'].firstElementChild, this.lab ? 'None' : 'Win fights to earn Jokers.');
-    setText(this.ui['draw-text'], `${this.state.drawPile.length} cards in draw pile`);
-    setText(this.ui['discard-text'], `${this.state.discardPile.length + this.state.usedCards.length} cards in discard`);
-    setText(this.ui['intent-title'], `${this.state.enemy.name}'s next move`);
-    setText(this.ui['side-intent'], this.state.result ? 'None' : this.describeIntent(this.state.enemy.intent));
-    setText(this.ui['rules-title'], this.state.mode === 'poker' ? 'Poker hands' : 'Blackjack');
-    if (this.state.mode === 'poker') {
-      const list = document.createElement('dl');
-      list.className = 'poker-hands';
-      POKER_HANDS.forEach(hand => {
-        const entry = document.createElement('div');
-        const term = document.createElement('dt');
-        setText(term, hand.label);
-        const effect = document.createElement('dd');
-        setText(effect, hand.name === 'HIGH_CARD' ? '1.5x value, max 15 dmg' : describePokerActions(hand.actions, { compact: true }));
-        entry.append(term, effect);
-        list.append(entry);
-      });
-      setChildren(this.ui['rules-body'], list);
-    } else {
-      const rulesGrid = document.createElement('div');
-      rulesGrid.className = 'blackjack-rules';
-      const introduction = document.createElement('p');
-      setText(introduction, `Deal to get 2 cards; the ${this.state.enemy.name} gets 2, one face down. Hit to take a card, stand to stop. The ${this.state.enemy.name} then draws until it reaches 17${rules?.dealerHitsSoft17 ? ' (and hits soft 17)' : ''}.`);
-      const outcomes = document.createElement('div');
-      outcomes.className = 'blackjack-outcomes';
-      [
-        `Win: damage equal to your total (natural blackjack: ${NATURAL_DAMAGE}) plus chips.`,
-        `Lose or bust: the ${this.state.enemy.name} hits you for ${lossPenalty(this.state)}.`,
-        'Double down: 1 more energy, one card, double the result.',
-        'Surrender: take half the loss.',
-        `Tie: ${rules?.noPushRefund ? 'the house keeps your energy' : 'energy refunded'}.`,
-      ].forEach(source => {
-        const paragraph = document.createElement('p');
-        setText(paragraph, source);
-        outcomes.append(paragraph);
-      });
-      rulesGrid.append(introduction, outcomes);
-      setChildren(this.ui['rules-body'], rulesGrid);
-    }
+    const drawn = this.state.drawPile.length;
+    const discarded = this.state.discardPile.length + this.state.usedCards.length;
+    setText(this.ui['draw-text'], String(drawn));
+    setLabel(this.ui['deck-box'], 'aria-label', `${drawn} cards in draw pile`);
+    setLabel(this.ui['deck-box'], 'title', `${discarded} cards in discard`);
+    this.jokersDialog.update(this.state, this.lab);
   }
 
   /** Switches appearance and remembers it without changing battle state. */

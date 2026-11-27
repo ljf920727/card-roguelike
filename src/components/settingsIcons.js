@@ -12,3 +12,9 @@ export const LANGUAGE_ICON = `<svg class="settings-icon" viewBox="0 0 24 24" fil
     <ellipse cx="12" cy="12" rx="4" ry="9"/>
     <path d="M3 12h18M5 6.5c4 2 10 2 14 0M5 17.5c4-2 10-2 14 0"/>
 </svg>`;
+
+/** Open book outline marks the Guidebook without relying on translated words. */
+export const BOOK_ICON = `<svg class="settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" translate="no">
+    <path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5Z"/>
+    <path d="M12 6.5v13"/>
+</svg>`;

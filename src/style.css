@@ -80,7 +80,7 @@ button {
     flex-wrap: wrap;
     align-items: center;
     gap: 12px 28px;
-    padding: 14px var(--gutter);
+    padding: 8px var(--gutter);
     background: var(--panel);
     border-bottom: 1px solid var(--panel-line);
 }
@@ -208,22 +208,13 @@ button {
     margin-left: auto;
 }
 
-.phase {
-    font-family: var(--display-font), serif;
-    font-size: 1.15rem;
-    font-weight: 700;
-}
-
-.phase.enemy-turn {
-    color: var(--danger);
-}
-
 .layout {
     flex: 1;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 300px;
-    gap: var(--gutter);
-    padding: var(--gutter);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 12px;
+    padding: 12px var(--gutter);
 }
 
 .table {
@@ -231,9 +222,9 @@ button {
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 8px;
     min-width: 0;
-    padding: 16px clamp(16px, 3vw, 32px) 20px;
+    padding: 16px clamp(16px, 3vw, 32px) 18px;
     background: var(--felt);
     border: 3px solid color-mix(in srgb, var(--rim) 75%, transparent);
     border-radius: 14px;
@@ -257,7 +248,7 @@ button {
     align-items: center;
     justify-content: center;
     gap: 16px 28px;
-    padding: 18px 24px;
+    padding: 2px 24px;
 }
 
 .enemy-token {
@@ -394,7 +385,7 @@ button {
     justify-content: center;
     gap: 32px;
     width: 100%;
-    min-height: 214px;
+    min-height: 168px;
 }
 
 .mode-toggle {
@@ -533,18 +524,7 @@ button {
     border-radius: 18px;
 }
 
-.panel section + section {
-    padding-top: 16px;
-    border-top: 1px solid var(--panel-line);
-}
-
-.panel > *, .panel section > * { min-width: 0; }
-.panel-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-top: auto;
-}
+.panel > * { min-width: 0; }
 .blackjack-rules { display: grid; gap: 16px; }
 .blackjack-outcomes { display: grid; gap: 6px; }
 
@@ -563,13 +543,6 @@ button {
     margin-bottom: 6px;
 }
 
-.turn {
-    margin-bottom: 10px;
-    color: var(--secondary);
-    font-weight: 600;
-}
-
-.pile,
 .rules-body {
     color: var(--secondary);
 }
@@ -587,54 +560,6 @@ button {
     color: var(--muted);
 }
 
-.next-attack {
-    color: var(--attack);
-    font-size: 1.125rem;
-    font-weight: 600;
-}
-
-.restart {
-    margin-top: auto;
-}
-
-@media (max-width: 900px) {
-    .layout {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
-    .panel {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
-        align-items: start;
-    }
-
-    .panel section + section {
-        padding-top: 0;
-        border-top: 0;
-    }
-
-    .panel .rules {
-        grid-column: 1 / -1;
-        padding-top: 16px;
-        border-top: 1px solid var(--panel-line);
-    }
-
-    .panel .blackjack-rules {
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
-    }
-
-    .panel .poker-hands {
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
-        gap: 12px 24px;
-    }
-
-    .panel-actions {
-        grid-column: 1 / -1;
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-    }
-}
 
 @media (max-width: 640px) {
     .topbar {
@@ -1206,9 +1131,9 @@ button {
 .table[data-mode="blackjack"] .hand,
 .table[data-mode="poker"] .blackjack,
 .table[data-mode="poker"] #stand-button,
-.table[data-mode="poker"] #double-button,
+.table[data-mode="poker"] [data-slot="double"],
 .table[data-mode="poker"] #surrender-button,
-.table[data-mode="blackjack"] #mulligan-button {
+.table[data-mode="blackjack"] [data-slot="mulligan"] {
     display: none;
 }
 
@@ -1367,11 +1292,16 @@ button {
 }
 
 .house-rule {
-    margin: -4px 0 10px;
+    margin: 0;
+    padding: 3px 12px;
+    border: 1px solid color-mix(in srgb, var(--attack) 55%, transparent);
+    border-radius: 999px;
     color: var(--attack);
-    font-size: 0.875rem;
+    background: color-mix(in srgb, var(--attack) 10%, transparent);
+    font-size: 0.8rem;
     font-weight: 600;
 }
+.house-rule[hidden] { display: none; }
 
 .intent[data-intent="pierce"],
 .intent[data-intent="shatter"],
@@ -1388,9 +1318,10 @@ button {
 }
 
 .intent-detail {
-    margin-top: 4px;
+    margin: 0;
     font-size: 0.875rem;
 }
+.intent-detail:empty { display: none; }
 
 .joker-list {
     display: flex;
@@ -1570,3 +1501,233 @@ button {
     font-size: 0.875rem;
     font-weight: 600;
 }
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+/* Floor header: title, fight-to-boss stepper and house rule on one row. */
+.run-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 10px;
+    text-align: center;
+}
+.floor-title {
+    font: 700 1.2rem/1.2 var(--display-font), serif;
+}
+.run-header .floor-route { justify-content: center; }
+
+.floor-route {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.floor-route li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.floor-route li + li::before {
+    content: "";
+    width: clamp(20px, 4vw, 56px);
+    height: 3px;
+    margin-inline: 10px;
+    border-radius: 2px;
+    background: var(--panel-line);
+}
+.floor-route li.cleared + li::before { background: var(--heal); }
+.step-marker {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 26px;
+    height: 26px;
+    border: 2px solid var(--panel-line);
+    border-radius: 50%;
+    font-size: 0.8rem;
+    font-weight: 800;
+    line-height: 1;
+}
+.floor-route li[data-boss="true"] .step-marker { border-radius: 8px; font-size: 0.95rem; }
+.floor-route li.cleared { color: var(--heal); }
+.floor-route li.cleared .step-marker { border-color: var(--heal); background: var(--heal); color: var(--felt); }
+.floor-route li.current { color: var(--text); font-weight: 800; }
+.floor-route li.current .step-marker {
+    border-color: var(--attack);
+    background: var(--attack);
+    color: var(--felt);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--attack) 28%, transparent);
+}
+.floor-route li.upcoming { opacity: 0.7; }
+
+/* The turn counter sits centred in the gap; hand feedback appears below it and nudges it up. */
+.turn-zone {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    min-height: 8.25rem;
+    width: 100%;
+}
+.turn-zone > * { flex: none; }
+/* Turn counter replaces the idle prompt in the middle of the table. */
+.turn-counter {
+    display: grid;
+    justify-items: center;
+    gap: 0;
+    text-align: center;
+}
+.turn-number {
+    font: 700 2rem/1.15 var(--display-font), serif;
+}
+.turn-phase {
+    color: var(--secondary);
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.turn-phase.enemy-turn { color: var(--danger); }
+
+/* Hand and round feedback keeps its space but is invisible until there is something to say. */
+.selection-detail { min-height: 0; }
+.selection-detail[data-idle="true"] { display: none; }
+.selection-detail .result { min-height: 0; font-size: 1.3rem; }
+.selection-detail .selection-count { min-height: 0; }
+.selection-detail .feedback { min-height: 2lh; font-size: 0.85rem; }
+
+/* Action bar: draw pile and Jokers on the left, actions beside them. */
+.action-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    width: 100%;
+}
+.action-column {
+    display: grid;
+    justify-items: center;
+    min-width: 0;
+    /* Room for the absolutely placed forecast under End turn. */
+    padding-bottom: 40px;
+}
+.deck-box {
+    --card-w: 44px;
+    position: relative;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 2px;
+    width: var(--card-w);
+    aspect-ratio: 5 / 7;
+    border: 2px solid var(--rim);
+    border-radius: 9px;
+    color: var(--text);
+    background:
+        repeating-linear-gradient(45deg, transparent 0 6px, color-mix(in srgb, var(--rim) 16%, transparent) 6px 7px),
+        var(--panel);
+    box-shadow: 3px 3px 0 -1px var(--panel), 3px 3px 0 0 var(--rim), 6px 6px 0 -1px var(--panel), 6px 6px 0 0 var(--rim);
+}
+.deck-box::before {
+    content: "";
+    position: absolute;
+    inset: 5px;
+    border: 1px solid color-mix(in srgb, var(--rim) 60%, transparent);
+    border-radius: 5px;
+    pointer-events: none;
+}
+.deck-count {
+    font: 700 1.25rem/1 var(--display-font), serif;
+    font-variant-numeric: tabular-nums;
+}
+.deck-label {
+    color: var(--secondary);
+    font-size: 0.5rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+.joker-button { white-space: nowrap; }
+.next-card {
+    max-width: 150px;
+    margin: 0;
+    color: var(--secondary);
+    font-size: 0.75rem;
+    text-align: center;
+}
+.next-card[hidden] { display: none; }
+.jokers-dialog { height: fit-content; }
+.jokers-dialog .preferences-heading h2 { font-size: 1.6rem; }
+.jokers-dialog .joker-list { margin-block: 14px; }
+.jokers-dialog .rules-title { margin: 18px 0 0; }
+
+/* Status ribbon: deck pile, HP, shield, energy and chips, then the Jokers button, under the table. */
+.status-ribbon {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+}
+.ribbon-side { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.ribbon-left { justify-content: flex-end; }
+.ribbon-right { justify-content: flex-start; }
+@media (max-width: 760px) {
+    .status-ribbon { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .status-ribbon .stats { grid-column: 1 / -1; grid-row: 1; }
+    .ribbon-left { justify-content: flex-start; }
+    .ribbon-right { justify-content: flex-end; }
+}
+.status-ribbon .stats {
+    flex: 0 1 auto;
+    justify-content: center;
+    gap: 10px 32px;
+    padding: 6px 22px;
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    border-radius: 16px;
+}
+.status-ribbon .shield { margin-left: 0; }
+.status-ribbon .chips-badge { padding: 3px 12px; }
+.status-ribbon .chip-balance strong { font-size: 1.25rem; }
+.status-ribbon .casino-chip { width: 24px; height: 24px; }
+
+/* Each action's button sits in a slot; the annotation (cost pips or the End turn forecast) hangs beneath it. */
+.action-slot { position: relative; display: flex; }
+.cost-pips {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 5px;
+    padding: 4px 8px;
+}
+.cost-pips[hidden] { display: none; }
+.cost-pip {
+    --pip: var(--attack);
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle, var(--pip) 0 42%, var(--panel) 43% 48%, var(--pip) 49% 66%, transparent 67%),
+        repeating-conic-gradient(var(--pip) 0 40deg, var(--panel) 40deg 60deg);
+}
+/* Not enough energy: the pips turn red so the disabled button explains itself. */
+.cost-pips.short .cost-pip { --pip: var(--danger); }

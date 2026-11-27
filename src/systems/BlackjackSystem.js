@@ -142,7 +142,7 @@ export function stand(state) {
     return true;
 }
 
-function canAdjustBet(state) {
+export function canAdjustBet(state) {
     return isRoundActive(state) && state.blackjack.player.length === 2 && !state.blackjack.doubled;
 }
 

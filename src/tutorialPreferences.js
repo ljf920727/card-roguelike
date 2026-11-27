@@ -37,6 +37,9 @@ export function saveTutorialEnabled(enabled, storage) {
     unsavedTutorialChoice = write(TUTORIAL_KEY, enabled, storage) ? undefined : enabled;
 }
 
+/** Dispatched on `document` after the player changes the Hints setting. */
+export const HINTS_CHANGED_EVENT = "juniper:hints-changed";
+
 /** Reads the independent preference for optional combat tips. */
 export function getHintsEnabled(storage) {
     return read("juniper.hints", storage) ?? false;
@@ -45,4 +48,14 @@ export function getHintsEnabled(storage) {
 /** Remembers whether to display optional combat tips. */
 export function saveHintsEnabled(enabled, storage) {
     write("juniper.hints", enabled, storage);
+}
+
+/** Whether the player has opened the Guidebook, which stops its top-bar attention marker. */
+export function getGuidebookSeen(storage) {
+    return read("juniper.guidebookSeen", storage) ?? false;
+}
+
+/** Remembers that the Guidebook has been opened. */
+export function saveGuidebookSeen(seen, storage) {
+    write("juniper.guidebookSeen", seen, storage);
 }

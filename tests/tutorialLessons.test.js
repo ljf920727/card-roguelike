@@ -53,6 +53,8 @@ test("completion and fight outcomes have their own anchored guidance", () => {
     state.tutorial.step = "complete";
     state.run.fight = 2;
     assert.equal(getTutorialLesson(state).title, "You're on your own");
+    assert.equal(getTutorialLesson(state).target, ".topbar [data-guidebook]");
+    assert.match(getTutorialLesson(state).body, /Guidebook/);
     state.run.turn = 2;
     assert.equal(getTutorialLesson(state), null);
     state.tutorial = null;
@@ -62,6 +64,7 @@ test("completion and fight outcomes have their own anchored guidance", () => {
 test("free-play guidance does not restart when selecting cards or switching modes", () => {
     const state = createInitialState({ tutorial: true });
     state.tutorial.step = "free";
+    assert.equal(getTutorialLesson(state).target, "#enemy-intent");
     const key = getTutorialLesson(state).key;
     state.hand[0].selected = true;
     assert.equal(getTutorialLesson(state).key, key);

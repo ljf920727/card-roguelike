@@ -75,3 +75,11 @@ Run `npm test` and `npm run build`. For UI changes, also check keyboard controls
 320px and desktop layouts, both themes, reload/storage failures, live selections,
 blackjack rounds, rewards/shop cards, and two co-op clients using different
 languages. Linguistic review by native speakers is separate from functional tests.
+
+## Guidebook
+
+`src/scenes/guidebookContent.js` builds the Guidebook from existing catalogue
+sentences plus the poker and Jinx tables, so rule changes that update
+`POKER_HANDS` or `JINXES` reach every language. New Guidebook prose needs an
+entry in all nine dictionaries; `tests/guidebook.test.js` fails if a
+non-English locale falls back to English.

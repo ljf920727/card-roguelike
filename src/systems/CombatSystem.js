@@ -105,10 +105,13 @@ export function resolveIntent(state) {
     return outcome;
 }
 
-/** Predicts what End turn will do, without changing state. */
-export function forecastIntent(state) {
+/** Replays the enemy's telegraphed intent against copies of the player's shield and HP. */
+function simulateEnemyTurn(state) {
     const intent = state.enemy.intent ?? { type: "attack", value: 0 };
-    let shield = intent.type === "shatter" ? 0 : state.player.shield;
+    const shatter = intent.type === "shatter";
+    const shieldBefore = state.player.shield;
+    let shield = shatter ? 0 : shieldBefore;
+    let shieldOld = shatter ? 0 : (state.player.shieldOld ?? 0);
     const pierce = intent.type === "pierce";
     const extra = hasCurse(state, "thorns") ? THORNS_EXTRA_DAMAGE : 0;
     /** @type {number[]} Incoming damage for each individual hit. */
@@ -119,10 +122,58 @@ export function forecastIntent(state) {
     hits.forEach(amount => {
         const stopped = pierce ? 0 : Math.min(shield, amount);
         shield -= stopped;
+        shieldOld = Math.min(shield, Math.max(0, shieldOld - stopped));
         blocked += stopped;
         damage += amount - stopped;
     });
-    return { incoming: hits.reduce((sum, amount) => sum + amount, 0), blocked, damage: Math.min(state.player.hp, damage) };
+    return {
+        intent, shieldBefore, shield, shieldOld, blocked,
+        incoming: hits.reduce((sum, amount) => sum + amount, 0),
+        damage: Math.min(state.player.hp, damage),
+    };
+}
+
+/** Predicts what End turn will do, without changing state. */
+export function forecastIntent(state) {
+    const { incoming, blocked, damage } = simulateEnemyTurn(state);
+    return { incoming, blocked, damage };
+}
+
+/**
+ * Lists what the end of the turn will do to the player, in the order it happens.
+ * Kinds: `shield-block` (shield spent absorbing), `shield-break` (shield gone),
+ * `hp` (health lost), `charge` (a bigger hit next turn) and `shield-decay`.
+ * @param {Object} state Battle state; not modified.
+ * @returns {{ kind: string, amount: number }[]} Steps with positive amounts.
+ */
+export function forecastTurnEnd(state) {
+    const turn = simulateEnemyTurn(state);
+    const steps = [];
+    const lost = turn.shieldBefore - turn.shield;
+    if (turn.shieldBefore > 0 && lost > 0) {
+        steps.push({ kind: turn.shield === 0 ? "shield-break" : "shield-block", amount: lost });
+    }
+    if (turn.damage > 0) steps.push({ kind: "hp", amount: turn.damage });
+    if (turn.intent.type === "charge") steps.push({ kind: "charge", amount: turn.intent.next });
+    if (turn.shield > 0) {
+        const kept = decayedShield(state, turn.shield, turn.shieldOld).shield;
+        if (kept < turn.shield) steps.push({ kind: "shield-decay", amount: turn.shield - kept });
+    }
+    return steps;
+}
+
+/**
+ * Computes the shield a player keeps into the next turn: decayed shield vanishes and fresh shield decays.
+ * @param {Object} state Battle state, used for Curses and Jokers.
+ * @param {number} shield Current shield.
+ * @param {number} shieldOld The part of the shield that already decayed once.
+ * @returns {{ shield: number, shieldOld: number }}
+ */
+function decayedShield(state, shield, shieldOld) {
+    if (hasCurse(state, "fortress")) return { shield, shieldOld: 0 };
+    const fresh = Math.max(0, shield - shieldOld);
+    const kept = Math.floor(fresh * (hasJoker(state, "bulwark") ? BULWARK_DECAY : SHIELD_DECAY));
+    return { shield: kept, shieldOld: kept };
 }
 
 /**
@@ -131,14 +182,9 @@ export function forecastIntent(state) {
  */
 export function decayShield(state) {
     const player = state.player;
-    if (hasCurse(state, "fortress")) {
-        player.shieldOld = 0;
-        return;
-    }
-    const fresh = Math.max(0, player.shield - (player.shieldOld ?? 0));
-    const kept = Math.floor(fresh * (hasJoker(state, "bulwark") ? BULWARK_DECAY : SHIELD_DECAY));
-    player.shield = kept;
-    player.shieldOld = kept;
+    const next = decayedShield(state, player.shield, player.shieldOld ?? 0);
+    player.shield = next.shield;
+    player.shieldOld = next.shieldOld;
 }
 
 /**

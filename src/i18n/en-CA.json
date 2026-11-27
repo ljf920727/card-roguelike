@@ -492,7 +492,7 @@
   "A poker play costs 2 energy, leaving 1 for a mulligan or a blackjack round. Unplayed cards stay for next turn, so you can build toward a flush or full house. Shield lasts a turn, then halves, then vanishes: time it against the enemy's move.": "A poker play costs 2 energy, leaving 1 for a mulligan or a blackjack round. Unplayed cards stay for next turn, so you can build toward a flush or full house. Shield lasts a turn, then halves, then vanishes: time it against the enemy's move.",
   "Blackjack is the gamble: wins deal your total in damage and pay chips, losses let the enemy hit you. Double down on a strong start, surrender a bad one. Count what's left in your deck.": "Blackjack is the gamble: wins deal your total in damage and pay chips, losses let the enemy hit you. Double down on a strong start, surrender a bad one. Count what's left in your deck.",
   "You're on your own": "You're on your own",
-  "Each floor is two fights and a boss. Beating a boss offers a Curse and opens the shop, where blackjack chips buy potions, cards and Jokers. Turn Hints on in the side panel if you want tips along the way.": "Each floor is two fights and a boss. Beating a boss offers a Curse and opens the shop, where blackjack chips buy potions, cards and Jokers. Turn Hints on in the side panel if you want tips along the way.",
+  "Each floor is two fights and a boss. Beating a boss offers a Curse and opens the shop, where blackjack chips buy potions, cards and Jokers. Every rule and hand is in the Guidebook (top right); turn Hints on in Settings if you want tips along the way.": "Each floor is two fights and a boss. Beating a boss offers a Curse and opens the shop, where blackjack chips buy potions, cards and Jokers. Every rule and hand is in the Guidebook (top right); turn Hints on in Settings if you want tips along the way.",
   "Goblin down": "Goblin down",
   "Try again": "Try again",
   "Pick a reward, then choose Next fight to finish the tutorial.": "Pick a reward, then choose Next fight to finish the tutorial.",
@@ -502,7 +502,7 @@
   "Play the pair": "Play the pair",
   "25 shield for 2 energy. Only the cards you play are discarded; the rest stay in your hand.": "25 shield for 2 energy. Only the cards you play are discarded; the rest stay in your hand.",
   "Make a poker hand": "Make a poker hand",
-  "Select the two 7s. Pairs shield, flushes heal, and bigger hands hit harder: the full list is in the side panel.": "Select the two 7s. Pairs shield, flushes heal, and bigger hands hit harder: the full list is in the side panel.",
+  "Select the two 7s. Pairs shield, flushes heal, and bigger hands hit harder: the Guidebook (top right) lists every hand.": "Select the two 7s. Pairs shield, flushes heal, and bigger hands hit harder: the Guidebook (top right) lists every hand.",
   "Mulligan what you don't need": "Mulligan what you don't need",
   "You have 1 energy left. Select up to 3 cards and swap them for new ones. Your hand carries into next turn, so keep what helps you build a bigger hand.": "You have 1 energy left. Select up to 3 cards and swap them for new ones. Your hand carries into next turn, so keep what helps you build a bigger hand.",
   "End turn: the Goblin acts": "End turn: the Goblin acts",
@@ -657,5 +657,11 @@
   "Menu ·": "Menu ·",
   "Battle ·": "Battle ·",
   "by Julie Damsgaard / Spring Spring / Spring Enterprises.": "by Julie Damsgaard / Spring Spring / Spring Enterprises.",
-  "by Kevin MacLeod (incompetech.com).": "by Kevin MacLeod (incompetech.com)."
+  "by Kevin MacLeod (incompetech.com).": "by Kevin MacLeod (incompetech.com).",
+  "Guidebook": "Guidebook",
+  "Basics": "Basics",
+  "Jinxes": "Jinxes",
+  "Guidebook sections": "Guidebook sections",
+  "Hints": "Hints",
+  "Deck": "Deck"
 }

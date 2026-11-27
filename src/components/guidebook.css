@@ -1,0 +1,78 @@
+/** Layout for the tabbed Guidebook and its top-bar attention marker. */
+.guidebook-dialog {
+    width: min(640px, calc(100% - 24px));
+    height: min(84dvh, 720px);
+}
+.guidebook-tabs {
+    flex: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px var(--sheet-padding) 0;
+    border-bottom: 1px solid var(--rim);
+}
+.guidebook-tab {
+    padding: 8px 12px;
+    border: 1px solid transparent;
+    border-bottom: 0;
+    border-radius: 10px 10px 0 0;
+    background: transparent;
+    color: var(--muted);
+    font: 600 0.95rem/1.2 var(--ui-font), sans-serif;
+    cursor: pointer;
+}
+.guidebook-tab:hover { color: var(--text); }
+.guidebook-tab[aria-selected="true"] {
+    border-color: var(--rim);
+    background: var(--panel);
+    color: var(--text);
+    margin-bottom: -1px;
+    box-shadow: inset 0 -2px 0 var(--accent, currentColor);
+}
+.guidebook-tab:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }
+.guidebook-body { flex: 1; }
+.guidebook-panel { display: grid; gap: 12px; padding-top: 14px; }
+.guidebook-panel[hidden] { display: none; }
+.guidebook-panel h3 { margin: 6px 0 0; font: 700 1.2rem/1.2 var(--display-font), serif; }
+.guidebook-panel p { margin: 0; color: var(--secondary); }
+.guidebook-hands, .guidebook-jinxes { display: grid; margin: 6px 0 0; }
+.guidebook-hands > div, .guidebook-jinxes > div {
+    display: grid;
+    grid-template-columns: minmax(7.5em, 0.4fr) minmax(0, 1fr);
+    gap: 4px 14px;
+    padding: 8px 0;
+    border-top: 1px solid var(--panel-line);
+}
+.guidebook-hands dt, .guidebook-jinxes dt { font-weight: 700; }
+.guidebook-hands dd, .guidebook-jinxes dd { margin: 0; color: var(--secondary); }
+@media (max-width: 480px) {
+    .guidebook-hands > div, .guidebook-jinxes > div { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* A small pulsing dot until the Guidebook has been opened once. */
+[data-guidebook] {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .45em;
+}
+[data-guidebook].attention::after {
+    content: "";
+    position: absolute;
+    top: -4px;
+    inset-inline-end: -4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--attack, #e0524f);
+    box-shadow: 0 0 0 0 currentColor;
+    animation: guidebook-pulse 1.8s ease-out infinite;
+}
+@keyframes guidebook-pulse {
+    0% { box-shadow: 0 0 0 0 rgb(224 82 79 / 0.6); }
+    70%, 100% { box-shadow: 0 0 0 10px rgb(224 82 79 / 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    [data-guidebook].attention::after { animation: none; }
+}

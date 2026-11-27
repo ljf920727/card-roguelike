@@ -46,7 +46,6 @@
 .guide-facts li + li { margin-top: 6px; }
 .guide-dismiss { margin-top: 12px; }
 .guide-highlight { position: fixed; z-index: 7; border: 2px solid var(--attack); border-radius: 12px; box-shadow: 0 0 0 4px color-mix(in srgb, var(--attack) 18%, transparent); pointer-events: none; }
-.turn-forecast { flex: none; max-width: 68ch; text-align: center; color: var(--secondary); font-size: 0.8rem; }
 .hand { position: relative; }
 .hand-inputs { position: absolute; inset: 0; pointer-events: none; }
 .hand-inputs button { position: absolute; padding: 0; border: 0; border-radius: 12px; background: transparent; color: transparent; cursor: pointer; pointer-events: auto; }
