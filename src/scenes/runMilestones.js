@@ -1,4 +1,5 @@
-import { FLOORS, getFloor, isBossFight, isFinalFight, encounterJinxText } from "../systems/RunSystem.js";
+/** Builds localized-source announcements for campaign and practice encounters. */
+import { FLOORS, getFloor, isFinalFight, encounterJinxText } from "../systems/RunSystem.js";
 import { JINXES } from "../systems/DeckSystem.js";
 
 /** Presentation-only milestones; acknowledgement never changes combat or reward state. */
@@ -6,8 +7,9 @@ export function getRunMilestone(state, seen = new Set()) {
     const { run, enemy, result } = state;
     if (result === "defeat") return null;
     const floor = getFloor(state);
+    const boss = run.encounters[run.fight - 1]?.boss;
     let milestone;
-    if (result === "victory" && isBossFight(state)) {
+    if (result === "victory" && boss) {
         const final = isFinalFight(state);
         milestone = {
             kind: "clear", key: `${run.floor}:clear`, label: final ? "The house falls" : "Boss defeated",
@@ -19,7 +21,7 @@ export function getRunMilestone(state, seen = new Set()) {
             ],
             action: final ? "Enjoy the victory" : "Claim boss rewards",
         };
-    } else if (!result && isBossFight(state)) {
+    } else if (!result && boss) {
         milestone = {
             kind: "boss", key: `${run.floor}:boss`, label: `Floor ${run.floor} / Boss showdown`,
             title: enemy.name, body: `The boss of ${floor.name} stands between you and ${isFinalFight(state) ? "clearing the casino" : "the next floor"}.`,
@@ -47,7 +49,7 @@ export function getRunMilestone(state, seen = new Set()) {
     if (!result && run.turn === 1 && enemy.addedJinxes?.length) {
         const key = `${run.floor}:${run.fight}:jinx`;
         // Floor and boss introductions already announce this encounter's additions.
-        const introduction = isBossFight(state) ? `${run.floor}:boss` : run.fight === 1 ? `${run.floor}:floor` : null;
+        const introduction = boss ? `${run.floor}:boss` : run.fight === 1 ? `${run.floor}:floor` : null;
         if (!seen.has(key) && !seen.has(introduction)) return {
             kind: "jinx", key, label: "Encounter hazard", title: `${enemy.name}'s Jinxes`, body: encounterJinxText(enemy),
             facts: enemy.addedJinxes.map(type => `${JINXES[type].name}: ${JINXES[type].text}`), action: "Face the Jinxes",

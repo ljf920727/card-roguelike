@@ -111,8 +111,8 @@ export class CardLab {
         this.ui.tools.hidden = this.ui.remove.hidden = this.ui.replay.hidden = false;
         this.validateSetup();
         this.buildTrial();
-        this.replay();
         this.ui.title.focus();
+        this.replay();
     }
 
     /** Returns the shared battle controls to the campaign. */

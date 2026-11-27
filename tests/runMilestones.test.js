@@ -1,3 +1,4 @@
+/** Checks campaign and practice announcements, acknowledgements and shop guidance. */
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createInitialState } from "../src/gameState.js";
@@ -16,6 +17,18 @@ test("floor arrivals explain the boss, shop and next floor without repeating", (
     state.run.floor = 2;
     state.run.rules = FLOORS[1].rules;
     assert.match(getRunMilestone(state).facts.join(" "), /Dealer hits soft 17/);
+});
+
+test("single-encounter trials announce the selected floor or its boss", () => {
+    for (const [index, floor] of FLOORS.entries()) {
+        for (const enemy of [...floor.enemies, {...floor.boss, boss: true}]) {
+            const state = createInitialState({practiceEnemy: enemy, floor: index + 1});
+            const entrance = getRunMilestone(state);
+            assert.equal(entrance.kind, enemy.boss ? 'boss' : 'floor');
+            assert.equal(entrance.title, enemy.boss ? enemy.name : floor.name);
+            assert.equal(getRunMilestone(state, new Set([entrance.key])), null);
+        }
+    }
 });
 
 test("ordinary fights have no announcement; bosses get an entrance and a separate celebration", () => {

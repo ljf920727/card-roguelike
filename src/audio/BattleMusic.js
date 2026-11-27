@@ -1,6 +1,9 @@
 /** Plays the battle bass and its percussion arrangement on one Web Audio clock. */
 import { AUDIO_BASE } from './sounds.js';
 
+/** Shared gain for both stems while a playable rare hand is selected (about +8 dB). */
+const ANTICIPATION_GAIN = 2.5;
+
 /** Keeps the score, percussion and gain transitions aligned across looping and pausing. */
 export class BattleMusic {
     /** Creates buses within the player's existing music mix. */
@@ -103,7 +106,7 @@ export class BattleMusic {
         this.active = active;
         const now = this.context.currentTime;
         const end = now + (active ? 1.8 : 1.4);
-        for (const [gain, target] of [[this.emphasis.gain, active ? 1.7 : 1], [this.drums.gain, active ? 1.32 : 0]]) {
+        for (const [gain, target] of [[this.emphasis.gain, active ? ANTICIPATION_GAIN : 1], [this.drums.gain, active ? 1.32 : 0]]) {
             if (gain.cancelAndHoldAtTime) gain.cancelAndHoldAtTime(now);
             else {
                 const current = gain.value;
