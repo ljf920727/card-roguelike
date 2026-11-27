@@ -36,7 +36,9 @@ test("the mulligan lesson moves to the Mulligan button once cards are selected",
 
 test("blackjack guidance goes from the toggle, to Deal, to the double-down choice", () => {
     const state = createInitialState({ tutorial: true });
-    state.tutorial.step = "blackjack";
+    // Reach the step the way play does, so the scripted cards (6 + 5, never a natural) are stacked.
+    ["intro-done", "play", "mulligan", "new-turn"].forEach(action => advanceTutorial(state, action));
+    assert.equal(state.tutorial.step, "blackjack");
     assert.equal(getTutorialLesson(state).target, '.mode-option[data-mode="blackjack"]');
     state.mode = "blackjack";
     assert.equal(getTutorialLesson(state).target, "#play-button");
@@ -53,6 +55,8 @@ test("completion and fight outcomes have their own anchored guidance", () => {
     state.tutorial.step = "complete";
     state.run.fight = 2;
     assert.equal(getTutorialLesson(state).title, "You're on your own");
+    assert.equal(getTutorialLesson(state).target, ".topbar [data-guidebook]");
+    assert.match(getTutorialLesson(state).body, /Guidebook/);
     state.run.turn = 2;
     assert.equal(getTutorialLesson(state), null);
     state.tutorial = null;
@@ -62,6 +66,7 @@ test("completion and fight outcomes have their own anchored guidance", () => {
 test("free-play guidance does not restart when selecting cards or switching modes", () => {
     const state = createInitialState({ tutorial: true });
     state.tutorial.step = "free";
+    assert.equal(getTutorialLesson(state).target, "#enemy-intent");
     const key = getTutorialLesson(state).key;
     state.hand[0].selected = true;
     assert.equal(getTutorialLesson(state).key, key);

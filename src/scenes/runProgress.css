@@ -1,26 +1,4 @@
 /** Styles floor progress, milestone dialogs and celebration particles. */
-.floor-route {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin-bottom: 16px;
-    color: var(--secondary);
-    font-size: 0.75rem;
-}
-
-.floor-route span {
-    padding: 5px 10px;
-    border-bottom: 2px solid var(--panel-line);
-}
-
-.floor-route .current {
-    color: var(--attack);
-    border-color: var(--attack);
-    font-weight: 700;
-}
-
-.floor-route .cleared { color: var(--heal); border-color: var(--heal); }
-
 .shop-wallet:not([hidden]) {
     position: sticky;
     top: 0;

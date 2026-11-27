@@ -1,7 +1,8 @@
 /** Positions shared battle panels, deck choices and settings controls for manual dealing. */
-.practicing :is(#floor-route, .mode-toggle, #mulligan-button, #turn-forecast,
-    .panel-actions, .rules-shared, #draw-text, #next-card, #turn-text) { display: none; }
+.practicing :is(.run-header, .turn-counter, .mode-toggle, [data-slot="mulligan"], #turn-forecast, .cost-pips,
+    #deck-box, #next-card) { display: none; }
 .lab-action[hidden], #lab-tools[hidden] { display: none; }
+.practicing .action-column { padding-bottom: 0; }
 #lab-tools { display: flex; min-width: 0; }
 .lab-heading, .lab-links {
     display: flex;
@@ -23,11 +24,11 @@
 @media (min-width: 901px) {
     .practicing .layout {
         grid-template-columns: minmax(0, 1fr) clamp(300px, 32vw, 420px);
-        grid-template-areas: "table rack" "table panel";
-        grid-template-rows: auto minmax(0, 1fr);
+        grid-template-areas: "table rack" "ribbon rack";
+        grid-template-rows: minmax(0, 1fr) auto;
     }
     .practicing #table { grid-area: table; }
-    .practicing aside.panel { grid-area: panel; }
+    .practicing #status-ribbon { grid-area: ribbon; }
     #lab-tools { grid-area: rack; max-height: max(45dvh, calc(100dvh - 18rem)); overflow-y: auto; }
     #lab-ranks { max-height: none; overflow: visible; }
 }

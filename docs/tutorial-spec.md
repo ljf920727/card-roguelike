@@ -4,7 +4,7 @@ Status: implemented for the core-loop overhaul (2-energy poker, mulligans, decay
 
 ## Objective
 
-Teach the core loop by doing, then get out of the way. The player should finish the first fight on their own and never need to read the How to play dialog to keep going. Explain blackjack chips during the blackjack lesson, then teach floors, bosses and shopping through contextual announcements and first-shop guidance.
+Teach the core loop by doing, then get out of the way. The player should finish the first fight on their own and never need to read the Guidebook to keep going. Explain blackjack chips during the blackjack lesson, then teach floors, bosses and shopping through contextual announcements and first-shop guidance.
 
 Principles:
 
@@ -40,7 +40,7 @@ Every run begins with a floor announcement: two fights, then a boss; blackjack w
 - The tooltip points at the control to use next (cards, then Play cards; cards, then Mulligan; the Blackjack toggle, then Deal, then Double down).
 - Turns don't end automatically until step 6.
 - The guided opening is on by default. Reaching fight 2 or choosing **Skip tutorial** turns it off for future solo runs. Losing or leaving early keeps the preference. **Settings → Tutorial** lets players change it for their next new solo run. Browsers with an existing completion record start with guidance off.
-- **Hints** (optional tips during normal play) never restrict actions.
+- **Hints** (optional tips during normal play, toggled in Settings) never restrict actions.
 - Floor/boss announcements use the run dialog, once per milestone per run. Combat tooltips stay hidden while that dialog is open; acknowledgement moves focus into the next screen. Victory particles are disabled for reduced motion.
 
 ## Files

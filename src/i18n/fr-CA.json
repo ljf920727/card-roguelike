@@ -492,7 +492,7 @@
   "A poker play costs 2 energy, leaving 1 for a mulligan or a blackjack round. Unplayed cards stay for next turn, so you can build toward a flush or full house. Shield lasts a turn, then halves, then vanishes: time it against the enemy's move.": "Le poker coûte 2 énergie, laissant 1 pour un échange ou du blackjack. Les cartes non jouées restent, pour préparer une couleur ou une main pleine. Le bouclier dure un tour, diminue de moitié au suivant, puis disparaît : adaptez-le à l’ennemi.",
   "Blackjack is the gamble: wins deal your total in damage and pay chips, losses let the enemy hit you. Double down on a strong start, surrender a bad one. Count what's left in your deck.": "Le blackjack est un pari : une victoire inflige votre total en dégâts et rapporte des jetons; une défaite permet une attaque ennemie. Doublez un bon départ ou abandonnez un mauvais. Comptez les cartes restantes.",
   "You're on your own": "À vous de jouer",
-  "Each floor is two fights and a boss. Beating a boss offers a Curse and opens the shop, where blackjack chips buy potions, cards and Jokers. Turn Hints on in the side panel if you want tips along the way.": "Chaque étage contient deux combats et un boss. Le battre propose une malédiction et ouvre la boutique : achetez potions, cartes et Jokers avec vos jetons. Activez les conseils dans le panneau latéral au besoin.",
+  "Each floor is two fights and a boss. Beating a boss offers a Curse and opens the shop, where blackjack chips buy potions, cards and Jokers. Every rule and hand is in the Guidebook (top right); turn Hints on in Settings if you want tips along the way.": "Chaque étage contient deux combats et un boss. Le battre propose une malédiction et ouvre la boutique : achetez potions, cartes et Jokers avec vos jetons. Toutes les règles sont dans le Guide ; activez les conseils dans les Paramètres au besoin.",
   "Goblin down": "Gobelin vaincu",
   "Try again": "Réessayez",
   "Pick a reward, then choose Next fight to finish the tutorial.": "Choisissez une récompense, puis Combat suivant pour terminer le tutoriel.",
@@ -502,7 +502,7 @@
   "Play the pair": "Jouez la paire",
   "25 shield for 2 energy. Only the cards you play are discarded; the rest stay in your hand.": "25 bouclier pour 2 énergie. Seules les cartes jouées sont défaussées; les autres restent.",
   "Make a poker hand": "Formez une main",
-  "Select the two 7s. Pairs shield, flushes heal, and bigger hands hit harder: the full list is in the side panel.": "Sélectionnez les deux 7. Les paires protègent, les couleurs soignent et les grosses mains frappent fort. Liste complète dans le panneau latéral.",
+  "Select the two 7s. Pairs shield, flushes heal, and bigger hands hit harder: the Guidebook (top right) lists every hand.": "Sélectionnez les deux 7. Les paires protègent, les couleurs soignent et les grosses mains frappent fort. Liste complète dans le Guide (en haut à droite).",
   "Mulligan what you don't need": "Échangez l’inutile",
   "You have 1 energy left. Select up to 3 cards and swap them for new ones. Your hand carries into next turn, so keep what helps you build a bigger hand.": "Il vous reste 1 énergie. Échangez jusqu’à 3 cartes. Votre main reste au prochain tour : gardez les cartes utiles pour une meilleure combinaison.",
   "End turn: the Goblin acts": "Fin du tour : le Gobelin agit",
@@ -657,5 +657,11 @@
   "Menu ·": "Menu ·",
   "Battle ·": "Combat ·",
   "by Julie Damsgaard / Spring Spring / Spring Enterprises.": "par Julie Damsgaard / Spring Spring / Spring Enterprises.",
-  "by Kevin MacLeod (incompetech.com).": "par Kevin MacLeod (incompetech.com)."
+  "by Kevin MacLeod (incompetech.com).": "par Kevin MacLeod (incompetech.com).",
+  "Guidebook": "Guide",
+  "Basics": "Notions de base",
+  "Jinxes": "Poisses",
+  "Guidebook sections": "Sections du guide",
+  "Hints": "Conseils",
+  "Deck": "Pioche"
 }

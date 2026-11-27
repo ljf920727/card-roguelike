@@ -1,5 +1,5 @@
 /** Shared appearance, language, sound and guided-opening settings for both game pages. */
-import { getTutorialEnabled, saveTutorialEnabled } from "../tutorialPreferences.js";
+import { getHintsEnabled, getTutorialEnabled, HINTS_CHANGED_EVENT, saveHintsEnabled, saveTutorialEnabled } from "../tutorialPreferences.js";
 import { installAudioSettings } from "../audio/AudioSettings.js";
 import { gameMusic } from "../audio/GameMusic.js";
 import { audio } from "../audio/AudioManager.js";
@@ -15,6 +15,7 @@ import { openDialogAtStart } from './dialogNavigation.js';
  * @param {(theme: string) => void} setTheme Applies and saves the page's palette.
  */
 export function installSettings(setTheme) {
+    const soloPage = Boolean(document.getElementById("guide"));
     const dialog = document.createElement("dialog");
     dialog.className = "preferences-dialog settings-dialog";
     dialog.setAttribute("aria-labelledby", "settings-title");
@@ -25,6 +26,9 @@ export function installSettings(setTheme) {
             <div class="settings-row"><label for="settings-tutorial">Tutorial</label>
                 <input class="table-switch" type="checkbox" role="switch" id="settings-tutorial" aria-describedby="tutorial-setting-note">
                 <p id="tutorial-setting-note">Guide my next solo run. Turns off when I finish or skip the tutorial.</p></div>
+            ${soloPage ? `<div class="settings-row"><label for="settings-hints">Hints</label>
+                <input class="table-switch" type="checkbox" role="switch" id="settings-hints" aria-describedby="hints-setting-note">
+                <p id="hints-setting-note">Show optional combat tips</p></div>` : ""}
             <button type="button" class="menu-button settings-link settings-sound" data-sound-settings aria-haspopup="dialog">
                 Sound <span class="settings-arrow" aria-hidden="true">›</span></button>
         </div>`;
@@ -36,6 +40,12 @@ export function installSettings(setTheme) {
     const tutorial = dialog.querySelector("#settings-tutorial");
     light.addEventListener("change", () => {
         setTheme(light.checked ? "light" : "dark");
+        void audio.play("ui");
+    });
+    const hints = dialog.querySelector("#settings-hints");
+    hints?.addEventListener("change", () => {
+        saveHintsEnabled(hints.checked);
+        document.dispatchEvent(new CustomEvent(HINTS_CHANGED_EVENT));
         void audio.play("ui");
     });
     tutorial.addEventListener("change", () => {
@@ -51,6 +61,7 @@ export function installSettings(setTheme) {
         button.addEventListener("click", () => {
             light.checked = document.documentElement.style.colorScheme === "light";
             tutorial.checked = getTutorialEnabled();
+            if (hints) hints.checked = getHintsEnabled();
             openDialogAtStart(dialog);
         });
     });

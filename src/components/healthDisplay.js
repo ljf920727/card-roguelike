@@ -17,7 +17,9 @@ export function renderHearts(container, hp, maxHp, pokerHit) {
             lost.className = "heart-lost";
             const fill = document.createElement("span");
             fill.className = "heart-fill";
-            heart.append(lost, fill);
+            const pulse = document.createElement("span");
+            pulse.className = "heart-pulse";
+            heart.append(lost, fill, pulse);
             return heart;
         }));
     }
@@ -88,4 +90,28 @@ function showPokerImpact(container, { hand, damage }, hitX) {
         if (activePokerImpacts.get(container) === pop) activePokerImpacts.delete(container);
         resolve();
     }, duration));
+}
+
+/**
+ * Softly pulses the part of a heart row that an action would change.
+ * @param {HTMLElement} container The row rendered by `renderHearts`.
+ * @param {number} maxHp Full health pool, which the ten hearts represent.
+ * @param {number} from Start of the affected HP range.
+ * @param {number} to End of the affected HP range.
+ * @param {"damage" | "heal"} kind Picks the pulse colour.
+ */
+export function pulseHearts(container, maxHp, from, to, kind) {
+    if (container.children.length !== HEARTS || !(to > from) || !(maxHp > 0)) return clearHeartPulse(container);
+    const perHeart = maxHp / HEARTS;
+    const share = (value, i) => Math.max(0, Math.min(1, (value - i * perHeart) / perHeart)) * 100;
+    [...container.children].forEach((heart, i) => {
+        heart.style.setProperty("--pulse-from", `${share(from, i)}%`);
+        heart.style.setProperty("--pulse-to", `${share(to, i)}%`);
+    });
+    container.dataset.pulse = kind;
+}
+
+/** Stops pulsing a heart row. */
+export function clearHeartPulse(container) {
+    delete container.dataset.pulse;
 }

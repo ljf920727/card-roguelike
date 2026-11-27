@@ -1,5 +1,5 @@
 /** Binds the HTML battle interface to game state and draws the hand with PixiJS. */
-import { appendText, setText, setLabel, setChildren } from '../i18n/dom.js';
+import { setText, setLabel } from '../i18n/dom.js';
 
 import {renderHearts} from '../components/healthDisplay.js';
 import {PokerPreview} from '../components/PokerPreview.js';
@@ -7,7 +7,6 @@ import {Container} from 'pixi.js';
 
 import {CARD_SELECTED_LIFT, CardView} from '../components/CardView.js';
 import {cardLabel, createCardElement} from '../components/cardElement.js';
-import {POKER_HANDS} from '../systems/RuleEngine.js';
 import {describePokerActions, isLethalPokerHand, isRarePokerHand, rarePokerHit} from '../systems/rules/PokerRule.js';
 import {
   bustLimit,
@@ -21,7 +20,6 @@ import {
   hit,
   isRoundActive,
   lossPenalty,
-  NATURAL_DAMAGE,
   stand,
   surrender,
   WIN_CHIPS,
@@ -45,8 +43,7 @@ import {
   startNextFight,
 } from '../systems/RunSystem.js';
 import {ensureRewards} from '../systems/RewardSystem.js';
-import {CARD_COUNTER_REVEAL, getJoker, hasJoker, jokerSlots} from '../systems/JokerSystem.js';
-import {getCurse} from '../systems/CurseSystem.js';
+import {CARD_COUNTER_REVEAL, hasJoker} from '../systems/JokerSystem.js';
 import {resetGameState} from '../gameState.js';
 import {getPreferredDifficulty} from '../difficultyPreferences.js';
 import {getDifficulty} from '../systems/DifficultySystem.js';
@@ -54,6 +51,11 @@ import {BATTLE_THEMES, getPreferredTheme, savePreferredTheme} from '../themes.js
 import {isTutorialActive, tutorialAllows, tutorialHoldsTurn} from '../systems/TutorialSystem.js';
 import {getTutorialEnabled, saveTutorialEnabled} from '../tutorialPreferences.js';
 import {GuideView} from './GuideView.js';
+import {actionCosts} from '../systems/ActionCosts.js';
+import {previewAction} from '../systems/ActionPreview.js';
+import {SwarmEffect} from '../components/SwarmEffect.js';
+import {PreviewPulse} from '../components/PreviewPulse.js';
+import {JokersDialog} from '../components/JokersDialog.js';
 import {RunScreen} from './RunScreen.js';
 import {shieldCap} from '../systems/CombatSystem.js';
 import {describeCard, getJinx} from '../systems/DeckSystem.js';
@@ -95,19 +97,32 @@ export class BattleScene {
       'hp-hearts', 'hp-text', 'shield-stat', 'shield-text', 'shield-cap', 'shield-fill', 'shield-fresh', 'energy-chips', 'phase-text',
       'last-action', 'enemy-token', 'enemy-icon', 'enemy-hearts', 'enemy-name', 'enemy-hp', 'enemy-intent',
       'selection-text', 'result-text', 'feedback-text', 'hand', 'play-button', 'end-turn-button',
-      'fight-text', 'turn-text', 'draw-text', 'discard-text', 'intent-title', 'side-intent',
-      'rules-title', 'rules-body', 'restart-button', 'table', 'stand-button',
+      'fight-text', 'turn-text', 'draw-text', 'deck-box',
+      'table', 'stand-button',
       'bj-dealer', 'bj-player', 'bj-dealer-total', 'bj-player-total', 'bj-dealer-label', 'hand-inputs',
       'mulligan-button', 'double-button', 'surrender-button', 'chips-text', 'house-rule', 'next-card',
-      'intent-detail', 'joker-list', 'jokers-title', 'curse-list', 'curses-section', 'floor-route', 'boss-label',
+      'intent-detail', 'floor-route', 'boss-label', 'jokers-button', 'selection-detail',
+      'play-cost', 'mulligan-cost', 'double-cost',
     ].map(id => [id, document.getElementById(id)]));
     this.pokerPreview = new PokerPreview(this.ui.table, this.ui['result-text']);
+    this.jokersDialog = new JokersDialog(this.ui['jokers-button']);
+    this.swarm = new SwarmEffect();
+    this.previewPulse = new PreviewPulse({
+      enemyHearts: this.ui['enemy-hearts'], playerHearts: this.ui['hp-hearts'],
+      shieldStat: this.ui['shield-stat'], shieldBand: document.getElementById('shield-preview'),
+    });
+    /** HP shown while a swarm is still flying, so the bars drop when the pips land. */
+    this.holds = {enemy: {hp: null, count: 0, owner: null}, player: {hp: null, count: 0, owner: null}};
+    this.fxPrev = null;
+    this.fxSources = null;
+    this.fxEpoch = 0;
     this.runScreen = new RunScreen(state, () => this.refreshBattle());
     this.modeOptions = [...document.querySelectorAll('.mode-option')];
 
     this.ui['play-button'].addEventListener('click', () => this.onPrimaryAction());
     this.ui['end-turn-button'].addEventListener('click', () => this.endTurn());
     this.ui['stand-button'].addEventListener('click', () => {
+      this.captureSources();
       stand(this.state);
       this.afterAction();
     });
@@ -115,20 +130,22 @@ export class BattleScene {
       const validation = mulligan(this.state);
       if (!validation.allowed) {
         setText(this.ui['feedback-text'], validation.reason);
+        this.ui['selection-detail'].dataset.idle = 'false';
         return;
       }
       void audio.play('shuffle');
       this.afterAction();
     });
     this.ui['double-button'].addEventListener('click', () => {
+      this.captureSources();
       doubleDown(this.state);
       this.afterAction();
     });
     this.ui['surrender-button'].addEventListener('click', () => {
+      this.captureSources();
       surrender(this.state);
       this.afterAction();
     });
-    this.ui['restart-button'].addEventListener('click', () => this.startRun());
     this.modeOptions.forEach(option => option.addEventListener('click', () => this.setMode(option.dataset.mode)));
     new ResizeObserver(() => this.scheduleResize()).observe(this.ui.hand);
 
@@ -234,6 +251,7 @@ export class BattleScene {
       this.startRun();
       return;
     }
+    this.captureSources();
     if (this.state.mode === 'blackjack') {
       if (isRoundActive(this.state)) {
         hit(this.state);
@@ -248,6 +266,7 @@ export class BattleScene {
     });
     if (!validation.allowed) {
       setText(this.ui['feedback-text'], validation.reason);
+      this.ui['selection-detail'].dataset.idle = 'false';
       return;
     }
     this.afterAction(rarePokerHit(validation.evaluation));
@@ -286,8 +305,12 @@ export class BattleScene {
     this.ui['result-text'].style.setProperty('--result-color', view.color ?? this.theme.text);
     const autoEnding = Boolean(this.autoEndTimeout);
     setText(this.ui['feedback-text'], autoEnding ? `${this.autoEndReason} Ending your turn…` : view.feedback);
+    this.ui['selection-detail'].dataset.idle = String(Boolean(view.idle) && !autoEnding);
     setText(this.ui['play-button'], view.primaryLabel);
     this.ui['play-button'].disabled = !view.primaryEnabled || autoEnding;
+    const pending = !autoEnding && !this.state.result &&
+        (this.state.mode === 'blackjack' ? isRoundActive(this.state) : view.primaryEnabled);
+    this.previewPulse.update(this.state, pending ? previewAction(this.state) : {damage: 0, heal: 0, shield: 0}, shieldCap(this.state));
     const ready = !this.state.result && this.state.mode === 'poker' &&
         view.primaryEnabled && !autoEnding && isRarePokerHand(result.name);
     this.pokerPreview.update(view.result, ready ? result : null);
@@ -297,6 +320,7 @@ export class BattleScene {
     const mulliganCheck = validateMulligan(this.state);
     setText(this.ui['mulligan-button'], `Mulligan (${mulliganCheck.cost ? `${mulliganCheck.cost} energy` : 'free'})`);
     this.ui['mulligan-button'].disabled = !mulliganCheck.allowed || autoEnding || Boolean(this.state.result);
+    this.renderCostPips();
     this.ui['double-button'].disabled = !canDoubleDown(this.state);
     this.ui['surrender-button'].disabled = !canSurrender(this.state);
     const canAct = this.state.phase === 'player' && this.state.player.hp > 0 && this.state.enemy.hp > 0 && !autoEnding;
@@ -365,7 +389,8 @@ export class BattleScene {
         result: 'Pick your cards',
         feedback: `Select 1 to 5 cards to play a poker hand (${PLAY_COST} energy), or up to 3 to mulligan.`,
         primaryLabel: 'Play cards',
-        primaryEnabled: false
+        primaryEnabled: false,
+        idle: true
       };
     }
     return {
@@ -386,7 +411,7 @@ export class BattleScene {
     const dealFeedback = dealable ? `Costs ${DEAL_COST} energy. Win: damage and ${WIN_CHIPS}+ chips. Lose: ${name} hits you for ${lossPenalty(this.state)}.` :
         isTutorialActive(this.state) ? 'Follow the tutorial prompt above.' : 'Not enough energy. End your turn to restore energy.';
     if (!round) {
-      return {result: 'Deal to play a round', feedback: dealFeedback, primaryLabel: 'Deal', primaryEnabled: dealable};
+      return {result: 'Deal to play a round', feedback: dealFeedback, primaryLabel: 'Deal', primaryEnabled: dealable, idle: dealable};
     }
     if (round.status === 'playing') {
       const options = round.player.length === 2 && !round.doubled ? ' Double down or surrender now, or' : '';
@@ -490,6 +515,7 @@ export class BattleScene {
       const element = createCardElement(card);
       return i >= shown.player ? deal(element, fresh ? 2 * i : i - shown.player) : element;
     }) : this.createSlots()));
+    if (fresh || !round) delete this.ui['bj-player'].dataset.spent;
     this.lastRound = round;
     this.lastHidden = hidden;
     this.dealtCounts = {dealer: round?.dealer.length ?? 0, player: round?.player.length ?? 0};
@@ -548,6 +574,7 @@ export class BattleScene {
     this.turnTimeout = this.autoEndTimeout = null;
     this.soundSnapshot = this.handCards = this.finishingEnemy = null;
     for (const row of [this.ui['hp-hearts'], this.ui['enemy-hearts']]) delete row.dataset.maxHp;
+    this.resetEffects();
     audio.stop();
     this.state = state;
   }
@@ -576,6 +603,7 @@ export class BattleScene {
   /** Cancels pending turn work and starts a fresh random run at any time. */
   restart(options) {
     audio.stop();
+    this.resetEffects();
     this.soundSnapshot = null;
     if (this.turnTimeout != null) clearTimeout(this.turnTimeout);
     if (this.autoEndTimeout != null) clearTimeout(this.autoEndTimeout);
@@ -592,24 +620,27 @@ export class BattleScene {
    */
   refreshBattle(pokerHit) {
     showRareHandBanner(this.ui.table, pokerHit);
+    const fx = this.planEffects();
     if (!this.lab) ensureRewards(this.state);
     this.ui.table.dataset.mode = this.state.mode;
     this.refreshBlackjack();
     this.createCards();
     const impact = this.refreshEnemy(pokerHit);
     this.refreshHUD();
-    this.refreshSidePanel();
+    this.refreshRunInfo();
     this.onCardSelectionChanged();
     setText(this.ui['last-action'], this.state.lastAction);
     this.resize();
+    const landed = this.playEffects(fx, pokerHit);
     const finisher = Boolean(pokerHit && this.state.result === 'victory');
+    const settling = landed ?? (finisher ? impact : null);
     if (this.lab) {
       gameMusic.setScene(this.state.result ? null : 'battle');
-    } else if (finisher && impact) {
+    } else if (this.state.result && settling) {
       const enemy = this.state.enemy;
       this.finishingEnemy = enemy;
-      gameMusic.setScene(null);
-      impact.then(() => {
+      if (finisher) gameMusic.setScene(null);
+      settling.then(() => {
         if (this.finishingEnemy === enemy) this.finishingEnemy = null;
         if (this.state.enemy === enemy && !this.runScreen.isOpen()) this.runScreen.sync();
       });
@@ -620,12 +651,14 @@ export class BattleScene {
     const snapshot = soloSoundSnapshot(this.state);
     playSoundCues(audio, soloSoundCues(this.soundSnapshot, snapshot), this.soundDealDelay, finisher);
     this.soundSnapshot = snapshot;
+    this.fxPrev = {enemy: this.state.enemy, enemyHp: this.state.enemy.hp, playerHp: this.state.player.hp};
   }
 
   /** Displays player resources and whether battle input is available. */
   refreshHUD() {
     setText(document.getElementById('run-difficulty'), getDifficulty(this.state.run.difficulty).label);
-    const {hp, maxHp, shield, shieldOld, energy, maxEnergy} = this.state.player;
+    const {maxHp, shield, shieldOld, energy, maxEnergy} = this.state.player;
+    const hp = this.shownHp('player', this.state.player.hp);
     renderHearts(this.ui['hp-hearts'], hp, maxHp);
     setText(this.ui['hp-text'], `${hp} / ${maxHp}`);
     const cap = shieldCap(this.state);
@@ -654,7 +687,8 @@ export class BattleScene {
 
   /** Displays enemy health and intent, returning the lifetime of any rare damage number. */
   refreshEnemy(pokerHit) {
-    const {name, hp, maxHp, intent, boss} = this.state.enemy;
+    const {name, maxHp, intent, boss} = this.state.enemy;
+    const hp = this.shownHp('enemy', this.state.enemy.hp);
     setText(this.ui['enemy-name'], name);
     this.ui['boss-label'].hidden = !boss;
     setText(this.ui['boss-label'], `Floor ${this.state.run.floor} boss`);
@@ -669,88 +703,201 @@ export class BattleScene {
     return impact;
   }
 
-  /** Renders run information and structured rules that reflow between a sidebar and a bottom panel. */
-  refreshSidePanel() {
-    const {floor, fight, turn, encounters, rules, jokers, curses} = this.state.run;
+  /** Shows one energy pip per point of cost under each action that spends energy. */
+  renderCostPips() {
+    const costs = actionCosts(this.state);
+    const energy = this.state.player.energy;
+    [['play-cost', costs.play || costs.deal], ['mulligan-cost', costs.mulligan], ['double-cost', costs.double]].forEach(([id, cost]) => {
+      const element = this.ui[id];
+      element.hidden = !cost;
+      if (!cost) {
+        element.replaceChildren();
+        return;
+      }
+      element.classList.toggle('short', energy < cost);
+      element.replaceChildren(...Array.from({length: cost}, () => Object.assign(document.createElement('i'), {className: 'cost-pip'})));
+      setLabel(element, 'aria-label', `${cost} energy`);
+    });
+  }
+
+  /** Screen rectangles of the cards about to be spent, so they can dissolve into pips. */
+  captureSources() {
+    const sources = [];
+    if (this.state.mode === 'poker') {
+      const canvasRect = this.app.canvas.getBoundingClientRect();
+      const scale = canvasRect.width / this.app.screen.width;
+      this.handContainer.children.filter(view => view.cardData.selected).forEach(view => {
+        const bounds = view.getBounds();
+        const box = bounds.rectangle ?? bounds;
+        sources.push({
+          x: canvasRect.left + box.x * scale, y: canvasRect.top + box.y * scale,
+          width: box.width * scale, height: box.height * scale,
+          face: {rank: view.cardData.rank, suit: view.cardData.suit},
+        });
+      });
+    } else {
+      const cards = this.state.blackjack?.player ?? [];
+      [...this.ui['bj-player'].children].slice(0, cards.length).forEach((element, index) => {
+        const box = element.getBoundingClientRect();
+        if (box.width) sources.push({x: box.left, y: box.top, width: box.width, height: box.height, face: {rank: cards[index].rank, suit: cards[index].suit}});
+      });
+    }
+    this.fxSources = sources;
+  }
+
+  /** The HP a bar shows: the old value while pips are still flying toward it. */
+  shownHp(side, hp) {
+    const hold = this.holds[side];
+    return hold.count && (side === 'player' || hold.owner === this.state.enemy) ? hold.hp : hp;
+  }
+
+  /** Keeps a bar at its old HP until the returned release function runs. */
+  holdHp(side, shown) {
+    const hold = this.holds[side];
+    const epoch = this.fxEpoch;
+    if (!hold.count) {
+      hold.hp = shown;
+      hold.owner = side === 'enemy' ? this.state.enemy : null;
+    }
+    hold.count += 1;
+    let released = false;
+    return () => {
+      if (released || epoch !== this.fxEpoch) return;
+      released = true;
+      hold.count -= 1;
+      if (!hold.count) Object.assign(hold, {hp: null, owner: null});
+    };
+  }
+
+  /** Compares HP with the last presentation and holds the bars that are about to be hit by pips. */
+  planEffects() {
+    const prev = this.fxPrev;
+    const {state} = this;
+    if (!prev || prev.enemy !== state.enemy || !this.swarm.enabled) {
+      this.fxSources = null;
+      return {out: 0, inc: 0, prev};
+    }
+    const out = Math.max(0, prev.enemyHp - state.enemy.hp);
+    const inc = Math.max(0, prev.playerHp - state.player.hp);
+    return {
+      out, inc, prev,
+      releaseEnemy: out ? this.holdHp('enemy', prev.enemyHp) : null,
+      releasePlayer: inc ? this.holdHp('player', prev.playerHp) : null,
+    };
+  }
+
+  /**
+   * Launches the swarms for this refresh: cards into the enemy when it was hurt, the enemy into the HP bar when the player was.
+   * @returns {Promise|null} Resolves once the bars have dropped; null when nothing was launched.
+   */
+  playEffects(fx, pokerHit) {
+    const sources = this.fxSources;
+    this.fxSources = null;
+    if (!fx.out && !fx.inc) return null;
+    const epoch = this.fxEpoch;
+    const center = box => ({x: box.left + box.width / 2, y: box.top + box.height / 2});
+    const token = this.ui['enemy-token'];
+    const tokenBox = token.getBoundingClientRect();
+    const jobs = [];
+    // A pip that cannot land (a closed tab, a cancelled swarm) must not leave a bar stuck at its old value.
+    const guarded = promise => Promise.race([promise, new Promise(resolve => setTimeout(resolve, 4000))]);
+    let lastNudge = 0;
+    const nudge = () => {
+      const now = performance.now();
+      if (now - lastNudge < 90) return;
+      lastNudge = now;
+      token.animate([{filter: 'brightness(1)'}, {filter: 'brightness(1.7)'}, {filter: 'brightness(1)'}], {duration: 140});
+    };
+    // The bar drops the moment the first pip hits, while the portrait flashes; the swarm then finishes landing.
+    const onContact = (release, refresh) => {
+      let result;
+      let done = false;
+      return () => {
+        if (!done) {
+          done = true;
+          release();
+          if (epoch === this.fxEpoch) result = refresh();
+        }
+        return result;
+      };
+    };
+    if (fx.out) {
+      const heartsBox = this.ui['hp-hearts'].getBoundingClientRect();
+      const from = sources?.length ? sources : [{x: heartsBox.left, y: heartsBox.top, width: heartsBox.width, height: heartsBox.height}];
+      if (sources?.length && this.state.mode === 'blackjack') this.ui['bj-player'].dataset.spent = 'true';
+      const contact = onContact(fx.releaseEnemy, () => this.refreshEnemy(pokerHit));
+      jobs.push(guarded(this.swarm.launch({
+        amount: fx.out, sources: from, target: center(tokenBox), color: 'attack',
+        onImpact: () => {
+          nudge();
+          contact();
+        },
+      })).then(contact));
+    }
+    if (fx.inc) {
+      const hearts = this.ui['hp-hearts'];
+      const perHeart = this.state.player.maxHp / hearts.children.length;
+      const heart = hearts.children[Math.min(hearts.children.length - 1, Math.floor(Math.max(0, this.state.player.hp) / perHeart))] ?? hearts;
+      const contact = onContact(fx.releasePlayer, () => this.refreshHUD());
+      jobs.push(guarded(this.swarm.launch({
+        amount: fx.inc, sources: [{x: tokenBox.left + tokenBox.width * 0.2, y: tokenBox.top + tokenBox.height * 0.2, width: tokenBox.width * 0.6, height: tokenBox.height * 0.6}],
+        target: center(heart.getBoundingClientRect()), color: 'danger',
+        onImpact: contact,
+      })).then(contact));
+    }
+    return Promise.all(jobs);
+  }
+
+  /** Drops any swarm and HP hold when the table is rebound to a different run or encounter. */
+  resetEffects() {
+    this.fxEpoch += 1;
+    this.swarm.cancel();
+    this.holds = {enemy: {hp: null, count: 0, owner: null}, player: {hp: null, count: 0, owner: null}};
+    this.fxPrev = null;
+    this.fxSources = null;
+    this.previewPulse?.clear();
+  }
+
+  /** Renders the floor header and progress, turn counter, deck pile, enemy detail and Jokers. */
+  refreshRunInfo() {
+    const {floor, fight, turn, encounters, rules} = this.state.run;
     setText(this.ui['fight-text'], `Floor ${floor}: ${getFloor(this.state).name}`);
     this.ui['floor-route'].replaceChildren(...encounters.map((enemy, index) => {
-      const step = document.createElement('span');
       const cleared = index + 1 < fight || (index + 1 === fight && this.state.result === 'victory');
-      step.className = cleared ? 'cleared' : index + 1 === fight ? 'current' : '';
-      setText(step, `${cleared ? 'Cleared: ' : ''}${enemy.boss ? `Boss: ${enemy.name}` : `Fight ${index + 1}`}`);
-      if (index + 1 === fight) step.setAttribute('aria-current', 'step');
+      const current = index + 1 === fight && !cleared;
+      const name = enemy.boss ? `Boss: ${enemy.name}` : `Fight ${index + 1}`;
+      const step = document.createElement('li');
+      step.className = cleared ? 'cleared' : current ? 'current' : 'upcoming';
+      step.dataset.boss = String(Boolean(enemy.boss));
+      const marker = document.createElement('span');
+      marker.className = 'step-marker';
+      marker.setAttribute('aria-hidden', 'true');
+      marker.textContent = cleared ? '✓' : enemy.boss ? '♛' : String(index + 1);
+      const label = document.createElement('span');
+      label.className = 'step-label';
+      label.setAttribute('aria-hidden', 'true');
+      setText(label, name);
+      const spoken = document.createElement('span');
+      spoken.className = 'sr-only';
+      setText(spoken, cleared ? `Cleared: ${name}` : name);
+      step.append(marker, label, spoken);
+      if (current) step.setAttribute('aria-current', 'step');
       return step;
     }));
-    setText(this.ui['turn-text'], `${isBossFight(this.state) ? 'Boss fight' : `Fight ${fight} of ${encounters.length}`} · Turn ${turn}`);
-    setText(this.ui['house-rule'], rules ? `House rule: ${rules.label}` : 'No house rule');
+    setText(this.ui['turn-text'], `Turn ${turn}`);
+    this.ui['house-rule'].hidden = !rules;
+    if (rules) setText(this.ui['house-rule'], `House rule: ${rules.label}`);
     const top = this.state.drawPile.slice(-CARD_COUNTER_REVEAL).reverse();
     this.ui['next-card'].hidden = !hasJoker(this.state, 'card-counter');
     setText(this.ui['next-card'], top.length ? `Next cards: ${top.map(cardLabel).join(', ')}${top.length < CARD_COUNTER_REVEAL ? ', then a reshuffle' : ''}` :
         'Next cards: reshuffle');
     setText(this.ui['intent-detail'], this.state.result ? '' : this.intentDetail(this.state.enemy.intent));
-    setText(this.ui['jokers-title'], `Jokers (${jokers.length}/${jokerSlots(this.state)})`);
-    this.ui['curses-section'].hidden = !curses.length;
-    this.ui['curse-list'].replaceChildren(...curses.map(id => {
-      const curse = getCurse(id);
-      const item = document.createElement('li');
-      const name = document.createElement('strong');
-      setText(name, curse.name);
-      item.append(name);
-      appendText(item, ` ${curse.boon} ${curse.cost}`);
-      return item;
-    }));
-    this.ui['joker-list'].replaceChildren(...(jokers.length ? jokers.map(id => {
-      const joker = getJoker(id);
-      const item = document.createElement('li');
-      const name = document.createElement('strong');
-      setText(name, joker.name);
-      item.append(name);
-      appendText(item, ` ${joker.text}`);
-      return item;
-    }) : [Object.assign(document.createElement('li'), {
-      className: 'muted',
-      textContent: ''
-    })]));
-    if (!jokers.length) setText(this.ui['joker-list'].firstElementChild, this.lab ? 'None' : 'Win fights to earn Jokers.');
-    setText(this.ui['draw-text'], `${this.state.drawPile.length} cards in draw pile`);
-    setText(this.ui['discard-text'], `${this.state.discardPile.length + this.state.usedCards.length} cards in discard`);
-    setText(this.ui['intent-title'], `${this.state.enemy.name}'s next move`);
-    setText(this.ui['side-intent'], this.state.result ? 'None' : this.describeIntent(this.state.enemy.intent));
-    setText(this.ui['rules-title'], this.state.mode === 'poker' ? 'Poker hands' : 'Blackjack');
-    if (this.state.mode === 'poker') {
-      const list = document.createElement('dl');
-      list.className = 'poker-hands';
-      POKER_HANDS.forEach(hand => {
-        const entry = document.createElement('div');
-        const term = document.createElement('dt');
-        setText(term, hand.label);
-        const effect = document.createElement('dd');
-        setText(effect, hand.name === 'HIGH_CARD' ? '1.5x value, max 15 dmg' : describePokerActions(hand.actions, { compact: true }));
-        entry.append(term, effect);
-        list.append(entry);
-      });
-      setChildren(this.ui['rules-body'], list);
-    } else {
-      const rulesGrid = document.createElement('div');
-      rulesGrid.className = 'blackjack-rules';
-      const introduction = document.createElement('p');
-      setText(introduction, `Deal to get 2 cards; the ${this.state.enemy.name} gets 2, one face down. Hit to take a card, stand to stop. The ${this.state.enemy.name} then draws until it reaches 17${rules?.dealerHitsSoft17 ? ' (and hits soft 17)' : ''}.`);
-      const outcomes = document.createElement('div');
-      outcomes.className = 'blackjack-outcomes';
-      [
-        `Win: damage equal to your total (natural blackjack: ${NATURAL_DAMAGE}) plus chips.`,
-        `Lose or bust: the ${this.state.enemy.name} hits you for ${lossPenalty(this.state)}.`,
-        'Double down: 1 more energy, one card, double the result.',
-        'Surrender: take half the loss.',
-        `Tie: ${rules?.noPushRefund ? 'the house keeps your energy' : 'energy refunded'}.`,
-      ].forEach(source => {
-        const paragraph = document.createElement('p');
-        setText(paragraph, source);
-        outcomes.append(paragraph);
-      });
-      rulesGrid.append(introduction, outcomes);
-      setChildren(this.ui['rules-body'], rulesGrid);
-    }
+    const drawn = this.state.drawPile.length;
+    const discarded = this.state.discardPile.length + this.state.usedCards.length;
+    setText(this.ui['draw-text'], String(drawn));
+    setLabel(this.ui['deck-box'], 'aria-label', `${drawn} cards in draw pile`);
+    setLabel(this.ui['deck-box'], 'title', `${discarded} cards in discard`);
+    this.jokersDialog.update(this.state, this.lab);
   }
 
   /** Switches appearance and remembers it without changing battle state. */

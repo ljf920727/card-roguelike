@@ -9,6 +9,7 @@ import { appendText, setLabel, setText } from '../i18n/dom.js';
 import { createDeckChoice, SUIT_SYMBOLS } from '../components/cardElement.js';
 import { createPreferenceChoice } from '../components/LanguagePicker.js';
 import { openDialogAtStart } from '../components/dialogNavigation.js';
+import { OPEN_GUIDEBOOK_EVENT } from '../components/Guidebook.js';
 import './cardLab.css';
 
 /** Shows a modifier's rules with the same switch as the game's settings. */
@@ -78,9 +79,7 @@ export class CardLab {
         CURSES.forEach(entry => addModifier(ui.curses, entry, [entry.boon, entry.cost]));
         ui.config.addEventListener('click', () => this.configure());
         document.getElementById('lab-reference').addEventListener('click', () => {
-            const heading = document.getElementById('rules-title');
-            heading.focus({preventScroll: true});
-            heading.scrollIntoView({block: 'center'});
+            document.dispatchEvent(new CustomEvent(OPEN_GUIDEBOOK_EVENT, {detail: {tab: 'poker'}}));
         });
         ui.dialog.addEventListener('input', () => this.validateSetup());
         ui.cancel.addEventListener('click', () => ui.dialog.close());

@@ -142,7 +142,7 @@ export function stand(state) {
     return true;
 }
 
-function canAdjustBet(state) {
+export function canAdjustBet(state) {
     return isRoundActive(state) && state.blackjack.player.length === 2 && !state.blackjack.doubled;
 }
 
@@ -189,6 +189,32 @@ function finishRound(state) {
     resolveRound(state);
 }
 
+/**
+ * The attack a winning hand deals, before the enemy's HP caps it: the hand's total (or a natural's 30),
+ * plus gilded cards and Jokers, minus Weakness, doubled by a double down and by Blood Money.
+ * @param {Object} state Battle state, used for Jokers and Curses.
+ * @param {Object} round The blackjack round being valued.
+ * @param {string} outcome `"win"` or `"natural"`.
+ * @returns {number} Attack amount.
+ */
+export function winDamage(state, round, outcome) {
+    const base = Math.max(0, (outcome === "natural" ? NATURAL_DAMAGE : calculateBlackjackValue(round.player)) +
+        round.player.filter(card => card.gilded).length * GILDED_DAMAGE +
+        (hasJoker(state, "high-roller") ? HIGH_ROLLER_DAMAGE : 0) - jinxCount(round.player, "weakness") * JINXES.weakness.amount);
+    return base * (round.doubled ? 2 : 1) * (hasCurse(state, "blood-money") ? 2 : 1);
+}
+
+/**
+ * What the active round would deal if the player won with the current hand, for the HP-bar preview.
+ * Does not reveal the dealer's cards or the result.
+ * @param {Object} state Battle state.
+ * @returns {number} Attack amount capped by the enemy's HP, or 0 when no round is being played.
+ */
+export function projectedWinDamage(state) {
+    if (!isRoundActive(state)) return 0;
+    return Math.min(state.enemy.hp, winDamage(state, state.blackjack, isNatural(state.blackjack.player) ? "natural" : "win"));
+}
+
 function resolveRound(state) {
     const round = state.blackjack;
     const playerTotal = calculateBlackjackValue(round.player);
@@ -222,14 +248,11 @@ function resolveRound(state) {
 
     if (outcome === "win" || outcome === "natural") {
         const highRoller = hasJoker(state, "high-roller");
-        const base = Math.max(0, (outcome === "natural" ? NATURAL_DAMAGE : playerTotal) +
-            round.player.filter(card => card.gilded).length * GILDED_DAMAGE + (highRoller ? HIGH_ROLLER_DAMAGE : 0) -
-            jinxCount(round.player, "weakness") * JINXES.weakness.amount);
         const chips = Math.max(0, (outcome === "natural" ? NATURAL_CHIPS : WIN_CHIPS) + (highRoller ? HIGH_ROLLER_CHIPS : 0) -
             jinxCount(round.player, "debt") * JINXES.debt.amount) * multiplier *
             (hasCurse(state, "greed") ? 2 : 1);
         const before = state.enemy.hp;
-        applyAction(state, { type: "attack", amount: base * multiplier * (hasCurse(state, "blood-money") ? 2 : 1) });
+        applyAction(state, { type: "attack", amount: winDamage(state, round, outcome) });
         round.damage = before - state.enemy.hp;
         round.chips = chips;
         state.run.gold += chips;

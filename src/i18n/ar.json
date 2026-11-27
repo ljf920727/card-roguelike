@@ -492,7 +492,7 @@
   "A poker play costs 2 energy, leaving 1 for a mulligan or a blackjack round. Unplayed cards stay for next turn, so you can build toward a flush or full house. Shield lasts a turn, then halves, then vanishes: time it against the enemy's move.": "لعب البوكر يكلف 2 طاقة، ويترك 1 للاستبدال أو البلاك جاك. الأوراق غير الملعوبة تبقى للدور التالي، لتبني نوعًا واحدًا أو ثلاثية وزوجًا. الدرع يدوم دورًا ثم ينصف ثم يزول؛ وقّته مع حركة العدو.",
   "Blackjack is the gamble: wins deal your total in damage and pay chips, losses let the enemy hit you. Double down on a strong start, surrender a bad one. Count what's left in your deck.": "البلاك جاك مغامرة: الفوز يسبب ضررًا بمجموعك ويمنح رقائق، والخسارة تسمح للعدو بضربك. ضاعف مع بداية قوية، واستسلم مع بداية سيئة. احسب ما تبقى في رزمتك.",
   "You're on your own": "القرار لك الآن",
-  "Each floor is two fights and a boss. Beating a boss offers a Curse and opens the shop, where blackjack chips buy potions, cards and Jokers. Turn Hints on in the side panel if you want tips along the way.": "كل طابق فيه معركتان وزعيم. هزيمة الزعيم تعرض لعنة وتفتح المتجر لشراء جرعات وأوراق وجوكرات برقائق البلاك جاك. فعّل التلميحات في اللوحة الجانبية إن رغبت.",
+  "Each floor is two fights and a boss. Beating a boss offers a Curse and opens the shop, where blackjack chips buy potions, cards and Jokers. Every rule and hand is in the Guidebook (top right); turn Hints on in Settings if you want tips along the way.": "كل طابق فيه معركتان وزعيم. هزيمة الزعيم تعرض لعنة وتفتح المتجر لشراء جرعات وأوراق وجوكرات برقائق البلاك جاك. كل القواعد في الدليل؛ فعّل التلميحات في الإعدادات إن رغبت.",
   "Goblin down": "هُزم العفريت",
   "Try again": "حاول مجددًا",
   "Pick a reward, then choose Next fight to finish the tutorial.": "اختر مكافأة، ثم «المعركة التالية» لإنهاء الشرح.",
@@ -502,7 +502,7 @@
   "Play the pair": "العب الزوج",
   "25 shield for 2 energy. Only the cards you play are discarded; the rest stay in your hand.": "25 درعًا مقابل 2 طاقة. تُستبعد الأوراق الملعوبة فقط؛ البقية تبقى في يدك.",
   "Make a poker hand": "كوّن تشكيلة بوكر",
-  "Select the two 7s. Pairs shield, flushes heal, and bigger hands hit harder: the full list is in the side panel.": "اختر ورقتي 7. الأزواج تمنح درعًا، والنوع الواحد يشفي، والتشكيلات الأكبر تضرب أقوى؛ القائمة في اللوحة الجانبية.",
+  "Select the two 7s. Pairs shield, flushes heal, and bigger hands hit harder: the Guidebook (top right) lists every hand.": "اختر ورقتي 7. الأزواج تمنح درعًا، والنوع الواحد يشفي، والتشكيلات الأكبر تضرب أقوى؛ القائمة في الدليل أعلى الشاشة.",
   "Mulligan what you don't need": "استبدل الأوراق غير المطلوبة",
   "You have 1 energy left. Select up to 3 cards and swap them for new ones. Your hand carries into next turn, so keep what helps you build a bigger hand.": "بقيت لك 1 طاقة. اختر حتى 3 أوراق واستبدلها. تبقى يدك للدور التالي، فاحتفظ بما يساعدك لبناء تشكيلة أكبر.",
   "End turn: the Goblin acts": "أنه الدور: يتحرك العفريت",
@@ -657,5 +657,11 @@
   "Menu ·": "القائمة ·",
   "Battle ·": "المعركة ·",
   "by Julie Damsgaard / Spring Spring / Spring Enterprises.": "من تأليف Julie Damsgaard / Spring Spring / Spring Enterprises.",
-  "by Kevin MacLeod (incompetech.com).": "من تأليف Kevin MacLeod (incompetech.com)."
+  "by Kevin MacLeod (incompetech.com).": "من تأليف Kevin MacLeod (incompetech.com).",
+  "Guidebook": "الدليل",
+  "Basics": "الأساسيات",
+  "Jinxes": "النحس",
+  "Guidebook sections": "أقسام الدليل",
+  "Hints": "التلميحات",
+  "Deck": "المجموعة"
 }

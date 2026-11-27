@@ -492,7 +492,7 @@
   "A poker play costs 2 energy, leaving 1 for a mulligan or a blackjack round. Unplayed cards stay for next turn, so you can build toward a flush or full house. Shield lasts a turn, then halves, then vanishes: time it against the enemy's move.": "ਪੋਕਰ ਨੂੰ 2 ਊਰਜਾ ਲੱਗਦੀ ਹੈ; 1 ਬਦਲਣ ਜਾਂ ਬਲੈਕਜੈਕ ਲਈ ਬਚਦੀ ਹੈ। ਨਾ ਖੇਡੇ ਪੱਤੇ ਅਗਲੀ ਵਾਰੀ ਲਈ ਰਹਿੰਦੇ ਹਨ, ਤਾਂ ਫਲੱਸ਼ ਜਾਂ ਫੁੱਲ ਹਾਊਸ ਬਣਾ ਸਕਦੇ ਹੋ। ਢਾਲ ਇੱਕ ਵਾਰੀ ਰਹਿੰਦੀ, ਫਿਰ ਅੱਧੀ, ਫਿਰ ਮੁੱਕਦੀ ਹੈ; ਦੁਸ਼ਮਣ ਮੁਤਾਬਕ ਵਰਤੋ।",
   "Blackjack is the gamble: wins deal your total in damage and pay chips, losses let the enemy hit you. Double down on a strong start, surrender a bad one. Count what's left in your deck.": "ਬਲੈਕਜੈਕ ਜੂਆ ਹੈ: ਜਿੱਤ ਤੇ ਕੁੱਲ ਅੰਕਾਂ ਜਿੰਨਾ ਨੁਕਸਾਨ ਅਤੇ ਚਿਪਸ; ਹਾਰ ਤੇ ਦੁਸ਼ਮਣ ਦਾ ਹਮਲਾ। ਚੰਗੇ ਹੱਥ ਤੇ ਦੁੱਗਣਾ ਕਰੋ, ਮਾੜੇ ਤੇ ਹਾਰ ਮੰਨੋ। ਬਚੇ ਪੱਤੇ ਗਿਣੋ।",
   "You're on your own": "ਹੁਣ ਆਪਣੀ ਮਰਜ਼ੀ ਨਾਲ ਖੇਡੋ",
-  "Each floor is two fights and a boss. Beating a boss offers a Curse and opens the shop, where blackjack chips buy potions, cards and Jokers. Turn Hints on in the side panel if you want tips along the way.": "ਹਰ ਮੰਜ਼ਿਲ ਵਿੱਚ ਦੋ ਲੜਾਈਆਂ ਅਤੇ ਬੌਸ ਹੈ। ਬੌਸ ਮਗਰੋਂ ਸਰਾਪ ਅਤੇ ਦੁਕਾਨ ਮਿਲਦੇ ਹਨ; ਚਿਪਸ ਨਾਲ ਦਵਾਈਆਂ, ਪੱਤੇ ਅਤੇ ਜੋਕਰ ਖਰੀਦੋ। ਲੋੜ ਹੋਵੇ ਤਾਂ ਪਾਸੇ ਵਾਲੇ ਸੁਝਾਅ ਚਾਲੂ ਕਰੋ।",
+  "Each floor is two fights and a boss. Beating a boss offers a Curse and opens the shop, where blackjack chips buy potions, cards and Jokers. Every rule and hand is in the Guidebook (top right); turn Hints on in Settings if you want tips along the way.": "ਹਰ ਮੰਜ਼ਿਲ ਵਿੱਚ ਦੋ ਲੜਾਈਆਂ ਅਤੇ ਬੌਸ ਹੈ। ਬੌਸ ਮਗਰੋਂ ਸਰਾਪ ਅਤੇ ਦੁਕਾਨ ਮਿਲਦੇ ਹਨ; ਚਿਪਸ ਨਾਲ ਦਵਾਈਆਂ, ਪੱਤੇ ਅਤੇ ਜੋਕਰ ਖਰੀਦੋ। ਸਾਰੇ ਨਿਯਮ ਗਾਈਡਬੁੱਕ ਵਿੱਚ ਹਨ; ਲੋੜ ਹੋਵੇ ਤਾਂ ਸੈਟਿੰਗਾਂ ਵਿੱਚ ਸੁਝਾਅ ਚਾਲੂ ਕਰੋ।",
   "Goblin down": "ਗੌਬਲਿਨ ਹਾਰਿਆ",
   "Try again": "ਮੁੜ ਕੋਸ਼ਿਸ਼ ਕਰੋ",
   "Pick a reward, then choose Next fight to finish the tutorial.": "ਇਨਾਮ ਚੁਣੋ, ਫਿਰ ਸਿਖਲਾਈ ਪੂਰੀ ਕਰਨ ਲਈ ਅਗਲੀ ਲੜਾਈ ਚੁਣੋ।",
@@ -502,7 +502,7 @@
   "Play the pair": "ਜੋੜਾ ਖੇਡੋ",
   "25 shield for 2 energy. Only the cards you play are discarded; the rest stay in your hand.": "2 ਊਰਜਾ ਲਈ 25 ਢਾਲ। ਸਿਰਫ਼ ਖੇਡੇ ਪੱਤੇ ਸੁੱਟੇ ਜਾਂਦੇ ਹਨ; ਬਾਕੀ ਰਹਿੰਦੇ ਹਨ।",
   "Make a poker hand": "ਪੋਕਰ ਹੱਥ ਬਣਾਓ",
-  "Select the two 7s. Pairs shield, flushes heal, and bigger hands hit harder: the full list is in the side panel.": "ਦੋਵੇਂ 7 ਚੁਣੋ। ਜੋੜੇ ਢਾਲ, ਫਲੱਸ਼ ਇਲਾਜ ਅਤੇ ਵੱਡੇ ਹੱਥ ਵੱਧ ਹਮਲਾ ਦਿੰਦੇ ਹਨ। ਪੂਰੀ ਸੂਚੀ ਪਾਸੇ ਹੈ।",
+  "Select the two 7s. Pairs shield, flushes heal, and bigger hands hit harder: the Guidebook (top right) lists every hand.": "ਦੋਵੇਂ 7 ਚੁਣੋ। ਜੋੜੇ ਢਾਲ, ਫਲੱਸ਼ ਇਲਾਜ ਅਤੇ ਵੱਡੇ ਹੱਥ ਵੱਧ ਹਮਲਾ ਦਿੰਦੇ ਹਨ। ਪੂਰੀ ਸੂਚੀ ਗਾਈਡਬੁੱਕ (ਉੱਪਰ ਸੱਜੇ) ਵਿੱਚ ਹੈ।",
   "Mulligan what you don't need": "ਬੇਲੋੜੇ ਪੱਤੇ ਬਦਲੋ",
   "You have 1 energy left. Select up to 3 cards and swap them for new ones. Your hand carries into next turn, so keep what helps you build a bigger hand.": "1 ਊਰਜਾ ਬਚੀ ਹੈ। ਵੱਧ ਤੋਂ ਵੱਧ 3 ਪੱਤੇ ਬਦਲੋ। ਹੱਥ ਅਗਲੀ ਵਾਰੀ ਰਹਿੰਦਾ ਹੈ; ਵੱਡਾ ਹੱਥ ਬਣਾਉਣ ਵਾਲੇ ਪੱਤੇ ਰੱਖੋ।",
   "End turn: the Goblin acts": "ਵਾਰੀ ਖਤਮ: ਗੌਬਲਿਨ ਦੀ ਚਾਲ",
@@ -657,5 +657,11 @@
   "Menu ·": "ਮੀਨੂ ·",
   "Battle ·": "ਲੜਾਈ ·",
   "by Julie Damsgaard / Spring Spring / Spring Enterprises.": "ਰਚਨਾਕਾਰ: Julie Damsgaard / Spring Spring / Spring Enterprises.",
-  "by Kevin MacLeod (incompetech.com).": "ਰਚਨਾਕਾਰ: Kevin MacLeod (incompetech.com)."
+  "by Kevin MacLeod (incompetech.com).": "ਰਚਨਾਕਾਰ: Kevin MacLeod (incompetech.com).",
+  "Guidebook": "ਗਾਈਡਬੁੱਕ",
+  "Basics": "ਬੁਨਿਆਦੀ ਗੱਲਾਂ",
+  "Jinxes": "ਬਦਕਿਸਮਤੀ",
+  "Guidebook sections": "ਗਾਈਡਬੁੱਕ ਭਾਗ",
+  "Hints": "ਸੁਝਾਅ",
+  "Deck": "ਡੈੱਕ"
 }

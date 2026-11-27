@@ -5,7 +5,6 @@ import { DIFFICULTIES, getDifficulty } from "../systems/DifficultySystem.js";
 import { getTutorialEnabled } from "../tutorialPreferences.js";
 import { DifficultyPicker } from "../components/DifficultyPicker.js";
 import { CardLab } from "./CardLab.js";
-import { openDialogAtStart } from '../components/dialogNavigation.js';
 import { getPreferredDifficulty, savePreferredDifficulty } from "../difficultyPreferences.js";
 
 export class MenuScreen {
@@ -20,7 +19,6 @@ export class MenuScreen {
         this.difficultyToggle = document.getElementById("difficulty-toggle");
         this.difficultyOptions = document.getElementById("difficulty-options");
         this.newRunButton = document.getElementById("menu-new-run");
-        this.rulesDialog = document.getElementById("rules-dialog");
         this.gameRegions = [document.querySelector(".topbar"), document.querySelector(".layout")];
         this.lab = new CardLab(battle);
         document.getElementById("menu-lab").addEventListener("click", () => {
@@ -62,7 +60,6 @@ export class MenuScreen {
             this.battle.startRun({ difficulty: this.difficulty.value });
             this.hide();
         });
-        document.getElementById("menu-rules").addEventListener("click", () => openDialogAtStart(this.rulesDialog));
         document.getElementById("menu-button").addEventListener("click", () => this.show());
         document.addEventListener("keydown", event => {
             if (event.key !== "Escape" || document.querySelector("dialog[open]")) return;

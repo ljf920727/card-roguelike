@@ -492,7 +492,7 @@
   "A poker play costs 2 energy, leaving 1 for a mulligan or a blackjack round. Unplayed cards stay for next turn, so you can build toward a flush or full house. Shield lasts a turn, then halves, then vanishes: time it against the enemy's move.": "扑克出牌消耗 2 能量，剩余 1 能量可换牌或进行二十一点。未打出的牌保留至下回合，可积攒同花或葫芦。护盾维持一回合，再减半保留一回合，随后消失；请根据敌人行动安排。",
   "Blackjack is the gamble: wins deal your total in damage and pay chips, losses let the enemy hit you. Double down on a strong start, surrender a bad one. Count what's left in your deck.": "二十一点是一场博弈：获胜造成点数等量伤害并赚取筹码，落败则遭到攻击。好开局可加倍，差开局可投降。留意牌组中剩余的牌。",
   "You're on your own": "独当一面",
-  "Each floor is two fights and a boss. Beating a boss offers a Curse and opens the shop, where blackjack chips buy potions, cards and Jokers. Turn Hints on in the side panel if you want tips along the way.": "每层包含两场战斗和一位首领。击败首领后可选择诅咒，并在商店用筹码购买药水、卡牌和小丑。需要帮助时，可打开侧栏提示。",
+  "Each floor is two fights and a boss. Beating a boss offers a Curse and opens the shop, where blackjack chips buy potions, cards and Jokers. Every rule and hand is in the Guidebook (top right); turn Hints on in Settings if you want tips along the way.": "每层包含两场战斗和一位首领。击败首领后可选择诅咒，并在商店用筹码购买药水、卡牌和小丑。所有规则都在指南中；需要帮助时，可在设置中打开提示。",
   "Goblin down": "哥布林倒下了",
   "Try again": "再试一次",
   "Pick a reward, then choose Next fight to finish the tutorial.": "选择奖励后，点击“下一场战斗”完成教程。",
@@ -502,7 +502,7 @@
   "Play the pair": "打出对子",
   "25 shield for 2 energy. Only the cards you play are discarded; the rest stay in your hand.": "2 能量换取 25 护盾。只弃掉打出的牌，其余手牌保留。",
   "Make a poker hand": "组成扑克牌型",
-  "Select the two 7s. Pairs shield, flushes heal, and bigger hands hit harder: the full list is in the side panel.": "选择两张 7。对子提供护盾，同花恢复生命，更强牌型造成更高伤害。完整列表见侧栏。",
+  "Select the two 7s. Pairs shield, flushes heal, and bigger hands hit harder: the Guidebook (top right) lists every hand.": "选择两张 7。对子提供护盾，同花恢复生命，更强牌型造成更高伤害。完整列表见右上角的指南。",
   "Mulligan what you don't need": "换掉多余的牌",
   "You have 1 energy left. Select up to 3 cards and swap them for new ones. Your hand carries into next turn, so keep what helps you build a bigger hand.": "你还剩 1 能量。选择最多 3 张牌换成新牌。手牌会保留至下回合，留下有助于组成更强牌型的牌。",
   "End turn: the Goblin acts": "结束回合：哥布林行动",
@@ -657,5 +657,11 @@
   "Menu ·": "菜单 ·",
   "Battle ·": "战斗 ·",
   "by Julie Damsgaard / Spring Spring / Spring Enterprises.": "作者：Julie Damsgaard / Spring Spring / Spring Enterprises。",
-  "by Kevin MacLeod (incompetech.com).": "作者：Kevin MacLeod (incompetech.com)。"
+  "by Kevin MacLeod (incompetech.com).": "作者：Kevin MacLeod (incompetech.com)。",
+  "Guidebook": "指南",
+  "Basics": "基础",
+  "Jinxes": "灾厄",
+  "Guidebook sections": "指南章节",
+  "Hints": "提示",
+  "Deck": "牌库"
 }

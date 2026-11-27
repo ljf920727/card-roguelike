@@ -492,7 +492,7 @@
   "A poker play costs 2 energy, leaving 1 for a mulligan or a blackjack round. Unplayed cards stay for next turn, so you can build toward a flush or full house. Shield lasts a turn, then halves, then vanishes: time it against the enemy's move.": "2 enerhiya ang poker, kaya may 1 para magpalit o mag-blackjack. Nananatili ang hindi nilarong baraha para makabuo ng flush o full house. Isang turno ang buong panangga, saka kalahati, saka nawawala: itapat sa galaw ng kalaban.",
   "Blackjack is the gamble: wins deal your total in damage and pay chips, losses let the enemy hit you. Double down on a strong start, surrender a bad one. Count what's left in your deck.": "Sugal ang blackjack: ang panalo ay pinsalang katumbas ng puntos at may chip; sa talo, aatake ang kalaban. Doblehin ang magandang simula, sumuko sa mahina. Bilangin ang natitira sa deck.",
   "You're on your own": "Ikaw na ang bahala",
-  "Each floor is two fights and a boss. Beating a boss offers a Curse and opens the shop, where blackjack chips buy potions, cards and Jokers. Turn Hints on in the side panel if you want tips along the way.": "May dalawang laban at boss bawat palapag. Sa pagkatalo ng boss, may sumpa at tindahang mapagbibilhan ng gamot, baraha at Joker gamit ang chip. Buksan ang mga pahiwatig sa gilid kung kailangan.",
+  "Each floor is two fights and a boss. Beating a boss offers a Curse and opens the shop, where blackjack chips buy potions, cards and Jokers. Every rule and hand is in the Guidebook (top right); turn Hints on in Settings if you want tips along the way.": "May dalawang laban at boss bawat palapag. Sa pagkatalo ng boss, may sumpa at tindahang mapagbibilhan ng gamot, baraha at Joker gamit ang chip. Nasa Gabay ang lahat ng patakaran; buksan ang mga pahiwatig sa Mga setting kung kailangan.",
   "Goblin down": "Bagsak ang Goblin",
   "Try again": "Subukang muli",
   "Pick a reward, then choose Next fight to finish the tutorial.": "Pumili ng gantimpala, saka Susunod na laban para matapos ang pagsasanay.",
@@ -502,7 +502,7 @@
   "Play the pair": "Ilaro ang pares",
   "25 shield for 2 energy. Only the cards you play are discarded; the rest stay in your hand.": "25 panangga sa 2 enerhiya. Ang nilarong mga baraha lamang ang itatapon; mananatili ang iba.",
   "Make a poker hand": "Bumuo ng kombinasyon sa poker",
-  "Select the two 7s. Pairs shield, flushes heal, and bigger hands hit harder: the full list is in the side panel.": "Piliin ang dalawang 7. Panangga ang pares, paggaling ang flush, at mas malakas ang malaking kombinasyon; nasa gilid ang buong listahan.",
+  "Select the two 7s. Pairs shield, flushes heal, and bigger hands hit harder: the Guidebook (top right) lists every hand.": "Piliin ang dalawang 7. Panangga ang pares, paggaling ang flush, at mas malakas ang malaking kombinasyon; nasa Gabay (sa kanang itaas) ang buong listahan.",
   "Mulligan what you don't need": "Palitan ang hindi kailangan",
   "You have 1 energy left. Select up to 3 cards and swap them for new ones. Your hand carries into next turn, so keep what helps you build a bigger hand.": "May 1 enerhiya ka pa. Pumili ng hanggang 3 baraha at ipalit. Mananatili ang kamay sa susunod na turno; itabi ang makatutulong sa mas malaking kombinasyon.",
   "End turn: the Goblin acts": "Tapusin ang turno: kikilos ang Goblin",
@@ -657,5 +657,11 @@
   "Menu ·": "Menu ·",
   "Battle ·": "Laban ·",
   "by Julie Damsgaard / Spring Spring / Spring Enterprises.": "ni Julie Damsgaard / Spring Spring / Spring Enterprises.",
-  "by Kevin MacLeod (incompetech.com).": "ni Kevin MacLeod (incompetech.com)."
+  "by Kevin MacLeod (incompetech.com).": "ni Kevin MacLeod (incompetech.com).",
+  "Guidebook": "Gabay",
+  "Basics": "Mga Batayan",
+  "Jinxes": "Mga Malas na Baraha",
+  "Guidebook sections": "Mga seksyon ng gabay",
+  "Hints": "Mga pahiwatig",
+  "Deck": "Deck"
 }

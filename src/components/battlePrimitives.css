@@ -460,3 +460,20 @@
         var(--enemy);
     border: 3px solid #fbf8f0;
 }
+
+/* Preview pulse: the hearts an action would remove (gold) or restore (green) breathe softly. */
+.heart > .heart-pulse {
+    background: var(--pulse-color, var(--attack));
+    clip-path: inset(0 calc(100% - var(--pulse-to, 0%)) 0 var(--pulse-from, 0%));
+    opacity: 0;
+    pointer-events: none;
+}
+.hearts[data-pulse="heal"] { --pulse-color: var(--heal); }
+.hearts[data-pulse] .heart-pulse { opacity: 0.5; }
+@media (prefers-reduced-motion: no-preference) {
+    .hearts[data-pulse] .heart-pulse { animation: heart-pulse 1.3s ease-in-out infinite; }
+}
+@keyframes heart-pulse {
+    0%, 100% { opacity: 0.1; }
+    50% { opacity: 0.8; }
+}

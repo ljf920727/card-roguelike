@@ -1,0 +1,49 @@
+/** Pictogram row showing what End turn does, centred under the End turn button. */
+.turn-forecast {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 30px;
+    white-space: nowrap;
+    color: var(--secondary);
+}
+.forecast-icon { flex: none; width: 18px; height: 18px; }
+.forecast-arrow { display: inline-flex; color: var(--muted); }
+.forecast-arrow .forecast-icon { width: 14px; height: 14px; }
+[dir="rtl"] .forecast-arrow { transform: scaleX(-1); }
+.forecast-token {
+    --tone: var(--shield);
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 11px;
+    border: 1px solid color-mix(in srgb, var(--tone) 55%, transparent);
+    border-radius: 999px;
+    color: var(--tone);
+    background: color-mix(in srgb, var(--tone) 14%, transparent);
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+}
+.forecast-token.hp { --tone: var(--danger); }
+.forecast-token.charge { --tone: var(--attack); }
+.forecast-token.decay { border-style: dashed; opacity: 0.75; }
+.forecast-token.future { border-style: dashed; }
+.forecast-overlay {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--danger);
+}
+.forecast-overlay .forecast-icon { width: 16px; height: 16px; }
+.forecast-token:has(.forecast-overlay) { padding-inline: 12px; }
+.forecast-token:has(.forecast-overlay) > .forecast-icon:first-child { opacity: 0.55; }
