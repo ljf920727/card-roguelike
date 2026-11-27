@@ -36,7 +36,9 @@ test("the mulligan lesson moves to the Mulligan button once cards are selected",
 
 test("blackjack guidance goes from the toggle, to Deal, to the double-down choice", () => {
     const state = createInitialState({ tutorial: true });
-    state.tutorial.step = "blackjack";
+    // Reach the step the way play does, so the scripted cards (6 + 5, never a natural) are stacked.
+    ["intro-done", "play", "mulligan", "new-turn"].forEach(action => advanceTutorial(state, action));
+    assert.equal(state.tutorial.step, "blackjack");
     assert.equal(getTutorialLesson(state).target, '.mode-option[data-mode="blackjack"]');
     state.mode = "blackjack";
     assert.equal(getTutorialLesson(state).target, "#play-button");
