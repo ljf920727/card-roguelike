@@ -1678,9 +1678,13 @@ button {
 .jokers-dialog .rules-title { margin: 18px 0 0; }
 
 /* Status ribbon: deck pile, HP, shield, energy and chips, then the Jokers button, under the table. */
+#status-ribbon {
+    container: ribbon / inline-size;
+    min-width: 0;
+}
 .status-ribbon {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-columns: minmax(max-content, 1fr) minmax(0, auto) minmax(max-content, 1fr);
     align-items: center;
     gap: 16px;
     min-width: 0;
@@ -1688,13 +1692,14 @@ button {
 .ribbon-side { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .ribbon-left { justify-content: flex-end; }
 .ribbon-right { justify-content: flex-start; }
-@media (max-width: 760px) {
-    .status-ribbon { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+@container ribbon (max-width: 760px) {
+    .status-ribbon { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .status-ribbon .stats { grid-column: 1 / -1; grid-row: 1; }
-    .ribbon-left { justify-content: flex-start; }
-    .ribbon-right { justify-content: flex-end; }
+    .ribbon-left { grid-column: 1; grid-row: 2; justify-content: flex-start; }
+    .ribbon-right { grid-column: 2; grid-row: 2; justify-content: flex-end; }
 }
 .status-ribbon .stats {
+    min-width: 0;
     flex: 0 1 auto;
     justify-content: center;
     gap: 10px 32px;

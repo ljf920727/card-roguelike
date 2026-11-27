@@ -44,6 +44,7 @@ export class RunScreen {
         this.wallet = document.getElementById("shop-wallet");
         this.chips = document.getElementById("shop-chips");
         this.picking = null;
+        this.milestonesByRun = new WeakMap();
         this.dialog.addEventListener("cancel", event => event.preventDefault());
     }
 
@@ -51,20 +52,19 @@ export class RunScreen {
         return this.dialog.open;
     }
 
-    /** Updates the run dialog and starts each new decision at its heading without scrolling to an action. */
-    sync() {
-        if (this.run !== this.state.run) {
-            this.run = this.state.run;
-            this.seenMilestones = new Set();
-            this.soundedMilestones = new Set();
+    /** Shows campaign decisions or a trial entrance, keeping acknowledgements local to that run. */
+    sync(state = this.state) {
+        if (!this.milestonesByRun.has(state.run)) {
+            this.milestonesByRun.set(state.run, {seen: new Set(), sounded: new Set()});
         }
-        const { reward, curseChoice, shop } = this.state;
-        const milestone = getRunMilestone(this.state, this.seenMilestones);
+        const {seen, sounded} = this.milestonesByRun.get(state.run);
+        const { reward, curseChoice, shop } = state;
+        const milestone = state !== this.state && state.result ? null : getRunMilestone(state, seen);
         this.wallet.hidden = !shop || Boolean(milestone);
-        setText(this.chips, this.state.run.gold.toLocaleString());
+        setText(this.chips, state.run.gold.toLocaleString());
         const needed = milestone || (reward && !reward.done) || (curseChoice && !curseChoice.done) || Boolean(shop);
         const menuHidden = document.getElementById("menu").hidden;
-        const atTable = !needed && !this.state.result;
+        const atTable = !needed && !state.result;
         gameMusic.setScene(menuHidden ? (atTable ? 'battle' : null) : 'menu');
         if (!needed || !menuHidden) {
             this.picking = null;
@@ -72,13 +72,13 @@ export class RunScreen {
             return;
         }
         this.dialog.dataset.milestone = milestone?.kind ?? "";
-        if (milestone?.kind === 'boss' && !this.soundedMilestones.has(milestone.key)) {
-            this.soundedMilestones.add(milestone.key);
+        if (milestone?.kind === 'boss' && !sounded.has(milestone.key)) {
+            sounded.add(milestone.key);
             void audio.play('boss');
         }
         const view = milestone?.key ?? (this.picking ? "picker" : !reward?.done ? "reward" :
             curseChoice && !curseChoice.done ? "curse" : "shop");
-        if (milestone) this.renderMilestone(milestone);
+        if (milestone) this.renderMilestone(milestone, state.run.floor, seen);
         else if (!reward?.done) this.renderReward();
         else if (curseChoice && !curseChoice.done) this.renderCurses();
         else this.renderShop();
@@ -110,14 +110,14 @@ export class RunScreen {
     }
 
     /** Displays a floor or boss milestone and its acknowledgement button. */
-    renderMilestone(milestone) {
+    renderMilestone(milestone, floor, seen) {
         setText(this.title, milestone.title);
         setText(this.subtitle, milestone.body);
         setText(this.message, "");
         const crest = document.createElement("div");
         crest.className = "milestone-crest";
         crest.setAttribute("aria-hidden", "true");
-        setText(crest, String(this.state.run.floor).padStart(2, "0"));
+        setText(crest, String(floor).padStart(2, "0"));
         const label = document.createElement("p");
         label.className = "milestone-label";
         setText(label, milestone.label);
@@ -136,7 +136,7 @@ export class RunScreen {
         }
         this.body.replaceChildren(crest, label, notes);
         const button = this.button(milestone.action, "button primary", () => {
-            this.seenMilestones.add(milestone.key);
+            seen.add(milestone.key);
             this.onChange();
         });
         this.footer.replaceChildren(button);

@@ -635,7 +635,7 @@ export class BattleScene {
     const finisher = Boolean(pokerHit && this.state.result === 'victory');
     const settling = landed ?? (finisher ? impact : null);
     if (this.lab) {
-      gameMusic.setScene(this.state.result ? null : 'battle');
+      this.runScreen.sync(this.state);
     } else if (this.state.result && settling) {
       const enemy = this.state.enemy;
       this.finishingEnemy = enemy;
