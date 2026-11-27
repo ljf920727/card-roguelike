@@ -1731,3 +1731,31 @@ button {
 }
 /* Not enough energy: the pips turn red so the disabled button explains itself. */
 .cost-pips.short .cost-pip { --pip: var(--danger); }
+
+/* Shield preview: the band of the gauge an action would fill pulses. */
+.shield-preview {
+    fill: var(--shield);
+    opacity: 0;
+    pointer-events: none;
+}
+.shield[data-pulse] .shield-preview { opacity: 0.55; }
+@media (prefers-reduced-motion: no-preference) {
+    .shield[data-pulse] .shield-preview { animation: shield-preview-pulse 1.3s ease-in-out infinite; }
+}
+@keyframes shield-preview-pulse {
+    0%, 100% { opacity: 0.12; }
+    50% { opacity: 0.85; }
+}
+
+/* Overlay for the damage swarm; it never takes input and sits under dialogs and banners. */
+.swarm-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 45;
+    pointer-events: none;
+}
+
+/* Cards that dissolved into pips on a won round stay gone until the next deal. */
+#bj-player[data-spent] > * { visibility: hidden; }

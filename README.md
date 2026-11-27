@@ -448,6 +448,16 @@ Keep play permission and resource consumption here; keep combination detection i
 
 ---
 
+### `src/components/SwarmEffect.js` and `swarmMath.js`
+
+**Purpose:** The damage swarm. When the player hurts the enemy, the spent card(s) crumble into pips that float for a moment and then fire at the enemy icon in staggered arcs; when the enemy hurts the player, pips leave the enemy icon for the HP bar. `swarmMath.js` is pure (pip count from damage, spawn points, the sine-in arc), so it is tested under Node; `SwarmEffect.js` draws it on a temporary full-window canvas that never takes input. Pips vary widely in speed and size (the biggest possible size grows with the damage). Both bars keep showing their old HP until the first pip lands (`BattleScene.planEffects` / `holdHp`), so the hearts drop and the damage number pops while the portrait flashes and the rest of the swarm arrives; spent blackjack cards stay hidden until the next deal. With reduced motion on, there is no swarm and no hold.
+
+### `src/components/PreviewPulse.js` and `systems/ActionPreview.js`
+
+**Purpose:** While an action is pending (selected poker cards, or a blackjack round being played), the part of the enemy's hearts it would remove pulses gold, the player's hearts it would restore pulse green, and the shield band it would fill pulses blue. `previewPlay()` runs the real play on a copy of the state, so the numbers include caps, Jokers and Curses; blackjack uses `projectedWinDamage()` and never reveals the dealer's cards.
+
+---
+
 ### `src/components/Guidebook.js`
 
 **Purpose:** The tabbed rules dialog (Basics, Poker, Blackjack, Jinxes, Between fights). Any `[data-guidebook]` button opens it (the value names the starting tab; without one it opens on the current combo mode's tab), as does the `?` key or a `juniper:guidebook` event with `detail.tab`, which the Card Lab uses. `src/scenes/guidebookContent.js` holds the text and builds the poker and Jinx tables from `POKER_HANDS` and `JINXES`; prose reuses existing catalogue strings so every language is covered. Co-op does not install it yet because its energy costs differ from solo.

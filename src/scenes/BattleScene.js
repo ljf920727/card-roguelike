@@ -52,6 +52,9 @@ import {isTutorialActive, tutorialAllows, tutorialHoldsTurn} from '../systems/Tu
 import {getTutorialEnabled, saveTutorialEnabled} from '../tutorialPreferences.js';
 import {GuideView} from './GuideView.js';
 import {actionCosts} from '../systems/ActionCosts.js';
+import {previewAction} from '../systems/ActionPreview.js';
+import {SwarmEffect} from '../components/SwarmEffect.js';
+import {PreviewPulse} from '../components/PreviewPulse.js';
 import {JokersDialog} from '../components/JokersDialog.js';
 import {RunScreen} from './RunScreen.js';
 import {shieldCap} from '../systems/CombatSystem.js';
@@ -103,12 +106,23 @@ export class BattleScene {
     ].map(id => [id, document.getElementById(id)]));
     this.pokerPreview = new PokerPreview(this.ui.table, this.ui['result-text']);
     this.jokersDialog = new JokersDialog(this.ui['jokers-button']);
+    this.swarm = new SwarmEffect();
+    this.previewPulse = new PreviewPulse({
+      enemyHearts: this.ui['enemy-hearts'], playerHearts: this.ui['hp-hearts'],
+      shieldStat: this.ui['shield-stat'], shieldBand: document.getElementById('shield-preview'),
+    });
+    /** HP shown while a swarm is still flying, so the bars drop when the pips land. */
+    this.holds = {enemy: {hp: null, count: 0, owner: null}, player: {hp: null, count: 0, owner: null}};
+    this.fxPrev = null;
+    this.fxSources = null;
+    this.fxEpoch = 0;
     this.runScreen = new RunScreen(state, () => this.refreshBattle());
     this.modeOptions = [...document.querySelectorAll('.mode-option')];
 
     this.ui['play-button'].addEventListener('click', () => this.onPrimaryAction());
     this.ui['end-turn-button'].addEventListener('click', () => this.endTurn());
     this.ui['stand-button'].addEventListener('click', () => {
+      this.captureSources();
       stand(this.state);
       this.afterAction();
     });
@@ -123,10 +137,12 @@ export class BattleScene {
       this.afterAction();
     });
     this.ui['double-button'].addEventListener('click', () => {
+      this.captureSources();
       doubleDown(this.state);
       this.afterAction();
     });
     this.ui['surrender-button'].addEventListener('click', () => {
+      this.captureSources();
       surrender(this.state);
       this.afterAction();
     });
@@ -235,6 +251,7 @@ export class BattleScene {
       this.startRun();
       return;
     }
+    this.captureSources();
     if (this.state.mode === 'blackjack') {
       if (isRoundActive(this.state)) {
         hit(this.state);
@@ -291,6 +308,9 @@ export class BattleScene {
     this.ui['selection-detail'].dataset.idle = String(Boolean(view.idle) && !autoEnding);
     setText(this.ui['play-button'], view.primaryLabel);
     this.ui['play-button'].disabled = !view.primaryEnabled || autoEnding;
+    const pending = !autoEnding && !this.state.result &&
+        (this.state.mode === 'blackjack' ? isRoundActive(this.state) : view.primaryEnabled);
+    this.previewPulse.update(this.state, pending ? previewAction(this.state) : {damage: 0, heal: 0, shield: 0}, shieldCap(this.state));
     const ready = !this.state.result && this.state.mode === 'poker' &&
         view.primaryEnabled && !autoEnding && isRarePokerHand(result.name);
     this.pokerPreview.update(view.result, ready ? result : null);
@@ -495,6 +515,7 @@ export class BattleScene {
       const element = createCardElement(card);
       return i >= shown.player ? deal(element, fresh ? 2 * i : i - shown.player) : element;
     }) : this.createSlots()));
+    if (fresh || !round) delete this.ui['bj-player'].dataset.spent;
     this.lastRound = round;
     this.lastHidden = hidden;
     this.dealtCounts = {dealer: round?.dealer.length ?? 0, player: round?.player.length ?? 0};
@@ -553,6 +574,7 @@ export class BattleScene {
     this.turnTimeout = this.autoEndTimeout = null;
     this.soundSnapshot = this.handCards = this.finishingEnemy = null;
     for (const row of [this.ui['hp-hearts'], this.ui['enemy-hearts']]) delete row.dataset.maxHp;
+    this.resetEffects();
     audio.stop();
     this.state = state;
   }
@@ -581,6 +603,7 @@ export class BattleScene {
   /** Cancels pending turn work and starts a fresh random run at any time. */
   restart(options) {
     audio.stop();
+    this.resetEffects();
     this.soundSnapshot = null;
     if (this.turnTimeout != null) clearTimeout(this.turnTimeout);
     if (this.autoEndTimeout != null) clearTimeout(this.autoEndTimeout);
@@ -597,6 +620,7 @@ export class BattleScene {
    */
   refreshBattle(pokerHit) {
     showRareHandBanner(this.ui.table, pokerHit);
+    const fx = this.planEffects();
     if (!this.lab) ensureRewards(this.state);
     this.ui.table.dataset.mode = this.state.mode;
     this.refreshBlackjack();
@@ -607,14 +631,16 @@ export class BattleScene {
     this.onCardSelectionChanged();
     setText(this.ui['last-action'], this.state.lastAction);
     this.resize();
+    const landed = this.playEffects(fx, pokerHit);
     const finisher = Boolean(pokerHit && this.state.result === 'victory');
+    const settling = landed ?? (finisher ? impact : null);
     if (this.lab) {
       gameMusic.setScene(this.state.result ? null : 'battle');
-    } else if (finisher && impact) {
+    } else if (this.state.result && settling) {
       const enemy = this.state.enemy;
       this.finishingEnemy = enemy;
-      gameMusic.setScene(null);
-      impact.then(() => {
+      if (finisher) gameMusic.setScene(null);
+      settling.then(() => {
         if (this.finishingEnemy === enemy) this.finishingEnemy = null;
         if (this.state.enemy === enemy && !this.runScreen.isOpen()) this.runScreen.sync();
       });
@@ -625,12 +651,14 @@ export class BattleScene {
     const snapshot = soloSoundSnapshot(this.state);
     playSoundCues(audio, soloSoundCues(this.soundSnapshot, snapshot), this.soundDealDelay, finisher);
     this.soundSnapshot = snapshot;
+    this.fxPrev = {enemy: this.state.enemy, enemyHp: this.state.enemy.hp, playerHp: this.state.player.hp};
   }
 
   /** Displays player resources and whether battle input is available. */
   refreshHUD() {
     setText(document.getElementById('run-difficulty'), getDifficulty(this.state.run.difficulty).label);
-    const {hp, maxHp, shield, shieldOld, energy, maxEnergy} = this.state.player;
+    const {maxHp, shield, shieldOld, energy, maxEnergy} = this.state.player;
+    const hp = this.shownHp('player', this.state.player.hp);
     renderHearts(this.ui['hp-hearts'], hp, maxHp);
     setText(this.ui['hp-text'], `${hp} / ${maxHp}`);
     const cap = shieldCap(this.state);
@@ -659,7 +687,8 @@ export class BattleScene {
 
   /** Displays enemy health and intent, returning the lifetime of any rare damage number. */
   refreshEnemy(pokerHit) {
-    const {name, hp, maxHp, intent, boss} = this.state.enemy;
+    const {name, maxHp, intent, boss} = this.state.enemy;
+    const hp = this.shownHp('enemy', this.state.enemy.hp);
     setText(this.ui['enemy-name'], name);
     this.ui['boss-label'].hidden = !boss;
     setText(this.ui['boss-label'], `Floor ${this.state.run.floor} boss`);
@@ -689,6 +718,144 @@ export class BattleScene {
       element.replaceChildren(...Array.from({length: cost}, () => Object.assign(document.createElement('i'), {className: 'cost-pip'})));
       setLabel(element, 'aria-label', `${cost} energy`);
     });
+  }
+
+  /** Screen rectangles of the cards about to be spent, so they can dissolve into pips. */
+  captureSources() {
+    const sources = [];
+    if (this.state.mode === 'poker') {
+      const canvasRect = this.app.canvas.getBoundingClientRect();
+      const scale = canvasRect.width / this.app.screen.width;
+      this.handContainer.children.filter(view => view.cardData.selected).forEach(view => {
+        const bounds = view.getBounds();
+        const box = bounds.rectangle ?? bounds;
+        sources.push({
+          x: canvasRect.left + box.x * scale, y: canvasRect.top + box.y * scale,
+          width: box.width * scale, height: box.height * scale,
+          face: {rank: view.cardData.rank, suit: view.cardData.suit},
+        });
+      });
+    } else {
+      const cards = this.state.blackjack?.player ?? [];
+      [...this.ui['bj-player'].children].slice(0, cards.length).forEach((element, index) => {
+        const box = element.getBoundingClientRect();
+        if (box.width) sources.push({x: box.left, y: box.top, width: box.width, height: box.height, face: {rank: cards[index].rank, suit: cards[index].suit}});
+      });
+    }
+    this.fxSources = sources;
+  }
+
+  /** The HP a bar shows: the old value while pips are still flying toward it. */
+  shownHp(side, hp) {
+    const hold = this.holds[side];
+    return hold.count && (side === 'player' || hold.owner === this.state.enemy) ? hold.hp : hp;
+  }
+
+  /** Keeps a bar at its old HP until the returned release function runs. */
+  holdHp(side, shown) {
+    const hold = this.holds[side];
+    const epoch = this.fxEpoch;
+    if (!hold.count) {
+      hold.hp = shown;
+      hold.owner = side === 'enemy' ? this.state.enemy : null;
+    }
+    hold.count += 1;
+    let released = false;
+    return () => {
+      if (released || epoch !== this.fxEpoch) return;
+      released = true;
+      hold.count -= 1;
+      if (!hold.count) Object.assign(hold, {hp: null, owner: null});
+    };
+  }
+
+  /** Compares HP with the last presentation and holds the bars that are about to be hit by pips. */
+  planEffects() {
+    const prev = this.fxPrev;
+    const {state} = this;
+    if (!prev || prev.enemy !== state.enemy || !this.swarm.enabled) {
+      this.fxSources = null;
+      return {out: 0, inc: 0, prev};
+    }
+    const out = Math.max(0, prev.enemyHp - state.enemy.hp);
+    const inc = Math.max(0, prev.playerHp - state.player.hp);
+    return {
+      out, inc, prev,
+      releaseEnemy: out ? this.holdHp('enemy', prev.enemyHp) : null,
+      releasePlayer: inc ? this.holdHp('player', prev.playerHp) : null,
+    };
+  }
+
+  /**
+   * Launches the swarms for this refresh: cards into the enemy when it was hurt, the enemy into the HP bar when the player was.
+   * @returns {Promise|null} Resolves once the bars have dropped; null when nothing was launched.
+   */
+  playEffects(fx, pokerHit) {
+    const sources = this.fxSources;
+    this.fxSources = null;
+    if (!fx.out && !fx.inc) return null;
+    const epoch = this.fxEpoch;
+    const center = box => ({x: box.left + box.width / 2, y: box.top + box.height / 2});
+    const token = this.ui['enemy-token'];
+    const tokenBox = token.getBoundingClientRect();
+    const jobs = [];
+    // A pip that cannot land (a closed tab, a cancelled swarm) must not leave a bar stuck at its old value.
+    const guarded = promise => Promise.race([promise, new Promise(resolve => setTimeout(resolve, 4000))]);
+    let lastNudge = 0;
+    const nudge = () => {
+      const now = performance.now();
+      if (now - lastNudge < 90) return;
+      lastNudge = now;
+      token.animate([{filter: 'brightness(1)'}, {filter: 'brightness(1.7)'}, {filter: 'brightness(1)'}], {duration: 140});
+    };
+    // The bar drops the moment the first pip hits, while the portrait flashes; the swarm then finishes landing.
+    const onContact = (release, refresh) => {
+      let result;
+      let done = false;
+      return () => {
+        if (!done) {
+          done = true;
+          release();
+          if (epoch === this.fxEpoch) result = refresh();
+        }
+        return result;
+      };
+    };
+    if (fx.out) {
+      const heartsBox = this.ui['hp-hearts'].getBoundingClientRect();
+      const from = sources?.length ? sources : [{x: heartsBox.left, y: heartsBox.top, width: heartsBox.width, height: heartsBox.height}];
+      if (sources?.length && this.state.mode === 'blackjack') this.ui['bj-player'].dataset.spent = 'true';
+      const contact = onContact(fx.releaseEnemy, () => this.refreshEnemy(pokerHit));
+      jobs.push(guarded(this.swarm.launch({
+        amount: fx.out, sources: from, target: center(tokenBox), color: 'attack',
+        onImpact: () => {
+          nudge();
+          contact();
+        },
+      })).then(contact));
+    }
+    if (fx.inc) {
+      const hearts = this.ui['hp-hearts'];
+      const perHeart = this.state.player.maxHp / hearts.children.length;
+      const heart = hearts.children[Math.min(hearts.children.length - 1, Math.floor(Math.max(0, this.state.player.hp) / perHeart))] ?? hearts;
+      const contact = onContact(fx.releasePlayer, () => this.refreshHUD());
+      jobs.push(guarded(this.swarm.launch({
+        amount: fx.inc, sources: [{x: tokenBox.left + tokenBox.width * 0.2, y: tokenBox.top + tokenBox.height * 0.2, width: tokenBox.width * 0.6, height: tokenBox.height * 0.6}],
+        target: center(heart.getBoundingClientRect()), color: 'danger',
+        onImpact: contact,
+      })).then(contact));
+    }
+    return Promise.all(jobs);
+  }
+
+  /** Drops any swarm and HP hold when the table is rebound to a different run or encounter. */
+  resetEffects() {
+    this.fxEpoch += 1;
+    this.swarm.cancel();
+    this.holds = {enemy: {hp: null, count: 0, owner: null}, player: {hp: null, count: 0, owner: null}};
+    this.fxPrev = null;
+    this.fxSources = null;
+    this.previewPulse?.clear();
   }
 
   /** Renders the floor header and progress, turn counter, deck pile, enemy detail and Jokers. */
