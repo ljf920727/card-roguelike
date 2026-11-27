@@ -1,0 +1,84 @@
+.rare-hand-banner {
+    --rare-color: #70caff;
+    position: fixed;
+    z-index: 100;
+    top: clamp(76px, 12vh, 120px);
+    left: 50%;
+    translate: -50% 0;
+
+    box-sizing: border-box;
+    width: min(360px, calc(100vw - 32px));
+    padding: 18px 24px;
+
+    display: grid;
+    gap: 6px;
+    text-align: center;
+    pointer-events: none;
+
+    border: 2px solid var(--rare-color);
+    border-radius: 16px;
+    background: #14201ff5;
+    color: var(--rare-color);
+
+    box-shadow:
+    0 0 28px
+    color-mix(in srgb, var(--rare-color) 35%, transparent);
+    
+    font-family: var(--ui-font), sans-serif;
+    animation: rare-hand-reveal 1600ms ease-out both;
+}
+
+.rare-hand-banner[data-hand="ROYAL_FLUSH"] {
+    --rare-color: #ffd66b;
+}
+
+.rare-hand-banner[data-hand="FIVE_OF_A_KIND"] {
+    --rare-color: #d5a0ff;
+}
+
+.rare-hand-banner[data-hand="FLUSH_FIVE"] {
+    --rare-color: #ffe186;
+    background: linear-gradient(120deg,#332444,#173e42,#45351a);
+}
+
+.rare-hand-banner strong {
+    font-size: clamp(22px, 5vw, 30px);
+    line-height: 1.2;
+}
+
+.rare-hand-damage {
+    color: #fff;
+    font-size: clamp(24px, 6vw, 36px);
+    font-weight: 800;
+}
+
+.rare-hand-banner small {
+    color: #f2e8cd;
+    font-size: 14px;
+}
+
+@keyframes rare-hand-reveal {
+    0% {
+        opacity: 0;
+        transform: translateY(12px) scale(.85);
+    }
+    15% {
+        opacity: 1;
+        transform: translateY(0) scale(1.04);
+     }
+    
+    25%, 80% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rare-hand-banner {
+        animation: none;
+    }
+}
