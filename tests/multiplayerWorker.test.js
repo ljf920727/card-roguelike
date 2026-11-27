@@ -10,6 +10,27 @@ async function peer(url, t) {
   let nextId = 0;
   const client = {
     ws, state: null, plays: [],
+    /**
+     * Waits until this peer has received a private snapshot matching the predicate.
+     * @param {(state: object) => boolean} matches Expected room state.
+     * @returns {Promise<void>} Resolves when the snapshot is available to the test.
+     */
+    async waitForState(matches) {
+      if (client.state && matches(client.state)) return;
+      await new Promise((resolve, reject) => {
+        const listener = () => {
+          if (!client.state || !matches(client.state)) return;
+          clearTimeout(timer);
+          ws.removeEventListener('message', listener);
+          resolve();
+        };
+        const timer = setTimeout(() => {
+          ws.removeEventListener('message', listener);
+          reject(new Error('Room snapshot timed out'));
+        }, 5000);
+        ws.addEventListener('message', listener);
+      });
+    },
     /** Sends a request and rejects promptly if the Worker does not answer. */
     request(type, data = {}) {
       return new Promise((resolve, reject) => {
@@ -66,25 +87,15 @@ test('Worker binds one identity per socket and preserves reconnects and seat cle
   let newcomer = await peer(url, t);
   await newcomer.request('join', { token: crypto.randomUUID(), name: 'New host' });
   assert.deepEqual(newcomer.state.players.map(player => player.name), ['Guest', 'New host']);
-  const disconnected = new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('Seat was not released')), 5000);
-    const listener = event => {
-      const message = JSON.parse(event.data);
-      if (message.type === 'roomUpdate' && message.state.players.length === 1) {
-        clearTimeout(timer);
-        guest.ws.removeEventListener('message', listener);
-        resolve();
-      }
-    };
-    guest.ws.addEventListener('message', listener);
-  });
+  await guest.waitForState(state => state.players.some(player => player.name === 'New host'));
   newcomer.ws.close();
-  await disconnected;
+  await guest.waitForState(state => state.players.length === 1);
   newcomer = await peer(url, t);
   await newcomer.request('join', { token: crypto.randomUUID(), name: 'Final host' });
   assert.deepEqual(newcomer.state.players.map(player => player.name), ['Guest', 'Final host']);
   await guest.request('ready');
   await newcomer.request('ready');
+  await Promise.all([guest, newcomer].map(seat => seat.waitForState(state => state.status === 'playing')));
   assert.equal(newcomer.state.status, 'playing');
   assert.equal(newcomer.state.enemy.maxHp, 325);
   assert.ok(newcomer.state.players.every(player => !('token' in player) && !('hand' in player)));
