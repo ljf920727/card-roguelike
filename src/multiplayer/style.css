@@ -271,24 +271,22 @@ details[open] > summary {
   display: none;
 }
 
-.selection-detail :is(#turn, #battle-message):empty,
-.selection-detail #hand-title:empty {
+.selection-detail #battle-message:empty {
   display: none;
 }
 #battle-message {
   color: var(--attack);
 }
-#turn.turn-arrived {
+#phase-text.turn-arrived {
   animation: turn-arrived 600ms ease-out;
 }
 .coop-hand {
   display: flex;
   justify-content: center;
   gap: 12px;
-  padding: 18px 8px 8px;
+  padding: 20px 0 4px;
 }
 .hand-card {
-  --arc: 0px;
   position: relative;
   flex: 0 1 auto;
   min-width: 0;
@@ -296,9 +294,7 @@ details[open] > summary {
   border: 0;
   background: none;
   cursor: pointer;
-  rotate: var(--angle);
-  translate: 0 var(--arc);
-  transition: translate 260ms cubic-bezier(.2, 1.6, .4, 1), rotate 260ms, filter 180ms;
+  transition: translate 160ms ease, opacity 160ms ease;
 }
 .hand-card .bj-card {
   width: clamp(56px, 16cqi, 100px);
@@ -306,17 +302,20 @@ details[open] > summary {
   aspect-ratio: 5 / 7;
   border-radius: 10px;
   box-shadow: 0 6px 12px #0004;
-  transition: box-shadow 180ms, border-color 180ms;
+  transition: box-shadow 160ms, border-color 160ms;
+}
+.card-corner {
+  position: absolute;
+  right: 7%;
+  bottom: 4%;
+  font-size: 15cqw;
+  line-height: 1;
 }
 .hand-card:hover:not(:disabled) {
-  translate: 0 calc(var(--arc) - 10px);
-  rotate: 0deg;
-  z-index: 2;
+  translate: 0 -6px;
 }
 .hand-card.selected, .hand-card.selected:hover:not(:disabled) {
-  translate: 0 -18px;
-  rotate: 0deg;
-  z-index: 3;
+  translate: 0 -16px;
 }
 .hand-card.selected .bj-card {
   border-color: var(--attack);
@@ -325,40 +324,8 @@ details[open] > summary {
 .hand-card:disabled {
   cursor: default;
 }
-#hand[data-inactive="true"] {
-  filter: saturate(.75) brightness(.9);
-}
-.table[data-mode="settled"] .blackjack {
-  flex: 0 1 320px;
-  gap: 6px;
-  opacity: .85;
-}
-.table[data-mode="settled"] .bj-row {
-  grid-template-columns: 56px minmax(0, max-content) 32px;
-  gap: 8px;
-}
-.table[data-mode="settled"] .bj-cards {
-  min-height: 0;
-  gap: 4px;
-  padding: 2px;
-}
-.table[data-mode="settled"] .blackjack .bj-card {
-  width: 40px;
-  height: 56px;
-}
-.table[data-mode="settled"] .bj-total {
-  font-size: 1.1rem;
-}
-.round-summary {
-  color: var(--attack);
-  font: 700 1.15rem var(--display-font), serif;
-  text-align: center;
-}
-.round-summary:empty {
-  display: none;
-}
-.round-summary.settled {
-  animation: result-settle 380ms ease-out;
+.hand-card:disabled:not(.selected) {
+  opacity: .5;
 }
 .table .hint {
   color: var(--muted);
@@ -462,7 +429,6 @@ details[open] > summary {
 @keyframes take-seat { from { opacity: 0; transform: translateY(12px); } }
 @keyframes card-float { 50% { translate: 0 -8px; rotate: 2deg; } }
 @keyframes turn-arrived { 25% { color: var(--attack); transform: translateY(-3px); } }
-@keyframes result-settle { from { opacity: .4; translate: 0 8px; } }
 
 @media (max-width: 700px) {
   #lobby-main {

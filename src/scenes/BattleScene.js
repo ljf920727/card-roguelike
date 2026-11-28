@@ -444,8 +444,9 @@ export class BattleScene {
     };
     return {
       ...outcomes[round.outcome],
-      selection: `You ${round.playerTotal}, ${name} ${round.dealerTotal}${bustLimit(round.player) < 21 ? ` · bust limit ${bustLimit(round.player)}` : ''}` +
-          (round.backlashDamage || round.backlashBlocked ? ` · Backlash: ${round.backlashDamage} HP lost, ${round.backlashBlocked} blocked` : ''),
+      selection: [bustLimit(round.player) < 21 ? `bust limit ${bustLimit(round.player)}` : '',
+        round.backlashDamage || round.backlashBlocked ? `Backlash: ${round.backlashDamage} HP lost, ${round.backlashBlocked} blocked` : '']
+          .filter(Boolean).join(' · '),
       feedback: dealable ? `Deal again for ${DEAL_COST} energy, or end your turn.` : 'Out of energy. End your turn to restore it.',
       primaryLabel: 'Deal again',
       primaryEnabled: dealable,

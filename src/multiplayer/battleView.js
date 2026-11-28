@@ -70,6 +70,10 @@ export function renderPokerCards(container, cards, selected, enabled, onSelect, 
             button.className = 'hand-card';
             button.dataset.cardId = card.id;
             const face = cardFace(card);
+            const corner = document.createElement('span');
+            corner.className = 'card-corner';
+            corner.textContent = `${card.suit} ${card.rank}`;
+            face.append(corner);
             setLabel(button, 'aria-label', sourceLabel(face, 'aria-label'));
             face.setAttribute('aria-hidden', 'true');
             dealCard(face, arriving++);
@@ -83,9 +87,6 @@ export function renderPokerCards(container, cards, selected, enabled, onSelect, 
         button.disabled = !enabled;
         // A hidden hand must not restart an unfinished deal when blackjack settles.
         if (!visible) button.firstElementChild.classList.remove('dealt');
-        const offset = index - (cards.length - 1) / 2;
-        button.style.setProperty('--angle', `${offset * 3}deg`);
-        button.style.setProperty('--arc', `${Math.abs(offset) * 3}px`);
     });
     container.dataset.inactive = String(!enabled);
 }
@@ -110,20 +111,21 @@ function renderBlackjackRow(container, cards, fresh, offset) {
 
 /** Maintains the current round's DOM and disclosure state across unrelated room updates. */
 export function renderBlackjackTable(data) {
-    const table = document.getElementById('table');
     const info = document.getElementById('blackjack-info');
     const player = document.getElementById('bj-player');
     const dealer = document.getElementById('bj-dealer');
-    const summary = document.getElementById('round-summary');
     const round = data.blackjack || data.lastBlackjack;
-    const active = Boolean(data.blackjack);
-    table.dataset.mode = active ? 'blackjack' : round ? 'settled' : 'poker';
-    info.hidden = !round;
+    setText(document.getElementById('bj-dealer-label'), data.enemy.name);
     if (!round) {
-        player.replaceChildren();
-        dealer.replaceChildren();
-        delete info.dataset.round;
-        setText(summary, '');
+        if (info.dataset.round !== '') {
+            const slots = () => [0, 1].map(() => Object.assign(document.createElement('span'), { className: 'bj-card slot' }));
+            player.replaceChildren(...slots());
+            dealer.replaceChildren(...slots());
+            delete player.dataset.spent;
+            info.dataset.round = '';
+        }
+        setText(document.getElementById('bj-player-total'), '');
+        setText(document.getElementById('bj-dealer-total'), '');
         return;
     }
     const fresh = info.dataset.round !== round.player[0].id;
@@ -136,17 +138,7 @@ export function renderBlackjackTable(data) {
     renderBlackjackRow(player, round.player, fresh, 0);
     renderBlackjackRow(dealer, round.dealer, fresh, 1);
     setText(document.getElementById('bj-player-total'), String(round.playerTotal));
-    setText(document.getElementById('bj-dealer-total'), active ? '?' : String(round.dealerTotal));
-    const result = active ? '' : round.outcome === 'win' ? `Win · ${round.damage} damage` :
-        round.outcome === 'push' ? `Push · +${round.refund} energy` :
-            `${round.outcome === 'bust' ? 'Bust' : 'Loss'} · −${round.damage} HP${round.blocked ? ` · ${round.blocked} blocked` : ''}`;
-    if (result && summary.dataset.result !== `${info.dataset.round}:${result}`) {
-        summary.classList.remove('settled');
-        void summary.offsetWidth;
-        summary.classList.add('settled');
-    }
-    summary.dataset.result = `${info.dataset.round}:${result}`;
-    setText(summary, result);
+    setText(document.getElementById('bj-dealer-total'), data.blackjack ? '?' : String(round.dealerTotal));
 }
 
 function renderChips(container, energy, max = 3) {

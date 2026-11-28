@@ -1,5 +1,5 @@
 /** Connects the cooperative lobby and battle UI to authoritative room snapshots. */
-import { installLocalization, setText } from '../i18n/dom.js';
+import { installLocalization, setLabel, setText } from '../i18n/dom.js';
 
 import { SERVER_URL, checkServer, createRoomCode, RoomConnection } from './connection.js';
 import { getDifficulty } from '../systems/DifficultySystem.js';
@@ -14,6 +14,7 @@ import { ENEMY_ICONS } from '../enemyIcons.js';
 import { renderPlayerSeats, renderPokerCards, renderBlackjackTable, renderMyStats, renderTeammate } from './battleView.js';
 import { CoopEffects } from './battleEffects.js';
 import { PreviewPulse } from '../components/PreviewPulse.js';
+import { TurnForecast } from '../components/TurnForecast.js';
 import { audio } from '../audio/AudioManager.js';
 import { installSettings } from '../components/SettingsDialog.js';
 import { gameMusic } from '../audio/GameMusic.js';
@@ -77,7 +78,11 @@ const connection = new RoomConnection({
 
 /** Finds a cooperative UI element by its stable ID. */
 const byId = id => document.getElementById(id);
-const pokerPreview = new PokerPreview(byId('battle'), byId('poker-preview'));
+const pokerPreview = new PokerPreview(byId('battle'), byId('result-text'));
+const turnForecast = new TurnForecast(byId('turn-forecast'));
+const ACTION_COLORS = { attack: 'attack', defend: 'shield', heal: 'heal' };
+const AUTO_END_TURN_MS = 1000;
+const modeOptions = [...document.querySelectorAll('.mode-option')];
 const effects = new CoopEffects();
 const previewPulse = new PreviewPulse({
   enemyHearts: byId('enemy-hearts'), playerHearts: byId('hp-hearts'),
@@ -92,6 +97,8 @@ let pending = false;
 let requestVersion = 0;
 let synced = false;
 let theme = getPreferredTheme();
+let mode = 'poker';
+let autoEndTimeout = null;
 
 /** Each tab owns its reconnect identity so two local players never replace one another. */
 let token = readStorage('sessionStorage', 'juniper.multiplayer.token');
@@ -332,10 +339,9 @@ async function action(type, cardIds) {
       selectedCards.clear();
       message('');
       if (state) render(state);
-      if (['deal', 'hit', 'stand'].includes(source.id) &&
+      if (['play-button', 'stand-button'].includes(source.id) &&
           [document.body, source].includes(document.activeElement)) {
-        const next = !source.hidden ? source : state?.blackjack ? byId('hit') :
-          !byId('deal').disabled ? byId('deal') : byId('end-turn');
+        const next = !source.disabled ? source : !byId('play-button').disabled ? byId('play-button') : byId('end-turn');
         if (!next.disabled) next.focus({ preventScroll: true });
       }
     }
@@ -371,7 +377,7 @@ function renderLobby(data) {
 function renderHand(data) {
   const ids = new Set(data.hand.map(card => card.id));
   selectedCards = new Set([...selectedCards].filter(id => ids.has(id)));
-  renderPokerCards(byId('hand'), data.hand, selectedCards, isMyTurn(data) && !data.blackjack, id => {
+  renderPokerCards(byId('hand'), data.hand, selectedCards, isMyTurn(data) && mode === 'poker' && !data.blackjack, id => {
     if (selectedCards.has(id)) selectedCards.delete(id);
     else if (selectedCards.size < 5) selectedCards.add(id);
     else return;
@@ -385,14 +391,102 @@ function isMyTurn(data) {
   return canAct(data, connection.connected && synced, pending);
 }
 
+function describeTable(data, me, myTurn, evaluation) {
+  const name = data.enemy.name;
+  const attack = data.enemy.attack;
+  if (data.status === 'finished') {
+    return { result: battleStatus(data, true), color: data.result === 'victory' ? 'heal' : 'danger', feedback: '' };
+  }
+  const connected = connection.connected && synced;
+  if (!myTurn) {
+    const label = battleStatus(data, connected);
+    const routine = connected && data.players.every(player => player.connected) && me.hp > 0;
+    return { result: '', feedback: routine ? '' : label, primaryLabel: mode === 'poker' ? 'Play cards' : 'Deal', idle: routine };
+  }
+  if (autoEndTimeout) {
+    return { result: '', feedback: 'You\'re out of energy. Ending your turn…', primaryLabel: mode === 'poker' ? 'Play cards' : 'Deal again' };
+  }
+  if (mode === 'poker') {
+    const count = selectedCards.size;
+    if (!count || !evaluation) {
+      return { result: 'Pick your cards', feedback: 'Select 1 to 5 cards to play a poker hand (3 energy). Playing ends your turn.',
+        primaryLabel: 'Play cards', idle: true };
+    }
+    return {
+      selection: `${count} ${count === 1 ? 'card' : 'cards'} selected`,
+      result: `${evaluation.label}: ${describePokerActions(evaluation.actions)}`,
+      color: ACTION_COLORS[evaluation.actions[0]?.type],
+      feedback: me.energy < 3 ? 'Not enough energy. End your turn to restore energy.' : 'Costs 3 energy. Your hand is discarded and your turn ends.',
+      primaryLabel: 'Play cards',
+      primaryEnabled: me.energy >= 3,
+      cost: 3,
+    };
+  }
+  const dealable = me.energy >= 1;
+  if (data.blackjack) {
+    return {
+      selection: `${name} shows ${data.blackjack.dealer[0].rank === 'A' ? 11 : ['J', 'Q', 'K'].includes(data.blackjack.dealer[0].rank) ? 10 : data.blackjack.dealer[0].rank}`,
+      result: `You have ${data.blackjack.playerTotal}`,
+      feedback: `Hit to take a card, or stand and the ${name} draws to 17. Losing costs ${attack} HP.`,
+      primaryLabel: 'Hit',
+      primaryEnabled: true,
+    };
+  }
+  const round = data.lastBlackjack;
+  if (!round) {
+    return {
+      result: 'Deal to play a round',
+      feedback: dealable ? `Costs 1 energy. Win: damage. Lose: ${name} hits you for ${attack}.` : 'Not enough energy. End your turn to restore energy.',
+      primaryLabel: 'Deal', primaryEnabled: dealable, cost: 1, idle: dealable,
+    };
+  }
+  const outcomes = {
+    win: { result: `You win: ${round.damage} damage`, color: 'attack' },
+    push: { result: 'Push: energy refunded', color: 'text' },
+    lose: { result: `${name} wins: you lost ${round.damage} HP`, color: 'danger' },
+    bust: { result: `Bust: you lost ${round.damage} HP`, color: 'danger' },
+  };
+  return {
+    ...outcomes[round.outcome],
+    feedback: dealable ? 'Deal again for 1 energy, or end your turn.' : 'Out of energy. End your turn to restore it.',
+    primaryLabel: 'Deal again', primaryEnabled: dealable, cost: 1,
+  };
+}
+
+function updateForecast(data, me, myTurn) {
+  if (!myTurn || data.blackjack) {
+    turnForecast.render([], '');
+    return;
+  }
+  const attack = data.enemy.attack;
+  const blocked = Math.min(me.shield, attack);
+  const damage = Math.min(me.hp, attack - blocked);
+  const steps = [];
+  if (blocked > 0) steps.push({ kind: blocked === me.shield ? 'shield-break' : 'shield-block', amount: blocked });
+  if (damage > 0) steps.push({ kind: 'hp', amount: damage });
+  turnForecast.render(steps, `Click End turn: ${data.enemy.name} deals ${attack}; shield blocks ${blocked}; you lose ${damage} HP. Then play passes to your teammate.`);
+}
+
+function scheduleAutoEnd(data, me, myTurn) {
+  const due = myTurn && !data.blackjack && me.energy <= 0;
+  if (!due) {
+    clearTimeout(autoEndTimeout);
+    autoEndTimeout = null;
+    return;
+  }
+  if (autoEndTimeout) return;
+  autoEndTimeout = setTimeout(() => {
+    autoEndTimeout = null;
+    void action('endTurn');
+  }, AUTO_END_TURN_MS);
+}
+
 /** Renders battle feedback, selection effects, replay readiness and enabled actions. */
 function renderBattle(data, pokerHit, heartsHit = pokerHit) {
   showRareHandBanner(byId('battle'), pokerHit);
-  const connected = connection.connected && synced;
-  const label = battleStatus(data, connected);
-  const routine = connected && data.status === 'playing' && data.players.every(player => player.connected) &&
-    data.players.find(player => player.isYou)?.hp > 0;
-  setText(byId('turn'), routine ? '' : label);
+  if (data.blackjack) mode = 'blackjack';
+  const table = byId('table');
+  table.dataset.mode = mode;
   const active = data.players[data.activeIndex];
   setText(byId('turn-text'), `Turn ${data.turn}`);
   const phase = byId('phase-text');
@@ -406,14 +500,14 @@ function renderBattle(data, pokerHit, heartsHit = pokerHit) {
   }
   phase.classList.toggle('enemy-turn', data.status === 'finished' && data.result !== 'victory');
   setText(byId('battle-difficulty'), getDifficulty(data.difficulty).label);
-  setText(byId('enemy-intent'), `Attack · ${data.enemy.attack}`);
+  const over = data.status === 'finished';
+  setText(byId('enemy-intent'), over ? 'Out of the fight' : `Attacks for ${data.enemy.attack}`);
+  setText(byId('intent-detail'), over ? '' : 'Shield absorbs it first.');
 
   setText(byId('enemy-name'), data.enemy.name);
   const enemyHp = effects.shown('enemy', data.enemy.hp);
   setText(byId('enemy-hp'), `${enemyHp} / ${data.enemy.maxHp} HP`);
   byId('enemy-token').style.setProperty('--hp', String(Math.max(0, enemyHp / data.enemy.maxHp)));
-
-
   renderHearts(byId('enemy-hearts'), enemyHp, data.enemy.maxHp, heartsHit);
   byId('enemy-token').classList.toggle('defeated', enemyHp <= 0);
 
@@ -426,54 +520,55 @@ function renderBattle(data, pokerHit, heartsHit = pokerHit) {
   renderBlackjackTable(data);
 
   const myTurn = isMyTurn(data);
-  const evaluation = evaluatePokerHand(data.hand.filter(card => selectedCards.has(card.id)));
-  const description = evaluation
-    ? `${evaluation.label} · ${describePokerActions(evaluation.actions, { separator: ' · ' })} · Ends turn`
-    : 'Select 1–5 cards';
-  setText(byId('hand-title'), data.blackjack || !myTurn ? '' : `Selected ${selectedCards.size} / 5`);
-  byId('hit').hidden = byId('stand').hidden = !data.blackjack;
-  const over = data.status === 'finished';
-  byId('deal').parentElement.hidden = byId('play-poker').parentElement.hidden = Boolean(data.blackjack) || over;
-  byId('end-turn').hidden = over;
-  byId('poker-cost').classList.toggle('short', me.energy < 3);
-  byId('deal-cost').classList.toggle('short', me.energy < 1);
-  byId('rematch').hidden = data.status !== 'finished' || data.players.length !== 2;
+  scheduleAutoEnd(data, me, myTurn);
+  modeOptions.forEach(option => {
+    option.setAttribute('aria-checked', String(option.dataset.mode === mode));
+    option.disabled = !myTurn || Boolean(data.blackjack) || Boolean(autoEndTimeout);
+  });
+
+  const evaluation = mode === 'poker' ? evaluatePokerHand(data.hand.filter(card => selectedCards.has(card.id))) : null;
+  const view = describeTable(data, me, myTurn, evaluation);
+  const play = byId('play-button');
+  setText(byId('selection-text'), view.selection ?? '');
+  byId('result-text').style.setProperty('--result-color', `var(--${view.color ?? 'text'})`);
+  setText(byId('feedback-text'), view.feedback ?? '');
+  byId('selection-detail').dataset.idle = String(Boolean(view.idle) && !byId('battle-message').textContent);
+  setText(play, view.primaryLabel ?? 'Play cards');
+  play.disabled = !myTurn || !view.primaryEnabled || Boolean(autoEndTimeout);
+  play.parentElement.hidden = over;
+  const cost = byId('play-cost');
+  cost.hidden = !view.cost || over;
+  if (view.cost) {
+    cost.classList.toggle('short', me.energy < view.cost);
+    if (cost.children.length !== view.cost) {
+      cost.replaceChildren(...Array.from({ length: view.cost }, () => Object.assign(document.createElement('i'), { className: 'cost-pip' })));
+    }
+    setLabel(cost, 'aria-label', `${view.cost} energy`);
+  }
+  byId('stand-button').disabled = !myTurn || !data.blackjack;
+  byId('stand-button').hidden = over;
+  byId('end-turn').disabled = !myTurn || Boolean(data.blackjack) || Boolean(autoEndTimeout);
+  byId('end-turn').parentElement.hidden = over;
+  updateForecast(data, me, myTurn && !autoEndTimeout);
+
+  byId('rematch').hidden = !over || data.players.length !== 2;
   byId('rematch').disabled = pending || !connection.connected || !synced || me?.ready || !data.players.every(player => player.connected);
   setText(byId('rematch'), me?.ready ? 'Waiting for teammate' : 'Ready for another battle');
 
-  byId('play-poker').disabled =
-    !myTurn || selectedCards.size === 0 ||
-    me.energy < 3 || !!data.blackjack;
-  const ready = !byId('play-poker').disabled && isRarePokerHand(evaluation?.name);
-  pokerPreview.update(myTurn && !data.blackjack ? description : '', ready ? evaluation : null);
+  const ready = myTurn && mode === 'poker' && Boolean(view.primaryEnabled) && isRarePokerHand(evaluation?.name);
+  pokerPreview.update(view.result ?? '', ready ? evaluation : null);
+  gameMusic.setAnticipation(ready);
   const total = kind => evaluation?.actions.filter(effect => effect.type === kind).reduce((sum, effect) => sum + effect.amount, 0) ?? 0;
-  if (!byId('play-poker').disabled) {
+  const preview = mode === 'poker' && view.primaryEnabled ? { damage: total('attack'), heal: total('heal'), shield: total('defend') } :
+    mode === 'blackjack' && myTurn && data.blackjack ? { damage: data.blackjack.playerTotal, heal: 0, shield: 0 } : null;
+  if (preview && myTurn) {
     previewPulse.update(
       { enemy: { hp: enemyHp, maxHp: data.enemy.maxHp }, player: { hp: effects.shown('me', me.hp), maxHp: 100, shield: me.shield } },
-      { damage: total('attack'), heal: total('heal'), shield: total('defend') }, 40);
+      preview, 40);
   } else previewPulse.clear();
-  gameMusic.setAnticipation(ready);
-
-  byId('deal').disabled =
-    !myTurn || me.energy < 1 || !!data.blackjack;
-
-  byId('hit').disabled = !myTurn || !data.blackjack;
-  byId('stand').disabled = !myTurn || !data.blackjack;
-  byId('end-turn').disabled = !myTurn || !!data.blackjack;
-
-  let energyHint = '';
-  if (myTurn && !data.blackjack && me.energy < 3) {
-       energyHint = me.energy > 0
-       ? 'Poker requires 3 energy. You can still play Blackjack or end your turn.'
-       : 'Out of energy. End your turn to restore energy.';
-  }
-
-  setText(byId('action-hint'), energyHint);
-  byId('action-hint').hidden = !energyHint;
 
   const log = byId('log');
   log.replaceChildren();
-
   for (const line of [...data.log].reverse()) {
     log.append(makeText('p', line));
   }
@@ -515,12 +610,18 @@ installSettings(name => {
   applyTheme();
 });
 
-byId('play-poker').onclick = () => action('poker', [...selectedCards]);
-
-byId('deal').onclick = () => action('deal');
-byId('hit').onclick = () => action('hit');
-byId('stand').onclick = () => action('stand');
+byId('play-button').onclick = () => {
+  if (mode === 'poker') action('poker', [...selectedCards]);
+  else action(state?.blackjack ? 'hit' : 'deal');
+};
+byId('stand-button').onclick = () => action('stand');
 byId('end-turn').onclick = () => action('endTurn');
+modeOptions.forEach(option => option.addEventListener('click', () => {
+  if (option.disabled || mode === option.dataset.mode) return;
+  mode = option.dataset.mode;
+  void audio.play('ui');
+  if (state) renderBattle(state);
+}));
 
 refreshControls();
 if (!SERVER_URL) {
