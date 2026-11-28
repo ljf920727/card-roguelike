@@ -60,10 +60,21 @@ export class TurnForecast {
         const text = state.enemy.intent?.type === 'charge' ?
             `Click End turn: ${name} charges up and hits for ${state.enemy.intent.next} next turn. Then: hand tops up to 5, ${state.player.maxEnergy} energy.` :
             `Click End turn: ${name} deals ${forecast.incoming}; shield blocks ${forecast.blocked}; you lose ${forecast.damage} HP. Then: hand tops up to 5, ${state.player.maxEnergy} energy, shield decays.`;
+        this.render(forecastTurnEnd(state), text);
+    }
+
+    render(steps, text) {
+        const { container } = this;
+        if (!steps.length && !text) {
+            container.replaceChildren();
+            container.removeAttribute('aria-label');
+            container.removeAttribute('title');
+            return;
+        }
         setLabel(container, 'aria-label', text);
         setLabel(container, 'title', text);
         const parts = [];
-        forecastTurnEnd(state).forEach(step => {
+        steps.forEach(step => {
             const described = describeStep(step);
             parts.push(token(described));
             if (described.then) parts.push(token(described.then));

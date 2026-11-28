@@ -563,7 +563,19 @@ button {
 
 @media (max-width: 640px) {
     .topbar {
-        gap: 10px 16px;
+        flex-wrap: nowrap;
+        gap: 8px;
+    }
+
+    .topbar-end {
+        flex-wrap: nowrap;
+        gap: 6px;
+    }
+
+    .topbar .button.small {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+        white-space: nowrap;
     }
 
     .stats {
@@ -678,6 +690,18 @@ button {
         padding-inline: 16px;
         white-space: normal;
         overflow-wrap: anywhere;
+    }
+}
+
+@media (max-width: 440px) {
+    .topbar .button.small:is([data-guidebook], [data-game-settings]) {
+        padding: 7px 9px;
+        font-size: 0;
+    }
+
+    .topbar :is([data-guidebook], [data-game-settings]) .settings-icon {
+        width: 17px;
+        height: 17px;
     }
 }
 
@@ -1514,17 +1538,38 @@ button {
 /* Floor header: title, fight-to-boss stepper and house rule on one row. */
 .run-header {
     display: flex;
-    flex-direction: column;
+    flex: 1 1 auto;
     align-items: center;
-    gap: 10px;
-    width: 100%;
-    margin-bottom: 10px;
-    text-align: center;
+    justify-content: center;
+    gap: 14px;
+    min-width: 0;
 }
 .floor-title {
-    font: 700 1.2rem/1.2 var(--display-font), serif;
+    font: 700 0.95rem/1.2 var(--display-font), serif;
+    white-space: nowrap;
 }
 .run-header .floor-route { justify-content: center; }
+.topbar .floor-route { font-size: 0.72rem; }
+.topbar .floor-route li { gap: 6px; white-space: nowrap; }
+.topbar .floor-route li + li::before { width: clamp(10px, 2vw, 28px); margin-inline: 6px; }
+.topbar .step-marker { width: 20px; height: 20px; font-size: 0.7rem; }
+.topbar .floor-route li.current .step-marker { box-shadow: 0 0 0 3px color-mix(in srgb, var(--attack) 28%, transparent); }
+.topbar .floor-route li[data-boss="true"] .step-marker { border-radius: 6px; font-size: 0.75rem; }
+@media (max-width: 1100px) {
+    .topbar .floor-route li:not(.current) .step-label { display: none; }
+}
+@media (min-width: 641px) {
+    .topbar { flex-wrap: nowrap; gap: 12px 20px; }
+    .topbar-end { flex-wrap: nowrap; gap: 10px; }
+}
+@media (min-width: 641px) and (max-width: 1000px) {
+    .topbar .button.small:is([data-guidebook], [data-game-settings]) { padding: 7px 9px; font-size: 0; }
+    .topbar .button.small:is([data-guidebook], [data-game-settings]) .settings-icon { width: 17px; height: 17px; }
+}
+@media (max-width: 640px) {
+    .topbar:has(.run-header) { flex-wrap: wrap; row-gap: 6px; }
+    .topbar .run-header { order: 3; flex-basis: 100%; }
+}
 
 .floor-route {
     display: flex;
@@ -1764,3 +1809,237 @@ button {
 
 /* Cards that dissolved into pips on a won round stay gone until the next deal. */
 #bj-player[data-spent] > * { visibility: hidden; }
+
+@media (min-width: 641px) {
+    body {
+        height: 100vh;
+        height: 100dvh;
+    }
+
+    .layout {
+        min-height: 0;
+    }
+
+    .table {
+        min-height: 0;
+        overflow-y: auto;
+    }
+
+    .table > * {
+        flex-shrink: 0;
+    }
+}
+
+@media (min-width: 641px) and (max-height: 860px) {
+    .table {
+        gap: 6px;
+        padding-block: 12px 16px;
+    }
+
+    .intent-detail,
+    .mode-title {
+        display: none;
+    }
+
+    .enemy-token {
+        width: clamp(64px, 13vh, 156px);
+    }
+
+    .enemy-name {
+        font-size: clamp(1.3rem, 3.2vh, 1.9rem);
+    }
+
+    .turn-zone {
+        gap: 6px;
+        min-height: 0;
+    }
+
+    .turn-counter {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+    }
+
+    .turn-number {
+        font-size: clamp(1.35rem, 3.6vh, 2rem);
+    }
+
+    .selection-detail .result {
+        font-size: clamp(1.1rem, 3vh, 1.3rem);
+    }
+
+    .selection-detail .feedback {
+        min-height: 0;
+    }
+
+    .hand-row {
+        min-height: 0;
+    }
+
+    .hand {
+        max-width: clamp(280px, 62vh, 580px);
+    }
+
+    .mode-option {
+        padding-block: 6px;
+    }
+
+    .blackjack {
+        gap: 4px;
+    }
+
+    .bj-row {
+        gap: 10px;
+    }
+
+    .bj-cards {
+        min-height: 0;
+        padding: 2px;
+    }
+
+    .blackjack .bj-card {
+        width: clamp(40px, 8vh, 62px);
+        height: auto;
+        aspect-ratio: 31 / 43;
+    }
+
+    .bj-total {
+        font-size: 1.25rem;
+    }
+
+    .selection-count {
+        display: none;
+    }
+
+    .actions {
+        gap: 12px;
+    }
+
+    .actions .button {
+        min-width: clamp(112px, 11vw, 164px);
+    }
+
+    .action-bar {
+        margin-top: 10px;
+    }
+
+    .action-column {
+        padding-bottom: 36px;
+    }
+
+    .status-ribbon .stats {
+        flex-wrap: nowrap;
+        gap: 8px 20px;
+    }
+
+    .status-ribbon .stat.hp .heart {
+        width: 20px;
+    }
+
+    .status-ribbon .energy-label {
+        display: none;
+    }
+}
+
+@media (min-width: 641px) and (max-height: 760px) {
+    .selection-detail .feedback {
+        display: none;
+    }
+}
+
+@media (min-width: 641px) and (max-height: 620px) {
+    .table:has(#bj-dealer .bj-card.back) #result-text {
+        display: none;
+    }
+}
+
+@media (min-width: 641px) and (max-height: 620px) {
+    .layout {
+        gap: 8px;
+        padding-block: 8px;
+    }
+
+    .selection-detail .feedback,
+    .selection-count,
+    .mode-hint {
+        display: none;
+    }
+
+    .mode-track {
+        flex-direction: row;
+    }
+
+    .mode-option {
+        width: auto;
+        min-width: 96px;
+    }
+
+    .action-column {
+        padding-bottom: 32px;
+    }
+
+    .cost-pips,
+    .turn-forecast {
+        top: calc(100% + 3px);
+        min-height: 0;
+    }
+
+    .status-ribbon .stats {
+        flex-wrap: nowrap;
+        gap: 8px 20px;
+        padding-block: 4px;
+    }
+
+    .status-ribbon .stat.hp .heart {
+        width: 18px;
+    }
+
+    .status-ribbon .energy-label {
+        display: none;
+    }
+
+    .deck-box {
+        --card-w: 34px;
+    }
+}
+
+@media (min-width: 641px) and (max-width: 900px) {
+    .actions .button {
+        min-width: 96px;
+        padding-inline: 16px;
+    }
+}
+
+@media (min-width: 641px) and (max-height: 560px) {
+    .enemy-token {
+        width: 56px;
+    }
+
+    .enemy-info {
+        gap: 2px;
+    }
+
+    .turn-zone {
+        gap: 2px;
+    }
+
+    .hand {
+        max-width: 52vh;
+    }
+
+    .blackjack {
+        gap: 2px;
+    }
+
+    .blackjack .bj-card {
+        width: 38px;
+    }
+
+    .actions .button {
+        padding-block: 9px;
+    }
+
+    .action-bar {
+        margin-top: 6px;
+    }
+}

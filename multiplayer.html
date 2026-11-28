@@ -72,10 +72,6 @@
 
   <div id="battle" class="layout screen" hidden>
     <main class="table" id="table" data-mode="poker">
-      <header class="run-header">
-        <h2 class="floor-title">Co-op</h2>
-      </header>
-
       <section class="enemy" aria-label="Enemy">
         <div class="enemy-token" id="enemy-token">
           <span class="enemy-face">
@@ -89,6 +85,7 @@
             <p class="enemy-hp" id="enemy-hp"></p>
           </div>
           <span class="intent" id="enemy-intent"></span>
+          <p class="intent-detail muted" id="intent-detail"></p>
         </div>
       </section>
 
@@ -97,21 +94,34 @@
           <p class="turn-number" id="turn-text"></p>
           <p class="turn-phase" id="phase-text"></p>
         </section>
-        <section class="selection selection-detail" aria-live="polite">
-          <p class="selection-count" id="hand-title"></p>
-          <p class="result" id="poker-preview"></p>
-          <p class="feedback" id="turn" role="status"></p>
+        <section class="selection selection-detail" id="selection-detail" aria-live="polite">
+          <p class="selection-count" id="selection-text"></p>
+          <p class="result" id="result-text"></p>
+          <p class="feedback" id="feedback-text"></p>
           <p class="feedback" id="battle-message" role="status"></p>
         </section>
       </div>
 
       <div class="hand-row">
+        <div class="mode-toggle">
+          <span class="mode-title" id="mode-title">Combo type</span>
+          <div class="mode-track" role="radiogroup" aria-labelledby="mode-title">
+            <button type="button" class="mode-option" role="radio" data-mode="blackjack" data-accent="attack">
+              <span class="mode-label">Blackjack</span>
+              <span class="mode-hint">Beat the dealer</span>
+            </button>
+            <button type="button" class="mode-option" role="radio" data-mode="poker" data-accent="shield">
+              <span class="mode-label">Poker</span>
+              <span class="mode-hint">Play any hand</span>
+            </button>
+          </div>
+        </div>
         <div class="hand" id="poker-area">
           <div id="hand" class="coop-hand" role="group" aria-label="Poker hand"></div>
         </div>
-        <div class="blackjack" id="blackjack-info" hidden>
+        <div class="blackjack" id="blackjack-info">
           <div class="bj-row">
-            <span class="bj-label">Dealer</span>
+            <span class="bj-label" id="bj-dealer-label"></span>
             <div class="bj-cards" id="bj-dealer"></div>
             <span class="bj-total" id="bj-dealer-total"></span>
           </div>
@@ -123,23 +133,18 @@
         </div>
       </div>
 
-      <p id="round-summary" class="round-summary" aria-live="polite"></p>
-      <p id="action-hint" class="hint" role="status" aria-live="polite" hidden></p>
-
       <div class="action-bar">
         <div class="action-column">
           <div class="actions">
             <div class="action-slot">
-              <button type="button" class="button primary" id="play-poker" data-action-sound>Play poker</button>
-              <span class="cost-pips" id="poker-cost" role="img" aria-label="3 energy"><i class="cost-pip"></i><i class="cost-pip"></i><i class="cost-pip"></i></span>
+              <button type="button" class="button primary" id="play-button" data-action-sound></button>
+              <span class="cost-pips" id="play-cost" role="img" hidden></span>
             </div>
+            <button type="button" class="button secondary" id="stand-button">Stand</button>
             <div class="action-slot">
-              <button type="button" class="button secondary" id="deal" data-action-sound>Deal blackjack</button>
-              <span class="cost-pips" id="deal-cost" role="img" aria-label="1 energy"><i class="cost-pip"></i></span>
+              <button type="button" class="button secondary" id="end-turn">End turn</button>
+              <div class="turn-forecast" id="turn-forecast"></div>
             </div>
-            <button type="button" class="button primary" id="hit" data-action-sound hidden>Hit</button>
-            <button type="button" class="button secondary" id="stand" hidden>Stand</button>
-            <button type="button" class="button secondary" id="end-turn">End turn</button>
             <button type="button" class="button primary" id="rematch" hidden>Ready for another battle</button>
           </div>
         </div>

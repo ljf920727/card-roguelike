@@ -271,24 +271,25 @@ details[open] > summary {
   display: none;
 }
 
-.selection-detail :is(#turn, #battle-message):empty,
-.selection-detail #hand-title:empty {
+.selection-detail #battle-message:empty {
   display: none;
 }
 #battle-message {
   color: var(--attack);
 }
-#turn.turn-arrived {
+#phase-text.turn-arrived {
   animation: turn-arrived 600ms ease-out;
+}
+#poker-area {
+  max-width: none;
 }
 .coop-hand {
   display: flex;
   justify-content: center;
   gap: 12px;
-  padding: 18px 8px 8px;
+  padding: 20px 0 14px;
 }
 .hand-card {
-  --arc: 0px;
   position: relative;
   flex: 0 1 auto;
   min-width: 0;
@@ -296,9 +297,7 @@ details[open] > summary {
   border: 0;
   background: none;
   cursor: pointer;
-  rotate: var(--angle);
-  translate: 0 var(--arc);
-  transition: translate 260ms cubic-bezier(.2, 1.6, .4, 1), rotate 260ms, filter 180ms;
+  transition: translate 160ms ease, opacity 160ms ease;
 }
 .hand-card .bj-card {
   width: clamp(56px, 16cqi, 100px);
@@ -306,17 +305,20 @@ details[open] > summary {
   aspect-ratio: 5 / 7;
   border-radius: 10px;
   box-shadow: 0 6px 12px #0004;
-  transition: box-shadow 180ms, border-color 180ms;
+  transition: box-shadow 160ms, border-color 160ms;
+}
+.card-corner {
+  position: absolute;
+  right: 7%;
+  bottom: 4%;
+  font-size: 15cqw;
+  line-height: 1;
 }
 .hand-card:hover:not(:disabled) {
-  translate: 0 calc(var(--arc) - 10px);
-  rotate: 0deg;
-  z-index: 2;
+  translate: 0 -6px;
 }
 .hand-card.selected, .hand-card.selected:hover:not(:disabled) {
-  translate: 0 -18px;
-  rotate: 0deg;
-  z-index: 3;
+  translate: 0 -16px;
 }
 .hand-card.selected .bj-card {
   border-color: var(--attack);
@@ -325,40 +327,8 @@ details[open] > summary {
 .hand-card:disabled {
   cursor: default;
 }
-#hand[data-inactive="true"] {
-  filter: saturate(.75) brightness(.9);
-}
-.table[data-mode="settled"] .blackjack {
-  flex: 0 1 320px;
-  gap: 6px;
-  opacity: .85;
-}
-.table[data-mode="settled"] .bj-row {
-  grid-template-columns: 56px minmax(0, max-content) 32px;
-  gap: 8px;
-}
-.table[data-mode="settled"] .bj-cards {
-  min-height: 0;
-  gap: 4px;
-  padding: 2px;
-}
-.table[data-mode="settled"] .blackjack .bj-card {
-  width: 40px;
-  height: 56px;
-}
-.table[data-mode="settled"] .bj-total {
-  font-size: 1.1rem;
-}
-.round-summary {
-  color: var(--attack);
-  font: 700 1.15rem var(--display-font), serif;
-  text-align: center;
-}
-.round-summary:empty {
-  display: none;
-}
-.round-summary.settled {
-  animation: result-settle 380ms ease-out;
+.hand-card:disabled:not(.selected) {
+  opacity: .5;
 }
 .table .hint {
   color: var(--muted);
@@ -478,8 +448,171 @@ details[open] > summary {
 @keyframes take-seat { from { opacity: 0; transform: translateY(12px); } }
 @keyframes card-float { 50% { translate: 0 -8px; rotate: 2deg; } }
 @keyframes turn-arrived { 25% { color: var(--attack); transform: translateY(-3px); } }
-@keyframes result-settle { from { opacity: .4; translate: 0 8px; } }
 
+body[data-page="battle"] {
+  height: 100vh;
+  height: 100dvh;
+}
+body[data-page="battle"] .layout {
+  min-height: 0;
+}
+body[data-page="battle"] .table {
+  min-height: 0;
+  overflow-y: auto;
+}
+body[data-page="battle"] .table > * {
+  flex-shrink: 0;
+}
+.turn-forecast:empty {
+  display: none;
+}
+@media (max-height: 860px) {
+  .table .intent-detail,
+  .table .mode-title {
+    display: none;
+  }
+  body[data-page="battle"] .table {
+    gap: 6px;
+    padding-block: 14px 16px;
+  }
+  .table .enemy-token {
+    width: clamp(64px, 13vh, 112px);
+  }
+  .table .enemy-name {
+    font-size: clamp(1.3rem, 3.2vh, 1.9rem);
+  }
+  .table .turn-zone {
+    gap: 6px;
+    min-height: 0;
+  }
+  .table .turn-counter {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .table .turn-number {
+    font-size: clamp(1.35rem, 3.6vh, 2rem);
+  }
+  .table .selection-detail .result {
+    font-size: clamp(1.1rem, 3vh, 1.75rem);
+  }
+  .table .selection-detail .feedback {
+    min-height: 0;
+  }
+  .table .hand-row {
+    min-height: 0;
+  }
+  .hand-card .bj-card {
+    width: clamp(52px, 12.5vh, 100px);
+  }
+  .coop-hand {
+    padding-top: 14px;
+  }
+  .table .blackjack {
+    gap: 4px;
+  }
+  .table .bj-cards {
+    min-height: 0;
+    padding: 2px;
+  }
+  .table .blackjack .bj-card {
+    width: clamp(40px, 8vh, 62px);
+    height: auto;
+    aspect-ratio: 5 / 7;
+  }
+  .table .mode-option {
+    padding-block: 6px;
+  }
+  .table .action-column {
+    padding-bottom: 34px;
+  }
+  .table[data-round="active"] .action-column {
+    padding-bottom: 6px;
+  }
+  .table[data-round="active"] #selection-text {
+    display: none;
+  }
+}
+@media (max-height: 620px) {
+  body[data-page="battle"] .layout {
+    gap: 8px;
+    padding-block: 8px;
+  }
+  .table .action-column {
+    padding-bottom: 30px;
+  }
+  .table :is(.cost-pips, .turn-forecast) {
+    top: calc(100% + 3px);
+    min-height: 0;
+  }
+  .table .forecast-token {
+    padding-block: 2px;
+  }
+  .coop-hand {
+    padding-top: 10px;
+  }
+  .status-ribbon .stats {
+    flex-wrap: nowrap;
+    gap: 8px 18px;
+    padding-block: 4px;
+  }
+  .status-ribbon .stat.hp {
+    flex: none;
+  }
+  .status-ribbon .stat.hp .heart {
+    width: 18px;
+  }
+  .status-ribbon .energy-label {
+    display: none;
+  }
+  .teammate {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding-block: 4px;
+  }
+  .teammate-heading {
+    display: block;
+  }
+  .teammate-status {
+    display: none;
+  }
+  .teammate-stats {
+    min-width: 0;
+  }
+  .table .mode-track {
+    flex-direction: row;
+  }
+  .table .mode-option {
+    width: auto;
+    min-width: 96px;
+  }
+  .table .selection-detail .feedback:not(#battle-message),
+  .table #selection-text,
+  .table .mode-hint {
+    display: none;
+  }
+  .table[data-round="active"] #result-text {
+    display: none;
+  }
+}
+@media (max-height: 540px) {
+  .table .enemy-token {
+    width: 56px;
+  }
+  .table .enemy {
+    gap: 4px 20px;
+  }
+  .hand-card .bj-card {
+    width: 48px;
+  }
+  .table .blackjack .bj-card {
+    width: 38px;
+  }
+  .table .actions .button {
+    padding-block: 9px;
+  }
+}
 @media (max-width: 700px) {
   #lobby-main {
     padding: 16px 14px;
@@ -506,12 +639,236 @@ details[open] > summary {
     gap: 0;
   }
   .coop-hand {
+    gap: 8px;
+  }
+}
+@media (max-width: 640px) {
+  body[data-page="battle"] .layout {
+    gap: 10px;
+  }
+  body[data-page="battle"] .table {
+    padding: 14px 14px 16px;
+  }
+  .table .intent-detail,
+  .table .mode-title,
+  .table .mode-hint,
+  .table[data-mode="blackjack"] #selection-text {
+    display: none;
+  }
+  .table .hand-row {
+    display: contents;
+  }
+  .table .action-bar {
+    order: 1;
+  }
+  .table .mode-toggle {
+    order: 2;
+    width: 100%;
+  }
+  .table .mode-track {
+    width: 100%;
+  }
+  .table .mode-option {
+    flex: 1;
+    width: auto;
+  }
+  .table .blackjack {
     gap: 6px;
+  }
+  .table .bj-cards {
+    min-height: 0;
+    padding: 2px;
+  }
+  .table .enemy {
+    padding: 4px;
+  }
+  .table .enemy-token {
+    width: 76px;
+  }
+  .table .turn-zone {
+    gap: 6px;
+    min-height: 0;
+  }
+  .table .turn-number {
+    font-size: 1.6rem;
+  }
+  .table .turn-phase {
+    font-size: 0.85rem;
+  }
+  .table .selection-detail .result {
+    font-size: 1.2rem;
+  }
+  .table .selection-detail .feedback {
+    min-height: 0;
+    font-size: 0.8rem;
+  }
+  .table .hand-row {
+    gap: 12px;
+  }
+  .hand-card .bj-card {
+    width: clamp(52px, 17cqi, 100px);
+  }
+  .table .blackjack .bj-card {
+    width: 52px;
+    height: 74px;
+  }
+  .table .actions {
+    flex-wrap: nowrap;
+    gap: 10px;
+    width: 100%;
+  }
+  .table .action-column {
+    width: 100%;
+    padding-bottom: 38px;
+  }
+  .table .actions > *,
+  .table .actions .action-slot {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .table .actions .button {
+    min-width: 0;
+    padding: 12px 8px;
+  }
+  .table .actions .action-slot > .button {
+    flex: 1;
+  }
+  .teammate {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+  }
+  .teammate-heading {
+    display: block;
+  }
+  .teammate-status {
+    display: none;
+  }
+  .teammate-name {
+    display: block;
+    max-width: 8ch;
+  }
+  .teammate-stats {
+    min-width: 0;
+  }
+}
+@media (max-width: 640px) and (max-height: 760px) {
+  .table .enemy-health {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+  .table .enemy-hearts .heart {
+    width: 15px;
+    min-width: 6px;
+  }
+  .table .enemy-hp {
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+  .table .selection-detail .feedback:not(#battle-message),
+  .table #selection-text {
+    display: none;
+  }
+  .table .blackjack .bj-card {
+    width: 40px;
+    height: 56px;
+  }
+  .table .action-column {
+    padding-bottom: 32px;
+  }
+  body[data-page="battle"] .layout {
+    gap: 8px;
+    padding-block: 8px;
+  }
+  body[data-page="battle"] .table {
+    padding-top: 14px;
+  }
+  .table .turn-counter {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .table[data-round="active"] #result-text {
+    display: none;
+  }
+  .table[data-round="active"] .action-column {
+    padding-bottom: 6px;
+  }
+  .teammate {
+    padding-block: 4px;
+  }
+  #log-button {
+    padding-block: 5px;
+  }
+  .table .enemy-token {
+    width: 64px;
+  }
+  .table .enemy-name {
+    font-size: 1.3rem;
+  }
+  .table .turn-number {
+    font-size: 1.35rem;
+  }
+}
+@media (max-width: 440px) {
+  .teammate .hearts {
+    display: none;
+  }
+  .teammate-hp {
+    color: var(--danger);
+  }
+}
+@media (max-width: 440px) {
+  #connection {
+    width: 1em;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+}
+@container ribbon (max-width: 760px) {
+  .status-ribbon {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .teammate {
+    flex: 1 1 auto;
+  }
+  .teammate-stats {
+    gap: 6px;
+  }
+  .teammate .hearts {
+    flex: 1 1 auto;
+  }
+  .teammate .heart {
+    width: 10px;
+    min-width: 5px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation: none !important;
     transition: none !important;
+  }
+}
+@media (max-width: 640px) and (max-height: 660px) {
+  .status-ribbon .stats {
+    flex-wrap: nowrap;
+    gap: 10px;
+    padding-block: 4px;
+  }
+  .status-ribbon .stat.hp {
+    flex: 1 1 auto;
+    gap: 6px;
+  }
+  .status-ribbon .stat.hp .heart {
+    width: 13px;
+    min-width: 6px;
+  }
+  .status-ribbon .shield-cap {
+    display: none;
+  }
+  .status-ribbon .chip {
+    width: 16px;
+    height: 16px;
   }
 }
