@@ -280,6 +280,9 @@ details[open] > summary {
 #phase-text.turn-arrived {
   animation: turn-arrived 600ms ease-out;
 }
+#poker-area {
+  max-width: none;
+}
 .coop-hand {
   display: flex;
   justify-content: center;
@@ -410,6 +413,22 @@ details[open] > summary {
   height: 12px;
 }
 
+@container ribbon (max-width: 760px) {
+  #battle .status-ribbon {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .teammate {
+    width: 100%;
+  }
+  .teammate-stats {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  .teammate .hearts {
+    flex: 0 1 auto;
+  }
+}
+
 .log-dialog #log {
   max-height: 50vh;
   overflow-y: auto;
@@ -448,7 +467,6 @@ body[data-page="battle"] .table > * {
   display: none;
 }
 @media (max-height: 860px) {
-  .table .run-header,
   .table .intent-detail,
   .table .mode-title {
     display: none;
@@ -631,7 +649,6 @@ body[data-page="battle"] .table > * {
   body[data-page="battle"] .table {
     padding: 14px 14px 16px;
   }
-  .table .run-header,
   .table .intent-detail,
   .table .mode-title,
   .table .mode-hint,
@@ -737,13 +754,25 @@ body[data-page="battle"] .table > * {
   }
 }
 @media (max-width: 640px) and (max-height: 760px) {
+  .table .enemy-health {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+  .table .enemy-hearts .heart {
+    width: 15px;
+    min-width: 6px;
+  }
+  .table .enemy-hp {
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
   .table .selection-detail .feedback:not(#battle-message),
   .table #selection-text {
     display: none;
   }
   .table .blackjack .bj-card {
-    width: 44px;
-    height: 62px;
+    width: 40px;
+    height: 56px;
   }
   .table .action-column {
     padding-bottom: 32px;
@@ -819,5 +848,27 @@ body[data-page="battle"] .table > * {
   *, *::before, *::after {
     animation: none !important;
     transition: none !important;
+  }
+}
+@media (max-width: 640px) and (max-height: 660px) {
+  .status-ribbon .stats {
+    flex-wrap: nowrap;
+    gap: 10px;
+    padding-block: 4px;
+  }
+  .status-ribbon .stat.hp {
+    flex: 1 1 auto;
+    gap: 6px;
+  }
+  .status-ribbon .stat.hp .heart {
+    width: 13px;
+    min-width: 6px;
+  }
+  .status-ribbon .shield-cap {
+    display: none;
+  }
+  .status-ribbon .chip {
+    width: 16px;
+    height: 16px;
   }
 }

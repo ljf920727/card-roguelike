@@ -109,7 +109,7 @@ function renderBlackjackRow(container, cards, fresh, offset) {
     });
 }
 
-/** Maintains the current round's DOM and disclosure state across unrelated room updates. */
+/** Keeps active and settled blackjack cards stable across unrelated room updates. */
 export function renderBlackjackTable(data) {
     const info = document.getElementById('blackjack-info');
     const player = document.getElementById('bj-player');
@@ -121,7 +121,6 @@ export function renderBlackjackTable(data) {
             const slots = () => [0, 1].map(() => Object.assign(document.createElement('span'), { className: 'bj-card slot' }));
             player.replaceChildren(...slots());
             dealer.replaceChildren(...slots());
-            delete player.dataset.spent;
             info.dataset.round = '';
         }
         setText(document.getElementById('bj-player-total'), '');
@@ -133,7 +132,6 @@ export function renderBlackjackTable(data) {
         player.replaceChildren();
         dealer.replaceChildren();
         info.dataset.round = round.player[0].id;
-        delete player.dataset.spent;
     }
     renderBlackjackRow(player, round.player, fresh, 0);
     renderBlackjackRow(dealer, round.dealer, fresh, 1);

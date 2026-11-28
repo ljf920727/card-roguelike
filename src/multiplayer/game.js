@@ -49,7 +49,7 @@ const connection = new RoomConnection({
     render(data, liveHit);
     effects.play(fx, {
       enemyToken: byId('enemy-token'), myHearts: byId('hp-hearts'), mateHearts: byId('teammate-hearts'),
-      mate: byId('teammate'), spent: byId('bj-player'),
+      mate: byId('teammate'),
     }, side => {
       if (state?.status !== 'waiting') renderBattle(state, undefined, side === 'enemy' ? liveHit : undefined);
     });
@@ -218,11 +218,12 @@ function saveRoom(id) {
   byId('room-code').value = id;
 }
 
-/** Displays the lobby, waiting room or battle while preserving global status feedback. */
+/** Switches screens and closes the battle log before leaving its table. */
 function showPage(page) {
   const playing = synced && state?.status === 'playing' && state.players.every(player => player.connected);
   if (page !== 'battle' || !playing) gameMusic.setAnticipation(false);
   gameMusic.setScene(page === 'battle' ? (playing ? 'battle' : null) : 'menu');
+  if (page !== 'battle') byId('log-dialog').close();
   document.body.dataset.page = page;
   byId('lobby').hidden = page !== 'lobby';
   byId('room').hidden = page !== 'room';
@@ -312,7 +313,7 @@ async function leave() {
   message('Left room');
 }
 
-/** Sends a combat action and presents errors without interrupting the battle with alerts. */
+/** Sends a combat action, reports errors and restores keyboard focus after blackjack actions. */
 async function action(type, cardIds) {
   if (!isMyTurn(state)) return;
   const start = performance.now();
@@ -341,8 +342,9 @@ async function action(type, cardIds) {
       if (state) render(state);
       if (['play-button', 'stand-button'].includes(source.id) &&
           [document.body, source].includes(document.activeElement)) {
-        const next = !source.disabled ? source : !byId('play-button').disabled ? byId('play-button') : byId('end-turn');
-        if (!next.disabled) next.focus({ preventScroll: true });
+        const next = [source, byId('play-button'), byId('stand-button'), byId('end-turn'), byId('rematch')]
+          .find(button => !button.disabled && !button.closest('[hidden]'));
+        next?.focus({ preventScroll: true });
       }
     }
   } catch (err) {
