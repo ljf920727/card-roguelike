@@ -73,6 +73,10 @@
     </div>
     <header class="topbar">
       <h1 class="brand"><img class="brand-logo" src="/logo.png" alt="Juniper" width="96" height="96"></h1>
+      <div class="run-header" id="run-header">
+        <h2 class="floor-title" id="fight-text"></h2>
+        <ol class="floor-route" id="floor-route" aria-label="Floor progress"></ol>
+      </div>
       <div class="topbar-end">
         <span id="run-difficulty" class="difficulty-badge" aria-label="Run difficulty">Normal</span>
         <button type="button" class="button secondary small" data-guidebook aria-haspopup="dialog" aria-keyshortcuts="?">Guidebook</button>
@@ -100,11 +104,7 @@
         </section>
       <main class="table" id="table">
         <p class="log" id="last-action" aria-live="polite"></p>
-        <header class="run-header" id="run-header">
-          <h2 class="floor-title" id="fight-text"></h2>
-          <p class="house-rule" id="house-rule" hidden></p>
-          <ol class="floor-route" id="floor-route" aria-label="Floor progress"></ol>
-        </header>
+        <p class="house-rule" id="house-rule" hidden></p>
 
         <section class="enemy" aria-label="Enemy">
           <div class="enemy-token" id="enemy-token">
