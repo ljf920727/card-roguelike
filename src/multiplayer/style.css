@@ -443,6 +443,22 @@ details[open] > summary {
   height: 12px;
 }
 
+@container ribbon (max-width: 760px) {
+  #battle .status-ribbon {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .teammate {
+    width: 100%;
+  }
+  .teammate-stats {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  .teammate .hearts {
+    flex: 0 1 auto;
+  }
+}
+
 .log-dialog #log {
   max-height: 50vh;
   overflow-y: auto;

@@ -108,7 +108,7 @@ function renderBlackjackRow(container, cards, fresh, offset) {
     });
 }
 
-/** Maintains the current round's DOM and disclosure state across unrelated room updates. */
+/** Keeps active and settled blackjack cards stable across unrelated room updates. */
 export function renderBlackjackTable(data) {
     const table = document.getElementById('table');
     const info = document.getElementById('blackjack-info');
@@ -131,7 +131,6 @@ export function renderBlackjackTable(data) {
         player.replaceChildren();
         dealer.replaceChildren();
         info.dataset.round = round.player[0].id;
-        delete player.dataset.spent;
     }
     renderBlackjackRow(player, round.player, fresh, 0);
     renderBlackjackRow(dealer, round.dealer, fresh, 1);

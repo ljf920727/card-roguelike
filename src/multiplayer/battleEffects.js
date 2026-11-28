@@ -1,3 +1,4 @@
+/** Animates damage from cooperative room snapshots and captured card faces. */
 import { SwarmEffect } from '../components/SwarmEffect.js';
 
 const SUITS = { '♠': 'spades', '♥': 'hearts', '♦': 'diamonds', '♣': 'clubs' };
@@ -52,6 +53,7 @@ export class CoopEffects {
         return fx;
     }
 
+    /** Launches particles from captured positions and reveals held HP when they land. */
     play(fx, ui, refresh) {
         if (!fx) return;
         const epoch = this.epoch;
@@ -76,7 +78,6 @@ export class CoopEffects {
         if (fx.enemy) {
             const fallback = rect((fx.actorIsYou ? ui.myHearts : ui.mate).getBoundingClientRect());
             const sources = fx.actorIsYou && fx.sources?.length ? fx.sources : [fallback];
-            if (fx.actorIsYou && fx.sources?.length && ui.spent.children.length) ui.spent.dataset.spent = 'true';
             const contact = release('enemy');
             void guarded(this.swarm.launch({
                 amount: fx.enemy, sources, target: center(tokenBox), color: 'attack',
