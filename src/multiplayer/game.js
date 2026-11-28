@@ -11,7 +11,9 @@ import { renderHearts } from '../components/healthDisplay.js';
 import { PokerPreview } from '../components/PokerPreview.js';
 import { showRareHandBanner } from '../components/RareHandBanner.js';
 import { ENEMY_ICONS } from '../enemyIcons.js';
-import { renderPlayerSeats, renderPokerCards, renderBlackjackTable } from './battleView.js';
+import { renderPlayerSeats, renderPokerCards, renderBlackjackTable, renderMyStats, renderTeammate } from './battleView.js';
+import { CoopEffects } from './battleEffects.js';
+import { PreviewPulse } from '../components/PreviewPulse.js';
 import { audio } from '../audio/AudioManager.js';
 import { installSettings } from '../components/SettingsDialog.js';
 import { gameMusic } from '../audio/GameMusic.js';
@@ -42,10 +44,18 @@ const connection = new RoomConnection({
     if (!synced) message('');
     synced = true;
     saveRoom(data.roomId);
+    const fx = effects.plan(data);
     render(data, liveHit);
+    effects.play(fx, {
+      enemyToken: byId('enemy-token'), myHearts: byId('hp-hearts'), mateHearts: byId('teammate-hearts'),
+      mate: byId('teammate'), spent: byId('bj-player'),
+    }, side => {
+      if (state?.status !== 'waiting') renderBattle(state, undefined, side === 'enemy' ? liveHit : undefined);
+    });
   },
   onStatus: status => {
     if (status === 'reconnecting') {
+      effects.reset();
       audio.stop();
       gameMusic.setAnticipation(false);
       synced = false;
@@ -68,6 +78,11 @@ const connection = new RoomConnection({
 /** Finds a cooperative UI element by its stable ID. */
 const byId = id => document.getElementById(id);
 const pokerPreview = new PokerPreview(byId('battle'), byId('poker-preview'));
+const effects = new CoopEffects();
+const previewPulse = new PreviewPulse({
+  enemyHearts: byId('enemy-hearts'), playerHearts: byId('hp-hearts'),
+  shieldStat: byId('shield-stat'), shieldBand: byId('shield-preview'),
+});
 
 let state = null;
 let roomId = readStorage('sessionStorage', 'juniper.room');
@@ -94,9 +109,6 @@ const difficulty = new DifficultyPicker(byId('difficulty'), 'normal', value => {
 });
 setText(byId('difficulty-description'), getDifficulty(difficulty.value).description);
 byId('enemy-icon').setAttribute('d', ENEMY_ICONS.Ogre);
-byId('blackjack-info').addEventListener('toggle', () => {
-  if (state?.blackjack) byId('blackjack-info').open = true;
-});
 applyTheme();
 
 /** Reads optional browser persistence without blocking play in restricted storage environments. */
@@ -125,6 +137,7 @@ function applyTheme() {
 /** Shows non-blocking feedback in every lobby and battle state. */
 function message(text) {
   setText(byId('message'), text);
+  setText(byId('battle-message'), text);
 }
 
 /**
@@ -154,7 +167,8 @@ function forgetRoom() {
   state = null;
   synced = false;
   selectedCards.clear();
-  delete byId('enemy-token').dataset.hp;
+  effects.reset();
+  previewPulse.clear();
   showPage('lobby');
   refreshControls();
 }
@@ -296,6 +310,12 @@ async function action(type, cardIds) {
   if (!isMyTurn(state)) return;
   const start = performance.now();
   const source = document.activeElement;
+  if (type === 'poker') {
+    const chosen = state.hand.filter(card => selectedCards.has(card.id));
+    effects.capture(chosen.map(card => byId('hand').querySelector(`[data-card-id="${CSS.escape(card.id)}"] .bj-card`)).filter(Boolean), chosen);
+  } else if (['hit', 'stand'].includes(type) && state.blackjack) {
+    effects.capture([...byId('bj-player').children], state.blackjack.player);
+  }
 
   try {
     const result = await request(
@@ -366,54 +386,57 @@ function isMyTurn(data) {
 }
 
 /** Renders battle feedback, selection effects, replay readiness and enabled actions. */
-function renderBattle(data, pokerHit) {
+function renderBattle(data, pokerHit, heartsHit = pokerHit) {
   showRareHandBanner(byId('battle'), pokerHit);
-  const turn = byId('turn');
-  const label = battleStatus(data, connection.connected && synced);
-  if (turn.textContent !== translate(label)) {
-    setText(turn, label);
-    turn.classList.remove('turn-arrived');
-    void turn.offsetWidth;
-    turn.classList.add('turn-arrived');
+  const connected = connection.connected && synced;
+  const label = battleStatus(data, connected);
+  const routine = connected && data.status === 'playing' && data.players.every(player => player.connected) &&
+    data.players.find(player => player.isYou)?.hp > 0;
+  setText(byId('turn'), routine ? '' : label);
+  const active = data.players[data.activeIndex];
+  setText(byId('turn-text'), `Turn ${data.turn}`);
+  const phase = byId('phase-text');
+  const phaseLabel = data.status === 'finished' ? data.result === 'victory' ? 'Victory' : 'Defeat' :
+    active?.isYou ? 'Your turn' : 'Waiting for teammate';
+  if (phase.textContent !== translate(phaseLabel)) {
+    setText(phase, phaseLabel);
+    phase.classList.remove('turn-arrived');
+    void phase.offsetWidth;
+    phase.classList.add('turn-arrived');
   }
+  phase.classList.toggle('enemy-turn', data.status === 'finished' && data.result !== 'victory');
   setText(byId('battle-difficulty'), getDifficulty(data.difficulty).label);
   setText(byId('enemy-intent'), `Attack · ${data.enemy.attack}`);
 
   setText(byId('enemy-name'), data.enemy.name);
-  setText(byId('enemy-hp'), `HP ${data.enemy.hp}/${data.enemy.maxHp}`);
+  const enemyHp = effects.shown('enemy', data.enemy.hp);
+  setText(byId('enemy-hp'), `${enemyHp} / ${data.enemy.maxHp} HP`);
+  byId('enemy-token').style.setProperty('--hp', String(Math.max(0, enemyHp / data.enemy.maxHp)));
 
-  const enemyToken = byId('enemy-token');
-  const previousHp = enemyToken.dataset.hp;
-  if (previousHp !== undefined && data.enemy.hp < Number(previousHp) && !matchMedia('(prefers-reduced-motion: reduce)').matches){
-       enemyToken.animate([
-        { translate: '0 0',filter: 'brightness(1)',},
-        { translate: '-6px 0',filter: 'brightness(1.8) drop-shadow(0 0 12px #ef4444)', offset: 0.2,},
-        { translate: '6px 0', filter: 'brightness(1.3)', offset: 0.4,},
-        { translate: '-3px 0',filter: 'brightness(1.1)', offset: 0.6,},
-        { translate: '0 0',filter: 'brightness(1)',},
-        ],
-        { duration: 400, easing: 'ease-out', }
-      );
-  }
-  enemyToken.dataset.hp = String(data.enemy.hp);
 
-  renderHearts(byId('enemy-hearts'), data.enemy.hp, data.enemy.maxHp, pokerHit);
-  byId('enemy-token').classList.toggle('defeated', data.enemy.hp <= 0);
+  renderHearts(byId('enemy-hearts'), enemyHp, data.enemy.maxHp, heartsHit);
+  byId('enemy-token').classList.toggle('defeated', enemyHp <= 0);
 
-  renderPlayers(byId('battle-players'), data.players);
+  const playing = data.status === 'playing';
+  const me = data.players.find(p => p.isYou);
+  const mate = data.players.find(p => !p.isYou);
+  renderMyStats({ ...me, hp: effects.shown('me', me.hp) }, playing && Boolean(active?.isYou));
+  renderTeammate(mate && { ...mate, hp: effects.shown('mate', mate.hp) }, data.status, playing && active === mate);
   renderHand(data);
   renderBlackjackTable(data);
 
   const myTurn = isMyTurn(data);
-  const me = data.players.find(p => p.isYou);
   const evaluation = evaluatePokerHand(data.hand.filter(card => selectedCards.has(card.id)));
   const description = evaluation
     ? `${evaluation.label} · ${describePokerActions(evaluation.actions, { separator: ' · ' })} · Ends turn`
     : 'Select 1–5 cards';
-  byId('poker-area').hidden = Boolean(data.blackjack);
-  setText(byId('hand-title'), data.blackjack ? 'Blackjack' : `Your hand · Selected ${selectedCards.size} / 5`);
+  setText(byId('hand-title'), data.blackjack || !myTurn ? '' : `Selected ${selectedCards.size} / 5`);
   byId('hit').hidden = byId('stand').hidden = !data.blackjack;
-  byId('deal').hidden = byId('play-poker').hidden = Boolean(data.blackjack);
+  const over = data.status === 'finished';
+  byId('deal').parentElement.hidden = byId('play-poker').parentElement.hidden = Boolean(data.blackjack) || over;
+  byId('end-turn').hidden = over;
+  byId('poker-cost').classList.toggle('short', me.energy < 3);
+  byId('deal-cost').classList.toggle('short', me.energy < 1);
   byId('rematch').hidden = data.status !== 'finished' || data.players.length !== 2;
   byId('rematch').disabled = pending || !connection.connected || !synced || me?.ready || !data.players.every(player => player.connected);
   setText(byId('rematch'), me?.ready ? 'Waiting for teammate' : 'Ready for another battle');
@@ -422,7 +445,13 @@ function renderBattle(data, pokerHit) {
     !myTurn || selectedCards.size === 0 ||
     me.energy < 3 || !!data.blackjack;
   const ready = !byId('play-poker').disabled && isRarePokerHand(evaluation?.name);
-  pokerPreview.update(description, ready ? evaluation : null);
+  pokerPreview.update(myTurn && !data.blackjack ? description : '', ready ? evaluation : null);
+  const total = kind => evaluation?.actions.filter(effect => effect.type === kind).reduce((sum, effect) => sum + effect.amount, 0) ?? 0;
+  if (!byId('play-poker').disabled) {
+    previewPulse.update(
+      { enemy: { hp: enemyHp, maxHp: data.enemy.maxHp }, player: { hp: effects.shown('me', me.hp), maxHp: 100, shield: me.shield } },
+      { damage: total('attack'), heal: total('heal'), shield: total('defend') }, 40);
+  } else previewPulse.clear();
   gameMusic.setAnticipation(ready);
 
   byId('deal').disabled =
@@ -479,6 +508,7 @@ byId('copy-room').onclick = copyRoomCode;
 byId('leave').onclick = confirmLeave;
 byId('battle-leave').onclick = confirmLeave;
 byId('rematch').onclick = ready;
+byId('log-button').onclick = () => byId('log-dialog').showModal();
 installSettings(name => {
   theme = name;
   savePreferredTheme(theme);

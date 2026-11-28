@@ -10,13 +10,17 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="./index.html"><img src="/logo.png" alt=""><span>Juniper</span></a>
+    <a class="brand" href="./index.html"><img class="brand-logo" src="/logo.png" alt="Juniper" width="96" height="96"><span>Juniper</span></a>
     <span class="topbar-label">Co-op</span>
-    <span id="connection" role="status">Connecting...</span>
-    <button class="secondary small" type="button" data-game-settings aria-haspopup="dialog">Settings</button>
+    <div class="topbar-end">
+      <span id="battle-difficulty" class="difficulty-badge"></span>
+      <span id="connection" role="status">Connecting...</span>
+      <button class="button secondary small" type="button" data-game-settings aria-haspopup="dialog">Settings</button>
+      <button id="battle-leave" class="button secondary small" type="button">Leave room</button>
+    </div>
   </header>
 
-  <main>
+  <main id="lobby-main">
     <p id="message" role="status" aria-live="polite"></p>
     <section id="lobby" class="lobby-screen screen">
       <div class="lobby-mark" aria-hidden="true"><span>♠</span><span>♥</span></div>
@@ -44,7 +48,7 @@
     <section id="room" class="lobby-screen screen" hidden>
       <p class="eyebrow">Your table</p>
       <h1 id="room-id"></h1>
-       <button id="copy-room" class="secondary small" type="button">Copy room code</button>
+      <button id="copy-room" class="secondary small" type="button">Copy room code</button>
       <p id="room-difficulty" class="difficulty-badge"></p>
       <div id="players" class="player-list"></div>
       <p id="room-status"></p>
@@ -55,67 +59,6 @@
       </div>
     </section>
 
-    <section id="battle" class="screen" hidden>
-      <div class="battle-heading">
-        <span id="battle-difficulty" class="difficulty-badge"></span>
-        <p id="turn" role="status" aria-live="polite"></p>
-        <button id="battle-leave" class="secondary small">Leave room</button>
-      </div>
-      <div class="coop-table">
-        <div class="enemy-stage">
-          <div id="enemy-token" class="enemy-token" aria-hidden="true">
-            <svg class="enemy-icon" viewBox="0 0 512 512"><path id="enemy-icon"></path></svg>
-          </div>
-          <div class="enemy-info">
-            <h2 id="enemy-name">Ogre</h2>
-            <div class="enemy-health">
-              <div id="enemy-hearts" class="hearts enemy-hearts" role="img" aria-label="Enemy health"></div>
-              <span id="enemy-hp"></span>
-            </div>
-            <p id="enemy-intent"></p>
-          </div>
-        </div>
-
-        <div id="battle-players" class="player-list"></div>
-
-        <section class="hand-panel">
-          <div class="hand-content">
-            <div id="poker-area">
-              <h3 id="hand-title" class="eyebrow">Your hand</h3>
-              <div id="hand" class="cards"></div>
-              <p id="poker-preview" aria-live="polite"></p>
-            </div>
-
-            <details id="blackjack-info" hidden>
-              <summary id="round-summary"></summary>
-              <div class="blackjack-table">
-                <div><h3 id="bj-player-total">You</h3><div id="bj-player" class="cards"></div></div>
-                <div><h3 id="bj-dealer-total">Dealer</h3><div id="bj-dealer" class="cards"></div></div>
-              </div>
-            </details>
-          </div>
-          <p id="action-hint" class="hint" role="status" aria-live="polite" hidden></p>
-          <div class="buttons battle-actions">
-            <button id="play-poker" data-action-sound>Play poker <span class="cost">3 energy</span></button>
-            <button id="deal" data-action-sound>Deal blackjack <span class="cost">1 energy</span></button>
-            <button id="hit" data-action-sound hidden>Hit</button>
-            <button id="stand" hidden>Stand</button>
-            <button id="end-turn" class="secondary">End turn</button>
-          </div>
-        </section>
-      </div>
-
-      <div class="buttons replay-actions">
-        <button id="rematch" hidden>Ready for another battle</button>
-      </div>
-
-      <details class="battle-log">
-        <summary>Battle log</summary>
-        <div id="log"></div>
-        <p id="latency">Latency: -- ms</p>
-      </details>
-
-    </section>
     <details class="rules">
       <summary>How to play</summary>
       <ul>
@@ -126,6 +69,138 @@
       </ul>
     </details>
   </main>
+
+  <div id="battle" class="layout screen" hidden>
+    <main class="table" id="table" data-mode="poker">
+      <header class="run-header">
+        <h2 class="floor-title">Co-op</h2>
+      </header>
+
+      <section class="enemy" aria-label="Enemy">
+        <div class="enemy-token" id="enemy-token">
+          <span class="enemy-face">
+            <svg class="enemy-icon" viewBox="0 0 512 512" aria-hidden="true"><path id="enemy-icon"/></svg>
+          </span>
+        </div>
+        <div class="enemy-info">
+          <h2 class="enemy-name" id="enemy-name">Ogre</h2>
+          <div class="enemy-health">
+            <div class="hearts enemy-hearts" id="enemy-hearts" role="img" aria-label="Enemy health"></div>
+            <p class="enemy-hp" id="enemy-hp"></p>
+          </div>
+          <span class="intent" id="enemy-intent"></span>
+        </div>
+      </section>
+
+      <div class="turn-zone">
+        <section class="turn-counter" aria-live="polite">
+          <p class="turn-number" id="turn-text"></p>
+          <p class="turn-phase" id="phase-text"></p>
+        </section>
+        <section class="selection selection-detail" aria-live="polite">
+          <p class="selection-count" id="hand-title"></p>
+          <p class="result" id="poker-preview"></p>
+          <p class="feedback" id="turn" role="status"></p>
+          <p class="feedback" id="battle-message" role="status"></p>
+        </section>
+      </div>
+
+      <div class="hand-row">
+        <div class="hand" id="poker-area">
+          <div id="hand" class="coop-hand" role="group" aria-label="Poker hand"></div>
+        </div>
+        <div class="blackjack" id="blackjack-info" hidden>
+          <div class="bj-row">
+            <span class="bj-label">Dealer</span>
+            <div class="bj-cards" id="bj-dealer"></div>
+            <span class="bj-total" id="bj-dealer-total"></span>
+          </div>
+          <div class="bj-row">
+            <span class="bj-label">You</span>
+            <div class="bj-cards" id="bj-player"></div>
+            <span class="bj-total" id="bj-player-total"></span>
+          </div>
+        </div>
+      </div>
+
+      <p id="round-summary" class="round-summary" aria-live="polite"></p>
+      <p id="action-hint" class="hint" role="status" aria-live="polite" hidden></p>
+
+      <div class="action-bar">
+        <div class="action-column">
+          <div class="actions">
+            <div class="action-slot">
+              <button type="button" class="button primary" id="play-poker" data-action-sound>Play poker</button>
+              <span class="cost-pips" id="poker-cost" role="img" aria-label="3 energy"><i class="cost-pip"></i><i class="cost-pip"></i><i class="cost-pip"></i></span>
+            </div>
+            <div class="action-slot">
+              <button type="button" class="button secondary" id="deal" data-action-sound>Deal blackjack</button>
+              <span class="cost-pips" id="deal-cost" role="img" aria-label="1 energy"><i class="cost-pip"></i></span>
+            </div>
+            <button type="button" class="button primary" id="hit" data-action-sound hidden>Hit</button>
+            <button type="button" class="button secondary" id="stand" hidden>Stand</button>
+            <button type="button" class="button secondary" id="end-turn">End turn</button>
+            <button type="button" class="button primary" id="rematch" hidden>Ready for another battle</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer id="status-ribbon" aria-label="Your status">
+      <div class="status-ribbon">
+        <div class="ribbon-side ribbon-left">
+          <article class="teammate" id="teammate" aria-label="Teammate">
+            <div class="teammate-heading">
+              <strong class="teammate-name" id="teammate-name" dir="auto"></strong>
+              <span class="teammate-status" id="teammate-status"></span>
+            </div>
+            <div class="teammate-stats">
+              <div class="hearts" id="teammate-hearts" role="img"></div>
+              <span class="teammate-hp" id="teammate-hp"></span>
+              <span class="teammate-shield" id="teammate-shield"></span>
+              <div class="chips" id="teammate-energy" role="img"></div>
+            </div>
+          </article>
+        </div>
+        <div class="stats" id="my-stats">
+          <div class="stat hp">
+            <div class="hearts" id="hp-hearts" role="img"></div>
+            <span id="hp-text"></span>
+          </div>
+          <div class="stat shield" id="shield-stat" role="img">
+            <svg class="shield-icon" viewBox="0 0 24 28" aria-hidden="true">
+              <defs>
+                <clipPath id="shield-clip">
+                  <path d="M12 1.5 L21.5 4.5 V12.5 C21.5 19.5 17.5 24 12 26.5 C6.5 24 2.5 19.5 2.5 12.5 V4.5 Z"/>
+                </clipPath>
+              </defs>
+              <g clip-path="url(#shield-clip)">
+                <rect class="shield-body" width="24" height="28"/>
+                <rect class="shield-level" id="shield-fill" width="24" height="28"/>
+                <rect class="shield-preview" id="shield-preview" width="24" height="0"/>
+              </g>
+              <path class="shield-rim" d="M12 1.5 L21.5 4.5 V12.5 C21.5 19.5 17.5 24 12 26.5 C6.5 24 2.5 19.5 2.5 12.5 V4.5 Z"/>
+            </svg>
+            <span class="shield-value"><span id="shield-text"></span><span class="shield-cap" id="shield-cap"></span></span>
+          </div>
+          <div class="stat energy">
+            <span class="energy-label">Energy</span>
+            <div class="chips" id="energy-chips" role="img"></div>
+          </div>
+        </div>
+        <div class="ribbon-side ribbon-right">
+          <button type="button" class="button secondary small" id="log-button" aria-haspopup="dialog">Battle log</button>
+        </div>
+      </div>
+    </footer>
+
+    <dialog class="rules-dialog log-dialog" id="log-dialog" aria-labelledby="log-title">
+      <h2 id="log-title">Battle log</h2>
+      <div id="log"></div>
+      <p id="latency">Latency: -- ms</p>
+      <form method="dialog"><button class="button secondary small">Close</button></form>
+    </dialog>
+  </div>
 
   <script type="module" src="/src/multiplayer/game.js"></script>
 </body>
