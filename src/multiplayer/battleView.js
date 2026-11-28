@@ -9,6 +9,8 @@ import { renderHearts } from '../components/healthDisplay.js';
 const SUITS = { '♠': 'spades', '♥': 'hearts', '♦': 'diamonds', '♣': 'clubs' };
 /** Matches the solo blackjack deal cadence. */
 const DEAL_STAGGER_MS = 110;
+const MAX_HP = 100;
+const SHIELD_CAP = 40;
 
 /** Creates a face using the same artwork and accessible card names as solo play. */
 function cardFace(card) {
@@ -108,16 +110,20 @@ function renderBlackjackRow(container, cards, fresh, offset) {
 
 /** Maintains the current round's DOM and disclosure state across unrelated room updates. */
 export function renderBlackjackTable(data) {
+    const table = document.getElementById('table');
     const info = document.getElementById('blackjack-info');
     const player = document.getElementById('bj-player');
     const dealer = document.getElementById('bj-dealer');
+    const summary = document.getElementById('round-summary');
     const round = data.blackjack || data.lastBlackjack;
+    const active = Boolean(data.blackjack);
+    table.dataset.mode = active ? 'blackjack' : round ? 'settled' : 'poker';
     info.hidden = !round;
     if (!round) {
         player.replaceChildren();
         dealer.replaceChildren();
         delete info.dataset.round;
-        info.classList.remove('active', 'settled');
+        setText(summary, '');
         return;
     }
     const fresh = info.dataset.round !== round.player[0].id;
@@ -125,18 +131,61 @@ export function renderBlackjackTable(data) {
         player.replaceChildren();
         dealer.replaceChildren();
         info.dataset.round = round.player[0].id;
-        info.open = true;
+        delete player.dataset.spent;
     }
-    const active = Boolean(data.blackjack);
-    if (active) info.open = true;
-    info.classList.toggle('active', active);
-    info.classList.toggle('settled', !active);
     renderBlackjackRow(player, round.player, fresh, 0);
     renderBlackjackRow(dealer, round.dealer, fresh, 1);
-    setText(document.getElementById('bj-player-total'), `You · ${round.playerTotal}`);
-    setText(document.getElementById('bj-dealer-total'), active ? 'Dealer · ?' : `Dealer · ${round.dealerTotal}`);
-    const result = round.outcome === 'win' ? `Win · ${round.damage} damage` :
+    setText(document.getElementById('bj-player-total'), String(round.playerTotal));
+    setText(document.getElementById('bj-dealer-total'), active ? '?' : String(round.dealerTotal));
+    const result = active ? '' : round.outcome === 'win' ? `Win · ${round.damage} damage` :
         round.outcome === 'push' ? `Push · +${round.refund} energy` :
             `${round.outcome === 'bust' ? 'Bust' : 'Loss'} · −${round.damage} HP${round.blocked ? ` · ${round.blocked} blocked` : ''}`;
-    setText(document.getElementById('round-summary'), active ? 'Blackjack' : result);
+    if (result && summary.dataset.result !== `${info.dataset.round}:${result}`) {
+        summary.classList.remove('settled');
+        void summary.offsetWidth;
+        summary.classList.add('settled');
+    }
+    summary.dataset.result = `${info.dataset.round}:${result}`;
+    setText(summary, result);
+}
+
+function renderChips(container, energy, max = 3) {
+    while (container.children.length > max) container.lastElementChild.remove();
+    while (container.children.length < max) container.append(document.createElement('span'));
+    [...container.children].forEach((chip, index) => { chip.className = index < energy ? 'chip' : 'chip spent'; });
+    setLabel(container, 'aria-label', `Energy ${energy} of ${max}`);
+}
+
+export function renderMyStats(player, active) {
+    document.getElementById('my-stats').classList.toggle('active', active);
+    renderHearts(document.getElementById('hp-hearts'), player.hp, MAX_HP);
+    setText(document.getElementById('hp-text'), `${player.hp} / ${MAX_HP}`);
+    document.getElementById('shield-fill').style.transform = `scaleY(${Math.min(1, player.shield / SHIELD_CAP)})`;
+    setText(document.getElementById('shield-text'), String(player.shield));
+    setText(document.getElementById('shield-cap'), ` / ${SHIELD_CAP}`);
+    const shield = document.getElementById('shield-stat');
+    shield.classList.toggle('active', player.shield > 0);
+    setLabel(shield, 'aria-label', `Shield ${player.shield} of ${SHIELD_CAP}`);
+    renderChips(document.getElementById('energy-chips'), player.energy);
+}
+
+export function renderTeammate(player, status, active) {
+    const panel = document.getElementById('teammate');
+    panel.hidden = !player;
+    if (!player) return;
+    panel.classList.toggle('active', active);
+    panel.classList.toggle('offline', !player.connected);
+    setText(document.getElementById('teammate-name'), player.name);
+    setText(document.getElementById('teammate-status'), !player.connected ? 'Disconnected' :
+        status !== 'playing' ? player.ready ? 'Ready ✓' : 'Waiting' :
+            player.hp <= 0 ? 'Defeated' : active ? 'Playing' : 'Waiting');
+    const hearts = document.getElementById('teammate-hearts');
+    renderHearts(hearts, player.hp, MAX_HP);
+    setLabel(hearts, 'aria-label', `${player.hp} / ${MAX_HP} HP`);
+    setText(document.getElementById('teammate-hp'), `${player.hp}/${MAX_HP}`);
+    const shield = document.getElementById('teammate-shield');
+    setText(shield, `⛨ ${player.shield}`);
+    setLabel(shield, 'aria-label', `Shield ${player.shield} of ${SHIELD_CAP}`);
+    shield.classList.toggle('active', player.shield > 0);
+    renderChips(document.getElementById('teammate-energy'), player.energy);
 }
