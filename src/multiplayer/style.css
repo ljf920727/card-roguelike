@@ -456,7 +456,206 @@ details[open] > summary {
     gap: 0;
   }
   .coop-hand {
+    gap: 8px;
+  }
+}
+@media (max-width: 640px) {
+  body[data-page="battle"] {
+    height: 100dvh;
+  }
+  body[data-page="battle"] .layout {
+    gap: 10px;
+    min-height: 0;
+  }
+  body[data-page="battle"] .table {
+    min-height: 0;
+    overflow-y: auto;
+  }
+  body[data-page="battle"] .table {
+    padding: 14px 12px 10px;
+  }
+  .table .run-header,
+  .table .intent-detail,
+  .table .mode-title,
+  .table .mode-hint,
+  .table[data-mode="blackjack"] #selection-text {
+    display: none;
+  }
+  .table .hand-row {
+    display: contents;
+  }
+  .table .action-bar {
+    order: 1;
+  }
+  .table .mode-toggle {
+    order: 2;
+    width: 100%;
+  }
+  .table .mode-track {
+    width: 100%;
+  }
+  .table .mode-option {
+    flex: 1;
+    width: auto;
+  }
+  .table .blackjack {
     gap: 6px;
+  }
+  .table .bj-cards {
+    min-height: 0;
+    padding: 2px;
+  }
+  .table .enemy {
+    padding: 4px;
+  }
+  .table .enemy-token {
+    width: 76px;
+  }
+  .table .turn-zone {
+    gap: 6px;
+    min-height: 0;
+  }
+  .table .turn-number {
+    font-size: 1.6rem;
+  }
+  .table .turn-phase {
+    font-size: 0.85rem;
+  }
+  .table .selection-detail .result {
+    font-size: 1.2rem;
+  }
+  .table .selection-detail .feedback {
+    min-height: 0;
+    font-size: 0.8rem;
+  }
+  .table .hand-row {
+    gap: 12px;
+  }
+  .hand-card .bj-card {
+    width: clamp(52px, 17cqi, 100px);
+  }
+  .table .blackjack .bj-card {
+    width: 52px;
+    height: 74px;
+  }
+  .table .actions {
+    flex-wrap: nowrap;
+    gap: 10px;
+    width: 100%;
+  }
+  .table .action-column {
+    width: 100%;
+    padding-bottom: 38px;
+  }
+  .table .actions > *,
+  .table .actions .action-slot {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .table .actions .button {
+    min-width: 0;
+    padding: 12px 8px;
+  }
+  .table .actions .action-slot > .button {
+    flex: 1;
+  }
+  .teammate {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+  }
+  .teammate-heading {
+    display: block;
+  }
+  .teammate-status {
+    display: none;
+  }
+  .teammate-name {
+    display: block;
+    max-width: 8ch;
+  }
+  .teammate-stats {
+    min-width: 0;
+  }
+}
+@media (max-width: 640px) and (max-height: 760px) {
+  .table .selection-detail .feedback:not(#battle-message),
+  .table #selection-text {
+    display: none;
+  }
+  .table .blackjack .bj-card {
+    width: 44px;
+    height: 62px;
+  }
+  .table .action-column {
+    padding-bottom: 32px;
+  }
+  body[data-page="battle"] .layout {
+    gap: 8px;
+    padding-block: 8px;
+  }
+  body[data-page="battle"] .table {
+    padding-top: 10px;
+  }
+  .table .turn-counter {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .table[data-round="active"] #result-text {
+    display: none;
+  }
+  .table[data-round="active"] .action-column {
+    padding-bottom: 6px;
+  }
+  .teammate {
+    padding-block: 4px;
+  }
+  #log-button {
+    padding-block: 5px;
+  }
+  .table .enemy-token {
+    width: 64px;
+  }
+  .table .enemy-name {
+    font-size: 1.3rem;
+  }
+  .table .turn-number {
+    font-size: 1.35rem;
+  }
+}
+@media (max-width: 440px) {
+  .teammate .hearts {
+    display: none;
+  }
+  .teammate-hp {
+    color: var(--danger);
+  }
+}
+@media (max-width: 440px) {
+  #connection {
+    width: 1em;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+}
+@container ribbon (max-width: 760px) {
+  .status-ribbon {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .teammate {
+    flex: 1 1 auto;
+  }
+  .teammate-stats {
+    gap: 6px;
+  }
+  .teammate .hearts {
+    flex: 1 1 auto;
+  }
+  .teammate .heart {
+    width: 10px;
+    min-width: 5px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

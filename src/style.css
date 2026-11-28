@@ -563,7 +563,19 @@ button {
 
 @media (max-width: 640px) {
     .topbar {
-        gap: 10px 16px;
+        flex-wrap: nowrap;
+        gap: 8px;
+    }
+
+    .topbar-end {
+        flex-wrap: nowrap;
+        gap: 6px;
+    }
+
+    .topbar .button.small {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+        white-space: nowrap;
     }
 
     .stats {
@@ -678,6 +690,18 @@ button {
         padding-inline: 16px;
         white-space: normal;
         overflow-wrap: anywhere;
+    }
+}
+
+@media (max-width: 440px) {
+    .topbar .button.small:is([data-guidebook], [data-game-settings]) {
+        padding: 7px 9px;
+        font-size: 0;
+    }
+
+    .topbar :is([data-guidebook], [data-game-settings]) .settings-icon {
+        width: 17px;
+        height: 17px;
     }
 }
 

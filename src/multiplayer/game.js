@@ -487,6 +487,7 @@ function renderBattle(data, pokerHit, heartsHit = pokerHit) {
   if (data.blackjack) mode = 'blackjack';
   const table = byId('table');
   table.dataset.mode = mode;
+  table.dataset.round = data.blackjack ? 'active' : '';
   const active = data.players[data.activeIndex];
   setText(byId('turn-text'), `Turn ${data.turn}`);
   const phase = byId('phase-text');
